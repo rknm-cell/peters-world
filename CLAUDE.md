@@ -6,33 +6,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A browser-based 3D diorama creator built with the T3 stack featuring low-poly cell-shaded aesthetics. Users create, customize, and share tiny worlds on floating islands with intuitive touch/mouse controls.
 
 ## Tech Stack & Key Dependencies
-- **Core**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma ORM, tRPC, NextAuth.js
-- **3D Graphics**: Three.js (r160+), @react-three/fiber, @react-three/drei, @react-three/postprocessing
+- **Runtime**: Bun (package manager and runtime)
+- **Core**: Next.js 15 (App Router), TypeScript, Tailwind CSS, Drizzle ORM, tRPC, NextAuth.js
+- **3D Graphics**: Three.js (r179+), @react-three/fiber, @react-three/drei, @react-three/postprocessing
 - **State Management**: Zustand for 3D scene state
 - **Database**: PostgreSQL (Supabase/Neon recommended)
 - **Storage**: R2/S3 for screenshot storage
 - **Deployment**: Vercel with edge functions
 
 ## Development Commands
-Based on T3 stack conventions, these commands should be available once implemented:
+This project uses Bun as the package manager and runtime:
 
 ```bash
 # Development
-npm run dev          # Start Next.js development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # ESLint
-npm run type-check   # TypeScript checking
+bun dev              # Start Next.js development server
+bun run build        # Build for production
+bun start            # Start production server
+bun run lint         # ESLint
+bun run typecheck    # TypeScript checking
 
-# Database
-npx prisma migrate dev    # Apply database migrations
-npx prisma generate       # Generate Prisma client
-npx prisma studio        # Open Prisma Studio
-npx prisma migrate deploy # Deploy migrations (production)
+# Database (using Drizzle)
+bun run db:push      # Push schema changes to database
+bun run db:generate  # Generate Drizzle types
+bun run db:studio    # Open Drizzle Studio
+bun run db:migrate   # Run database migrations
 
 # Testing (if implemented)
-npm run test         # Run tests
-npm run test:watch   # Watch mode
+bun test             # Run tests
+bun test --watch     # Watch mode
 ```
 
 ## Architecture Overview
@@ -74,9 +75,9 @@ interface WorldState {
 - Bundle size target: <500KB for 3D assets
 
 ## Database Schema
-The Prisma schema includes:
+The Drizzle schema includes:
 - **World**: Stores serialized object positions/rotations as JSON
-- **Share**: Short code system for easy world sharing
+- **Share**: Short code system for easy world sharing  
 - **User**: Optional authentication for persistence
 
 ## API Structure (tRPC)

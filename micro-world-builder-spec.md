@@ -9,15 +9,16 @@ A browser-based 3D diorama creator featuring low-poly cell-shaded aesthetics, bu
 ## Tech Stack
 
 ### Core T3 Stack
-- **Next.js 14** - App router, server components for gallery/landing pages
+- **Bun** - Package manager and runtime
+- **Next.js 15** - App router, server components for gallery/landing pages
 - **TypeScript** - Full type safety across the stack
 - **Tailwind CSS** - UI components and glass-morphism panels
-- **Prisma** - Database ORM for saved worlds
+- **Drizzle** - Database ORM for saved worlds
 - **tRPC** - Type-safe API routes
 - **NextAuth.js** - Optional authentication for saving/sharing
 
 ### 3D & Graphics
-- **Three.js** (r160+) - Core 3D engine
+- **Three.js** (r179+) - Core 3D engine
 - **@react-three/fiber** - React renderer for Three.js
 - **@react-three/drei** - Helper components (OrbitControls, etc.)
 - **@react-three/postprocessing** - Outline effects, FXAA
@@ -33,37 +34,32 @@ A browser-based 3D diorama creator featuring low-poly cell-shaded aesthetics, bu
 
 ## Database Schema
 
-```prisma
-model World {
-  id          String   @id @default(cuid())
-  name        String
-  data        Json     // Serialized object positions/rotations
-  screenshot  String?  // URL to screenshot
-  userId      String?
-  created     DateTime @default(now())
-  updated     DateTime @updatedAt
-  views       Int      @default(0)
-  featured    Boolean  @default(false)
-  
-  user        User?    @relation(fields: [userId], references: [id])
-  shares      Share[]
-}
+```typescript
+// Using Drizzle ORM schema
+export const worlds = pgTable('worlds', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  data: json('data').notNull(), // Serialized object positions/rotations
+  screenshot: text('screenshot'), // URL to screenshot
+  userId: text('user_id'),
+  created: timestamp('created').defaultNow().notNull(),
+  updated: timestamp('updated').defaultNow().notNull(),
+  views: integer('views').default(0).notNull(),
+  featured: boolean('featured').default(false).notNull(),
+});
 
-model Share {
-  id          String   @id @default(cuid())
-  worldId     String
-  shortCode   String   @unique // 6-char share code
-  created     DateTime @default(now())
-  
-  world       World    @relation(fields: [worldId], references: [id])
-}
+export const shares = pgTable('shares', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  worldId: text('world_id').notNull(),
+  shortCode: text('short_code').unique().notNull(), // 6-char share code
+  created: timestamp('created').defaultNow().notNull(),
+});
 
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  worlds      World[]
-}
+export const users = pgTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  email: text('email').unique().notNull(),
+  name: text('name'),
+});
 ```
 
 ---
@@ -252,8 +248,8 @@ R2_BUCKET_URL=
 
 3. **Database Migrations**
 ```bash
-npx prisma migrate deploy
-npx prisma generate
+bun run db:migrate
+bun run db:generate
 ```
 
 ---
