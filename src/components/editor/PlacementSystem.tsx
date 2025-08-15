@@ -2,9 +2,8 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Raycaster, Vector2, Vector3, Mesh } from 'three';
+import { Raycaster, Vector2, Mesh } from 'three';
 import { useWorldStore } from '~/lib/store';
-import { WORLD_LIMITS } from '~/lib/constants';
 import { calculatePlacement, getDetailedIntersection, type PlacementInfo } from '~/lib/utils/placement';
 
 interface PlacementSystemProps {
@@ -14,7 +13,7 @@ interface PlacementSystemProps {
 
 export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
-  const { isPlacing, selectedObject, selectedObjectType, objects, addObject, selectObject, removeObject } = useWorldStore();
+  const { isPlacing, selectedObjectType, objects, addObject, selectObject, removeObject } = useWorldStore();
   
   const raycaster = useRef(new Raycaster());
   const mouse = useRef(new Vector2());
@@ -79,11 +78,12 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
       const objectIntersects = raycaster.current.intersectObjects(sceneObjects);
       if (objectIntersects.length > 0) {
         const intersectedObject = objectIntersects[0]?.object;
-        if (intersectedObject?.userData.objectId) {
+        if (intersectedObject?.userData?.objectId && typeof intersectedObject.userData.objectId === 'string') {
+          const objectId: string = intersectedObject.userData.objectId;
           if (event.detail === 2) { // Double click
-            removeObject(intersectedObject.userData.objectId);
+            removeObject(objectId);
           } else {
-            selectObject(intersectedObject.userData.objectId);
+            selectObject(objectId);
           }
         }
       }

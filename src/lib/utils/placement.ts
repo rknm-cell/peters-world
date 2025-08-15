@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OBJECT_TYPES } from '~/lib/constants';
 
 // Define object-specific metadata for proper placement
 export const OBJECT_METADATA = {
@@ -84,7 +83,7 @@ export function calculatePlacement(
   }
 
   // Calculate rotation
-  let rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0); // Random Y rotation
+  const rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0); // Random Y rotation
   
   if (metadata.alignToNormal) {
     // Align object to surface normal
@@ -164,7 +163,7 @@ export function getDetailedIntersection(
   }
 
   const intersection = intersects[0];
-  if (!intersection || !intersection.face) {
+  if (!intersection?.face) {
     return null;
   }
 

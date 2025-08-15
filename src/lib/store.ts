@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Vector3 } from 'three';
+import type { Vector3 } from 'three';
 
 export interface PlacedObject {
   id: string;

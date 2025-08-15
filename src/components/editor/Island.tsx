@@ -77,7 +77,7 @@ export const Island = forwardRef<THREE.Mesh>((props, ref) => {
 
   return (
     <mesh
-      ref={ref || meshRef}
+      ref={ref ?? meshRef}
       geometry={geometry}
       material={material}
       receiveShadow
@@ -86,3 +86,5 @@ export const Island = forwardRef<THREE.Mesh>((props, ref) => {
     />
   );
 });
+
+Island.displayName = 'Island';
