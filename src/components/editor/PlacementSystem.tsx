@@ -2,16 +2,18 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 import { Raycaster, Vector2, Mesh } from 'three';
 import { useWorldStore } from '~/lib/store';
 import { calculatePlacement, getDetailedIntersection, type PlacementInfo } from '~/lib/utils/placement';
 
 interface PlacementSystemProps {
-  islandRef: React.RefObject<Mesh | null>;
+  globeRef: React.RefObject<THREE.Mesh | null>;
+  rotationGroupRef?: React.RefObject<THREE.Group | null>;
   children: React.ReactNode;
 }
 
-export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
+export function PlacementSystem({ globeRef, rotationGroupRef, children }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
   const { isPlacing, selectedObjectType, objects, addObject, selectObject, removeObject } = useWorldStore();
   
@@ -31,28 +33,34 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
     // Update raycaster
     raycaster.current.setFromCamera(mouse.current, camera);
     
-    // Check for intersections with the island
-    if (islandRef.current && isPlacing && selectedObjectType) {
-      const detailedIntersection = getDetailedIntersection(raycaster.current, islandRef.current);
+    // Check for intersections with the globe
+    if (globeRef.current && isPlacing && selectedObjectType) {
+      const detailedIntersection = getDetailedIntersection(raycaster.current, globeRef.current);
       
       if (detailedIntersection) {
+        // Convert world coordinates to local coordinates of the rotating group
+        const localPoint = detailedIntersection.point.clone();
+        const localNormal = detailedIntersection.normal.clone();
+        
+        if (rotationGroupRef?.current) {
+          // Convert world point to local space of the rotating group
+          const worldToLocal = new THREE.Matrix4().copy(rotationGroupRef.current.matrixWorld).invert();
+          localPoint.applyMatrix4(worldToLocal);
+          
+          // Convert world normal to local space (without translation)
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(rotationGroupRef.current.matrixWorld);
+          localNormal.applyMatrix3(normalMatrix.invert()).normalize();
+        }
+        
         const placementInfo = calculatePlacement(
           selectedObjectType,
-          detailedIntersection.point,
-          detailedIntersection.normal,
+          localPoint,
+          localNormal,
           objects
         );
 
         if (placementInfo.canPlace) {
-          // Create the placed object with proper positioning and rotation
-          const tempObject = {
-            type: selectedObjectType,
-            position: [placementInfo.position.x, placementInfo.position.y, placementInfo.position.z] as [number, number, number],
-            rotation: [placementInfo.rotation.x, placementInfo.rotation.y, placementInfo.rotation.z] as [number, number, number],
-            scale: [1, 1, 1] as [number, number, number],
-          };
-          
-          // Use the Vector3 for the addObject call (it will be converted internally)
+          // Use the local coordinates for placement
           addObject(selectedObjectType, placementInfo.position);
           
           // Update the last placed object with the correct rotation
@@ -61,7 +69,7 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
             const lastObject = newObjects[newObjects.length - 1];
             if (lastObject) {
               useWorldStore.getState().updateObject(lastObject.id, {
-                rotation: tempObject.rotation
+                rotation: [placementInfo.rotation.x, placementInfo.rotation.y, placementInfo.rotation.z] as [number, number, number]
               });
             }
           }
@@ -91,7 +99,7 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
       // Click on empty space - deselect
       selectObject(null);
     }
-  }, [camera, gl.domElement, islandRef, isPlacing, selectedObjectType, objects, addObject, selectObject, removeObject, scene.children]);
+  }, [camera, gl.domElement, globeRef, rotationGroupRef, isPlacing, selectedObjectType, objects, addObject, selectObject, removeObject, scene.children]);
 
   // Handle hover for placement preview
   const handlePointerMove = useCallback((event: PointerEvent) => {
@@ -106,14 +114,26 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
 
     raycaster.current.setFromCamera(mouse.current, camera);
 
-    if (islandRef.current) {
-      const detailedIntersection = getDetailedIntersection(raycaster.current, islandRef.current);
+    if (globeRef.current) {
+      const detailedIntersection = getDetailedIntersection(raycaster.current, globeRef.current);
       
       if (detailedIntersection) {
+        // Convert world coordinates to local coordinates for preview
+        const localPoint = detailedIntersection.point.clone();
+        const localNormal = detailedIntersection.normal.clone();
+        
+        if (rotationGroupRef?.current) {
+          const worldToLocal = new THREE.Matrix4().copy(rotationGroupRef.current.matrixWorld).invert();
+          localPoint.applyMatrix4(worldToLocal);
+          
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(rotationGroupRef.current.matrixWorld);
+          localNormal.applyMatrix3(normalMatrix.invert()).normalize();
+        }
+        
         const placementInfo = calculatePlacement(
           selectedObjectType,
-          detailedIntersection.point,
-          detailedIntersection.normal,
+          localPoint,
+          localNormal,
           objects
         );
         
@@ -122,7 +142,7 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
         setPlacementPreview(null);
       }
     }
-  }, [camera, gl.domElement, islandRef, isPlacing, selectedObjectType, objects]);
+  }, [camera, gl.domElement, globeRef, rotationGroupRef, isPlacing, selectedObjectType, objects]);
 
   // Set up event listeners
   useFrame(() => {

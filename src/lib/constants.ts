@@ -1,6 +1,6 @@
 // Color palettes for cell-shaded materials
 export const COLOR_PALETTES = {
-  island: {
+  globe: {
     primary: '#8FAE5A',
     shadow: '#5C7A3A',
     highlight: '#B8D178',
@@ -65,8 +65,9 @@ export const LIGHTING_PRESETS = {
 // Placement limits and performance settings
 export const WORLD_LIMITS = {
   maxObjects: 50,
-  islandRadius: 8,
-  placementHeight: 0.5,
+  globeRadius: 6,           // Base smooth globe radius
+  maxPlacementRadius: 7.0,  // Maximum distance from center for placement
+  placementHeight: 0.5,     // Legacy - now handled by surface attachment
 } as const;
 
 // Object types available for placement
