@@ -5,6 +5,12 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  experimental: {
+    optimizePackageImports: ['@trpc/server', '@trpc/client', '@trpc/react-query', '@trpc/next'],
+  },
+  // Disable font optimization to fix lightningcss issues on Vercel
+  optimizeFonts: false,
+};
 
 export default config;
