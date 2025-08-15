@@ -7,7 +7,7 @@ A browser-based 3D diorama creator built with the T3 stack featuring low-poly ce
 
 ## Tech Stack & Key Dependencies
 - **Runtime**: Bun (package manager and runtime)
-- **Core**: Next.js 15 (App Router), TypeScript, Tailwind CSS, Drizzle ORM, tRPC, NextAuth.js
+- **Core**: Next.js 15 (App Router), TypeScript, Tailwind CSS v3, Drizzle ORM, tRPC, NextAuth.js
 - **3D Graphics**: Three.js (r179+), @react-three/fiber, @react-three/drei, @react-three/postprocessing
 - **State Management**: Zustand for 3D scene state
 - **Database**: PostgreSQL (Supabase/Neon recommended)
