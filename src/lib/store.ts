@@ -31,6 +31,7 @@ interface WorldState {
 export const useWorldStore = create<WorldState>((set) => ({
   objects: [],
   selectedObject: null,
+  selectedObjectType: null,
   timeOfDay: 'day',
   isPlacing: false,
 
@@ -76,5 +77,9 @@ export const useWorldStore = create<WorldState>((set) => ({
         obj.id === id ? { ...obj, ...updates } : obj
       ),
     }));
+  },
+
+  setSelectedObjectType: (type: string | null) => {
+    set({ selectedObjectType: type });
   },
 }));

@@ -92,7 +92,7 @@ export const worldRouter = createTRPCRouter({
         .where(eq(worlds.id, input.id))
         .returning();
       return world;
-    },
+    }),
 
   // Get world by share code
   getByShareCode: publicProcedure
@@ -100,11 +100,16 @@ export const worldRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const share = await ctx.db.query.shares.findFirst({
         where: eq(shares.shortCode, input.shortCode),
-        with: {
-          world: true,
-        },
       });
-      return share?.world || null;
+      
+      if (!share) return null;
+      
+      // Manually fetch the world data
+      const world = await ctx.db.query.worlds.findFirst({
+        where: eq(worlds.id, share.worldId),
+      });
+      
+      return world;
     }),
 
   // Create share for a world
