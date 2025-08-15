@@ -11,7 +11,7 @@ interface RadialMenuProps {
 }
 
 export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
-  const { setPlacing } = useWorldStore();
+  const { setPlacing, setSelectedObjectType } = useWorldStore();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -27,8 +27,7 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
   };
 
   const handleObjectSelect = (objectType: string) => {
-    // Store the selected object type in the store
-    useWorldStore.getState().selectedObjectType = objectType;
+    setSelectedObjectType(objectType);
     setPlacing(true);
     onClose();
   };

@@ -1,23 +1,24 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Raycaster, Vector2, Vector3, Mesh } from 'three';
 import { useWorldStore } from '~/lib/store';
 import { WORLD_LIMITS } from '~/lib/constants';
+import { calculatePlacement, getDetailedIntersection, type PlacementInfo } from '~/lib/utils/placement';
 
 interface PlacementSystemProps {
-  islandRef: React.RefObject<Mesh>;
+  islandRef: React.RefObject<Mesh | null>;
   children: React.ReactNode;
 }
 
 export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
-  const { isPlacing, selectedObject, addObject, selectObject, removeObject } = useWorldStore();
+  const { isPlacing, selectedObject, selectedObjectType, objects, addObject, selectObject, removeObject } = useWorldStore();
   
   const raycaster = useRef(new Raycaster());
   const mouse = useRef(new Vector2());
-  const [hoverPoint, setHoverPoint] = useState<Vector3 | null>(null);
+  const [placementPreview, setPlacementPreview] = useState<PlacementInfo | null>(null);
 
   // Handle click/tap events for placement and selection
   const handlePointerDown = useCallback((event: PointerEvent) => {
@@ -32,26 +33,37 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
     raycaster.current.setFromCamera(mouse.current, camera);
     
     // Check for intersections with the island
-    if (islandRef.current) {
-      const intersects = raycaster.current.intersectObject(islandRef.current);
+    if (islandRef.current && isPlacing && selectedObjectType) {
+      const detailedIntersection = getDetailedIntersection(raycaster.current, islandRef.current);
       
-      if (intersects.length > 0) {
-        const intersectionPoint = intersects[0]?.point;
-        if (intersectionPoint) {
-          // Check if point is within island bounds
-          const distance = Math.sqrt(intersectionPoint.x ** 2 + intersectionPoint.z ** 2);
-          if (distance <= WORLD_LIMITS.islandRadius) {
-            if (isPlacing) {
-              // Place new object
-              const placementPosition = new Vector3(
-                intersectionPoint.x,
-                intersectionPoint.y + WORLD_LIMITS.placementHeight,
-                intersectionPoint.z
-              );
-              
-              // Get the object type from store (you'll implement this)
-              const objectType = 'pine'; // Default for now
-              addObject(objectType, placementPosition);
+      if (detailedIntersection) {
+        const placementInfo = calculatePlacement(
+          selectedObjectType,
+          detailedIntersection.point,
+          detailedIntersection.normal,
+          objects
+        );
+
+        if (placementInfo.canPlace) {
+          // Create the placed object with proper positioning and rotation
+          const tempObject = {
+            type: selectedObjectType,
+            position: [placementInfo.position.x, placementInfo.position.y, placementInfo.position.z] as [number, number, number],
+            rotation: [placementInfo.rotation.x, placementInfo.rotation.y, placementInfo.rotation.z] as [number, number, number],
+            scale: [1, 1, 1] as [number, number, number],
+          };
+          
+          // Use the Vector3 for the addObject call (it will be converted internally)
+          addObject(selectedObjectType, placementInfo.position);
+          
+          // Update the last placed object with the correct rotation
+          const newObjects = useWorldStore.getState().objects;
+          if (newObjects.length > 0) {
+            const lastObject = newObjects[newObjects.length - 1];
+            if (lastObject) {
+              useWorldStore.getState().updateObject(lastObject.id, {
+                rotation: tempObject.rotation
+              });
             }
           }
         }
@@ -59,12 +71,12 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
     }
 
     // Check for intersections with existing objects
-    const objects = scene.children.filter(child => 
+    const sceneObjects = scene.children.filter(child => 
       child.userData.isPlacedObject && child instanceof Mesh
     );
     
-    if (objects.length > 0) {
-      const objectIntersects = raycaster.current.intersectObjects(objects);
+    if (sceneObjects.length > 0) {
+      const objectIntersects = raycaster.current.intersectObjects(sceneObjects);
       if (objectIntersects.length > 0) {
         const intersectedObject = objectIntersects[0]?.object;
         if (intersectedObject?.userData.objectId) {
@@ -79,11 +91,14 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
       // Click on empty space - deselect
       selectObject(null);
     }
-  }, [camera, gl.domElement, islandRef, isPlacing, addObject, selectObject, removeObject, scene.children]);
+  }, [camera, gl.domElement, islandRef, isPlacing, selectedObjectType, objects, addObject, selectObject, removeObject, scene.children]);
 
   // Handle hover for placement preview
   const handlePointerMove = useCallback((event: PointerEvent) => {
-    if (!isPlacing) return;
+    if (!isPlacing || !selectedObjectType) {
+      setPlacementPreview(null);
+      return;
+    }
 
     const rect = gl.domElement.getBoundingClientRect();
     mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -92,27 +107,22 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
     raycaster.current.setFromCamera(mouse.current, camera);
 
     if (islandRef.current) {
-      const intersects = raycaster.current.intersectObject(islandRef.current);
+      const detailedIntersection = getDetailedIntersection(raycaster.current, islandRef.current);
       
-      if (intersects.length > 0) {
-        const intersectionPoint = intersects[0]?.point;
-        if (intersectionPoint) {
-          const distance = Math.sqrt(intersectionPoint.x ** 2 + intersectionPoint.z ** 2);
-          if (distance <= WORLD_LIMITS.islandRadius) {
-            setHoverPoint(new Vector3(
-              intersectionPoint.x,
-              intersectionPoint.y + WORLD_LIMITS.placementHeight,
-              intersectionPoint.z
-            ));
-          } else {
-            setHoverPoint(null);
-          }
-        }
+      if (detailedIntersection) {
+        const placementInfo = calculatePlacement(
+          selectedObjectType,
+          detailedIntersection.point,
+          detailedIntersection.normal,
+          objects
+        );
+        
+        setPlacementPreview(placementInfo);
       } else {
-        setHoverPoint(null);
+        setPlacementPreview(null);
       }
     }
-  }, [camera, gl.domElement, islandRef, isPlacing]);
+  }, [camera, gl.domElement, islandRef, isPlacing, selectedObjectType, objects]);
 
   // Set up event listeners
   useFrame(() => {
@@ -137,11 +147,54 @@ export function PlacementSystem({ islandRef, children }: PlacementSystemProps) {
       {children}
       
       {/* Placement preview */}
-      {isPlacing && hoverPoint && (
-        <mesh position={[hoverPoint.x, hoverPoint.y, hoverPoint.z]}>
-          <sphereGeometry args={[0.2, 8, 8]} />
-          <meshBasicMaterial color="#00ff00" opacity={0.5} transparent />
-        </mesh>
+      {isPlacing && placementPreview && (
+        <group
+          position={[
+            placementPreview.position.x,
+            placementPreview.position.y,
+            placementPreview.position.z
+          ]}
+          rotation={[
+            placementPreview.rotation.x,
+            placementPreview.rotation.y,
+            placementPreview.rotation.z
+          ]}
+        >
+          {/* Preview indicator - ghost version of the object */}
+          <mesh>
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <meshBasicMaterial 
+              color={placementPreview.canPlace ? "#00ff00" : "#ff0000"} 
+              opacity={0.7} 
+              transparent 
+            />
+          </mesh>
+          
+          {/* Surface normal indicator */}
+          {placementPreview.surfaceNormal && (
+            <group>
+              <mesh position={[0, 0.1, 0]}>
+                <cylinderGeometry args={[0.01, 0.01, 0.5]} />
+                <meshBasicMaterial color="#ffff00" opacity={0.5} transparent />
+              </mesh>
+              <mesh position={[0, 0.35, 0]}>
+                <coneGeometry args={[0.05, 0.1]} />
+                <meshBasicMaterial color="#ffff00" opacity={0.5} transparent />
+              </mesh>
+            </group>
+          )}
+          
+          {/* Placement area indicator */}
+          <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.3, 16]} />
+            <meshBasicMaterial 
+              color={placementPreview.canPlace ? "#00ff00" : "#ff0000"} 
+              opacity={0.2} 
+              transparent
+              side={2} // DoubleSide
+            />
+          </mesh>
+        </group>
       )}
     </>
   );

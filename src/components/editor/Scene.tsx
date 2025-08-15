@@ -7,12 +7,15 @@ import { useWorldStore } from '~/lib/store';
 import { LIGHTING_PRESETS } from '~/lib/constants';
 import { Island } from './Island';
 import { CameraController } from './CameraController';
+import { PlacementSystem } from './PlacementSystem';
+import { WorldObjects } from './WorldObjects';
 
 export function Scene() {
   const { scene, gl } = useThree();
   const timeOfDay = useWorldStore((state) => state.timeOfDay);
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const directionalLightRef = useRef<THREE.DirectionalLight>(null);
+  const islandRef = useRef<THREE.Mesh | null>(null);
 
   // Update lighting based on time of day
   useEffect(() => {
@@ -59,8 +62,14 @@ export function Scene() {
       {/* Camera Controls */}
       <CameraController />
 
-      {/* Main island */}
-      <Island />
+      {/* Placement System wraps all interactive objects */}
+      <PlacementSystem islandRef={islandRef}>
+        {/* Main island */}
+        <Island ref={islandRef} />
+        
+        {/* All placed objects */}
+        <WorldObjects />
+      </PlacementSystem>
 
       {/* Environment */}
       <fog attach="fog" args={[LIGHTING_PRESETS[timeOfDay].fogColor, 20, 100]} />
