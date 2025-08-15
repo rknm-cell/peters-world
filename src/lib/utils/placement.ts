@@ -44,7 +44,7 @@ export const OBJECT_METADATA = {
   },
   flower: { 
     bottomOffset: 0.0,      // Flowers grow from ground
-    alignToNormal: false,   // Flowers grow upward
+    alignToNormal: true,   // Flowers grow upward
     baseRadius: 0.1 
   },
 } as const;
@@ -124,9 +124,9 @@ function checkPlacementValidity(
   existingObjects: Array<{ position: [number, number, number]; type: string; id: string }>
 ): boolean {
   
-  // Check distance from island center
-  const distanceFromCenter = Math.sqrt(position.x ** 2 + position.z ** 2);
-  if (distanceFromCenter > 7.5) { // Slightly smaller than island radius
+  // Check distance from globe center (3D distance for sphere)
+  const distanceFromCenter = Math.sqrt(position.x ** 2 + position.y ** 2 + position.z ** 2);
+  if (distanceFromCenter > 7.0) { // Slightly larger than smooth globe radius (6) for placement buffer
     return false;
   }
 

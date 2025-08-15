@@ -13,7 +13,7 @@ export function Canvas({ className = '' }: CanvasProps) {
     <div className={`relative w-full h-full ${className}`}>
       <R3FCanvas
         camera={{
-          position: [10, 8, 10],
+          position: [0, 0, 20], // Position camera directly in front of globe
           fov: 50,
           near: 0.1,
           far: 200,
