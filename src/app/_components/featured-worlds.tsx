@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "~/trpc/react";
 
 export function FeaturedWorlds() {
@@ -48,9 +49,11 @@ export function FeaturedWorlds() {
         >
           <div className="aspect-square bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded mb-3 flex items-center justify-center">
             {world.screenshot ? (
-              <img
+              <Image
                 src={world.screenshot}
                 alt={world.name}
+                width={300}
+                height={300}
                 className="w-full h-full object-cover rounded"
               />
             ) : (
