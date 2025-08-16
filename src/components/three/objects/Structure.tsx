@@ -12,6 +12,7 @@ interface StructureProps {
   scale?: [number, number, number];
   selected?: boolean;
   objectId: string;
+  preview?: boolean;
 }
 
 export function Structure({
@@ -21,6 +22,7 @@ export function Structure({
   scale = [1, 1, 1],
   selected = false,
   objectId,
+  preview = false,
 }: StructureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -53,14 +55,20 @@ export function Structure({
       wall: new THREE.MeshToonMaterial({
         color: "#D2B48C", // Tan
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
       roof: new THREE.MeshToonMaterial({
         color: "#8B4513", // Brown
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
       stone: new THREE.MeshToonMaterial({
         color: COLOR_PALETTES.rock.primary,
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
     };
   }, []);

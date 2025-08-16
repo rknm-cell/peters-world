@@ -12,6 +12,7 @@ interface TreeProps {
   scale?: [number, number, number];
   selected?: boolean;
   objectId: string;
+  preview?: boolean;
 }
 
 export function Tree({
@@ -21,6 +22,7 @@ export function Tree({
   scale = [1, 1, 1],
   selected = false,
   objectId,
+  preview = false,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -53,10 +55,14 @@ export function Tree({
       trunk: new THREE.MeshToonMaterial({
         color: COLOR_PALETTES.tree.trunk,
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
       leaves: new THREE.MeshToonMaterial({
         color: COLOR_PALETTES.tree.leaves,
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
     };
   }, []);
