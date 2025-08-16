@@ -20,35 +20,13 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
       return geo;
     }, []);
 
-    // Create cell-shaded material
+    // Create material that receives shadows from directional light
     const material = useMemo(() => {
-      // Create a simple 3-step gradient texture for toon shading
-      const gradientTexture = new THREE.DataTexture(
-        new Uint8Array([
-          0,
-          0,
-          0,
-          255, // Dark
-          128,
-          128,
-          128,
-          255, // Mid
-          255,
-          255,
-          255,
-          255, // Light
-        ]),
-        3,
-        1,
-        THREE.RGBAFormat,
-      );
-      gradientTexture.magFilter = THREE.NearestFilter;
-      gradientTexture.minFilter = THREE.NearestFilter;
-      gradientTexture.needsUpdate = true;
-
-      return new THREE.MeshToonMaterial({
+      return new THREE.MeshStandardMaterial({
         color: COLOR_PALETTES.globe.primary,
-        gradientMap: gradientTexture,
+        roughness: 0.8, // Slightly rough surface for realistic shadow reception
+        metalness: 0.1, // Low metalness for natural appearance
+        flatShading: false, // Smooth shading for the sphere
       });
     }, []);
 

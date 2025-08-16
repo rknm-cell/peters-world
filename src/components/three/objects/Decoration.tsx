@@ -26,52 +26,32 @@ export function Decoration({
 }: DecorationProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Create cell-shaded materials
+  // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
-    const gradientTexture = new THREE.DataTexture(
-      new Uint8Array([
-        0,
-        0,
-        0,
-        255, // Dark
-        128,
-        128,
-        128,
-        255, // Mid
-        255,
-        255,
-        255,
-        255, // Light
-      ]),
-      3,
-      1,
-      THREE.RGBAFormat,
-    );
-    gradientTexture.magFilter = THREE.NearestFilter;
-    gradientTexture.minFilter = THREE.NearestFilter;
-    gradientTexture.needsUpdate = true;
-
     return {
-      rock: new THREE.MeshToonMaterial({
+      rock: new THREE.MeshStandardMaterial({
         color: COLOR_PALETTES.rock.primary,
-        gradientMap: gradientTexture,
+        roughness: 0.95, // Very rough stone surface
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
-      flower: new THREE.MeshToonMaterial({
+      flower: new THREE.MeshStandardMaterial({
         color: "#FF69B4", // Hot pink
-        gradientMap: gradientTexture,
+        roughness: 0.3, // Smooth flower petals
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
-      stem: new THREE.MeshToonMaterial({
+      stem: new THREE.MeshStandardMaterial({
         color: "#32CD32", // Lime green
-        gradientMap: gradientTexture,
+        roughness: 0.8, // Slightly rough stem
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, []);
+  }, [preview]);
 
   // Generate decoration geometry based on type
   const renderDecoration = () => {
