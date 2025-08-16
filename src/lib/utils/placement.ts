@@ -75,20 +75,27 @@ export function calculatePlacement(
   );
 
   // Calculate rotation - align perfectly to surface normal
-  // This makes objects point away from the globe center
+  // This makes objects stand upright on the surface without flipping
   const up = new THREE.Vector3(0, 1, 0);
-  const quaternion = new THREE.Quaternion().setFromUnitVectors(
-    up,
-    surfaceNormal,
-  );
   
-  // Add random Y rotation around the surface normal axis
-  const yRotation = Math.random() * Math.PI * 2;
-  const yQuaternion = new THREE.Quaternion().setFromAxisAngle(
-    surfaceNormal,
-    yRotation,
-  );
-  quaternion.multiply(yQuaternion);
+  // Create a rotation that makes the object's up vector align with the surface normal
+  // but without flipping the object upside down
+  const quaternion = new THREE.Quaternion();
+  
+  // Handle the case where the surface normal is pointing directly up or down
+  if (Math.abs(surfaceNormal.y) > 0.99) {
+    // If surface normal is nearly vertical, just use identity rotation
+    quaternion.identity();
+  } else {
+    // Calculate the rotation axis (cross product of up and surface normal)
+    const rotationAxis = new THREE.Vector3().crossVectors(up, surfaceNormal).normalize();
+    
+    // Calculate the rotation angle
+    const rotationAngle = Math.acos(up.dot(surfaceNormal));
+    
+    // Create quaternion from axis and angle
+    quaternion.setFromAxisAngle(rotationAxis, rotationAngle);
+  }
   
   // Convert to euler with consistent order
   const rotation = new THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
