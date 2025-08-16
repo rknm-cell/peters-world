@@ -90,7 +90,7 @@ export function PlacementSystem({
             // Use the local coordinates for placement
             addObject(selectedObjectType, placementInfo.position);
 
-            // Update the last placed object with the correct rotation
+            // Update the last placed object with the exact rotation from the preview
             const newObjects = useWorldStore.getState().objects;
             if (newObjects.length > 0) {
               const lastObject = newObjects[newObjects.length - 1];

@@ -16,7 +16,7 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
     // Create globe geometry - a smooth sphere
     const geometry = useMemo(() => {
       // Create a perfect smooth sphere
-      const geo = new THREE.SphereGeometry(6, 64, 32);
+      const geo = new THREE.SphereGeometry(6, 64, 64);
       return geo;
     }, []);
 
