@@ -26,52 +26,32 @@ export function Structure({
 }: StructureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Create cell-shaded materials
+  // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
-    const gradientTexture = new THREE.DataTexture(
-      new Uint8Array([
-        0,
-        0,
-        0,
-        255, // Dark
-        128,
-        128,
-        128,
-        255, // Mid
-        255,
-        255,
-        255,
-        255, // Light
-      ]),
-      3,
-      1,
-      THREE.RGBAFormat,
-    );
-    gradientTexture.magFilter = THREE.NearestFilter;
-    gradientTexture.minFilter = THREE.NearestFilter;
-    gradientTexture.needsUpdate = true;
-
     return {
-      wall: new THREE.MeshToonMaterial({
+      wall: new THREE.MeshStandardMaterial({
         color: "#D2B48C", // Tan
-        gradientMap: gradientTexture,
+        roughness: 0.8, // Slightly rough walls
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
-      roof: new THREE.MeshToonMaterial({
+      roof: new THREE.MeshStandardMaterial({
         color: "#8B4513", // Brown
-        gradientMap: gradientTexture,
+        roughness: 0.9, // Rough roof material
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
-      stone: new THREE.MeshToonMaterial({
+      stone: new THREE.MeshStandardMaterial({
         color: COLOR_PALETTES.rock.primary,
-        gradientMap: gradientTexture,
+        roughness: 0.95, // Very rough stone
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, []);
+  }, [preview]);
 
   // Generate structure geometry based on type
   const renderStructure = () => {

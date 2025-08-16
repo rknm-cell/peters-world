@@ -26,46 +26,25 @@ export function Tree({
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Create cell-shaded materials
+  // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
-    const gradientTexture = new THREE.DataTexture(
-      new Uint8Array([
-        0,
-        0,
-        0,
-        255, // Dark
-        128,
-        128,
-        128,
-        255, // Mid
-        255,
-        255,
-        255,
-        255, // Light
-      ]),
-      3,
-      1,
-      THREE.RGBAFormat,
-    );
-    gradientTexture.magFilter = THREE.NearestFilter;
-    gradientTexture.minFilter = THREE.NearestFilter;
-    gradientTexture.needsUpdate = true;
-
     return {
-      trunk: new THREE.MeshToonMaterial({
+      trunk: new THREE.MeshStandardMaterial({
         color: COLOR_PALETTES.tree.trunk,
-        gradientMap: gradientTexture,
+        roughness: 0.9, // Rough bark texture
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
-      leaves: new THREE.MeshToonMaterial({
+      leaves: new THREE.MeshStandardMaterial({
         color: COLOR_PALETTES.tree.leaves,
-        gradientMap: gradientTexture,
+        roughness: 0.7, // Slightly rough leaves
+        metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, []);
+  }, [preview]);
 
   // Generate tree geometry based on type
   const geometries = useMemo(() => {
