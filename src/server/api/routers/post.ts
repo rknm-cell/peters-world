@@ -40,38 +40,46 @@ export const worldRouter = createTRPCRouter({
 
   // Create a new world
   create: publicProcedure
-    .input(z.object({
-      name: z.string().min(1).max(100),
-      data: z.record(z.any()),
-      screenshot: z.string().optional(),
-      userId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        data: z.record(z.any()),
+        screenshot: z.string().optional(),
+        userId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const [world] = await ctx.db.insert(worlds).values({
-        name: input.name,
-        data: input.data,
-        screenshot: input.screenshot,
-        userId: input.userId,
-      }).returning();
-      
+      const [world] = await ctx.db
+        .insert(worlds)
+        .values({
+          name: input.name,
+          data: input.data,
+          screenshot: input.screenshot,
+          userId: input.userId,
+        })
+        .returning();
+
       return world;
     }),
 
   // Update an existing world
   update: publicProcedure
-    .input(z.object({
-      id: z.string(),
-      name: z.string().min(1).max(100).optional(),
-      data: z.record(z.any()).optional(),
-      screenshot: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).max(100).optional(),
+        data: z.record(z.any()).optional(),
+        screenshot: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
-      const [world] = await ctx.db.update(worlds)
+      const [world] = await ctx.db
+        .update(worlds)
         .set(updateData)
         .where(eq(worlds.id, id))
         .returning();
-      
+
       return world;
     }),
 
@@ -87,7 +95,8 @@ export const worldRouter = createTRPCRouter({
   incrementViews: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [world] = await ctx.db.update(worlds)
+      const [world] = await ctx.db
+        .update(worlds)
         .set({ views: sql`${worlds.views} + 1` })
         .where(eq(worlds.id, input.id))
         .returning();
@@ -101,14 +110,14 @@ export const worldRouter = createTRPCRouter({
       const share = await ctx.db.query.shares.findFirst({
         where: eq(shares.shortCode, input.shortCode),
       });
-      
+
       if (!share) return null;
-      
+
       // Manually fetch the world data
       const world = await ctx.db.query.worlds.findFirst({
         where: eq(worlds.id, share.worldId),
       });
-      
+
       return world;
     }),
 
@@ -117,13 +126,19 @@ export const worldRouter = createTRPCRouter({
     .input(z.object({ worldId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Generate a 6-character short code
-      const shortCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      const [share] = await ctx.db.insert(shares).values({
-        worldId: input.worldId,
-        shortCode,
-      }).returning();
-      
+      const shortCode = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
+
+      const [share] = await ctx.db
+        .insert(shares)
+        .values({
+          worldId: input.worldId,
+          shortCode,
+        })
+        .returning();
+
       return share;
     }),
 });

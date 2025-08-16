@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { Vector3 } from 'three';
+import { create } from "zustand";
+import type { Vector3 } from "three";
 
 export interface PlacedObject {
   id: string;
@@ -9,7 +9,7 @@ export interface PlacedObject {
   scale: [number, number, number];
 }
 
-export type TimeOfDay = 'day' | 'sunset' | 'night';
+export type TimeOfDay = "day" | "sunset" | "night";
 
 interface WorldState {
   objects: PlacedObject[];
@@ -17,7 +17,7 @@ interface WorldState {
   selectedObjectType: string | null;
   timeOfDay: TimeOfDay;
   isPlacing: boolean;
-  
+
   // Actions
   addObject: (type: string, position: Vector3) => void;
   removeObject: (id: string) => void;
@@ -32,7 +32,7 @@ export const useWorldStore = create<WorldState>((set) => ({
   objects: [],
   selectedObject: null,
   selectedObjectType: null,
-  timeOfDay: 'day',
+  timeOfDay: "day",
   isPlacing: false,
 
   addObject: (type: string, position: Vector3) => {
@@ -44,8 +44,8 @@ export const useWorldStore = create<WorldState>((set) => ({
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
     };
-    
-    set(state => ({
+
+    set((state) => ({
       objects: [...state.objects, newObject],
       selectedObject: id,
       isPlacing: false,
@@ -53,8 +53,8 @@ export const useWorldStore = create<WorldState>((set) => ({
   },
 
   removeObject: (id: string) => {
-    set(state => ({
-      objects: state.objects.filter(obj => obj.id !== id),
+    set((state) => ({
+      objects: state.objects.filter((obj) => obj.id !== id),
       selectedObject: state.selectedObject === id ? null : state.selectedObject,
     }));
   },
@@ -72,9 +72,9 @@ export const useWorldStore = create<WorldState>((set) => ({
   },
 
   updateObject: (id: string, updates: Partial<PlacedObject>) => {
-    set(state => ({
-      objects: state.objects.map(obj => 
-        obj.id === id ? { ...obj, ...updates } : obj
+    set((state) => ({
+      objects: state.objects.map((obj) =>
+        obj.id === id ? { ...obj, ...updates } : obj,
       ),
     }));
   },

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useWorldStore } from '~/lib/store';
+import { useState } from "react";
+import { useWorldStore } from "~/lib/store";
 
 export function Instructions() {
   const [isVisible, setIsVisible] = useState(true);
@@ -11,7 +11,7 @@ export function Instructions() {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 left-4 z-40 p-2 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 text-white/80 hover:text-white transition-colors"
+        className="fixed bottom-4 left-4 z-40 rounded-full border border-white/20 bg-black/70 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
         title="Show instructions"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -23,49 +23,49 @@ export function Instructions() {
 
   return (
     <div className="fixed bottom-4 left-4 z-40 max-w-sm">
-      <div className="bg-black/80 backdrop-blur-sm rounded-lg border border-white/20 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-medium text-sm">Controls</h3>
+      <div className="rounded-lg border border-white/20 bg-black/80 p-4 backdrop-blur-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-white">Controls</h3>
           <button
             onClick={() => setIsVisible(false)}
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-white/60 transition-colors hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
             </svg>
           </button>
         </div>
-        
-        <div className="space-y-2 text-white/80 text-xs">
+
+        <div className="space-y-2 text-xs text-white/80">
           {!isPlacing ? (
             <>
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-green-400"></span>
                 <span>Drag to rotate globe</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-blue-400"></span>
                 <span>Scroll to zoom in/out</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-purple-400"></span>
                 <span>Click + to add objects</span>
               </div>
             </>
           ) : (
             <>
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-yellow-400 rounded-full flex-shrink-0"></span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-yellow-400"></span>
                 <span>Click on globe to place object</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0"></span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-red-400"></span>
                 <span>Globe rotation disabled while placing</span>
               </div>
             </>
           )}
           <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></span>
+            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-orange-400"></span>
             <span>Double-click objects to delete</span>
           </div>
         </div>

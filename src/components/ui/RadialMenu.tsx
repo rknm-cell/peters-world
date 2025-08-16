@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useWorldStore } from '~/lib/store';
-import { OBJECT_TYPES } from '~/lib/constants';
+import { useState } from "react";
+import { useWorldStore } from "~/lib/store";
+import { OBJECT_TYPES } from "~/lib/constants";
 
 interface RadialMenuProps {
   isOpen: boolean;
@@ -17,9 +17,9 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
   if (!isOpen) return null;
 
   const categories = [
-    { name: 'trees', icon: '🌲', items: OBJECT_TYPES.trees },
-    { name: 'structures', icon: '🏠', items: OBJECT_TYPES.structures },
-    { name: 'decorations', icon: '🌸', items: OBJECT_TYPES.decorations },
+    { name: "trees", icon: "🌲", items: OBJECT_TYPES.trees },
+    { name: "structures", icon: "🏠", items: OBJECT_TYPES.structures },
+    { name: "decorations", icon: "🌸", items: OBJECT_TYPES.decorations },
   ];
 
   const handleCategorySelect = (category: string) => {
@@ -33,10 +33,7 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50" onClick={onClose}>
       {/* Main radial menu */}
       <div
         className="absolute"
@@ -49,22 +46,22 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Background circle */}
-        <div className="absolute inset-4 rounded-full bg-black/70 backdrop-blur-sm border border-white/20" />
-        
+        <div className="absolute inset-4 rounded-full border border-white/20 bg-black/70 backdrop-blur-sm" />
+
         {/* Category buttons */}
         {categories.map((category, index) => {
-          const angle = (index * 120) - 90; // Distribute evenly around circle
+          const angle = index * 120 - 90; // Distribute evenly around circle
           const radius = 60;
           const x = Math.cos((angle * Math.PI) / 180) * radius + 100;
           const y = Math.sin((angle * Math.PI) / 180) * radius + 100;
-          
+
           return (
             <button
               key={category.name}
-              className={`absolute w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-200 ${
+              className={`absolute flex h-12 w-12 items-center justify-center rounded-full text-xl transition-all duration-200 ${
                 selectedCategory === category.name
-                  ? 'bg-blue-500 scale-110'
-                  : 'bg-white/10 hover:bg-white/20 hover:scale-105'
+                  ? "scale-110 bg-blue-500"
+                  : "bg-white/10 hover:scale-105 hover:bg-white/20"
               }`}
               style={{
                 left: x - 24,
@@ -79,7 +76,7 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
 
         {/* Center close button */}
         <button
-          className="absolute w-8 h-8 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white text-sm transition-all duration-200 hover:scale-110"
+          className="absolute flex h-8 w-8 items-center justify-center rounded-full bg-red-500/80 text-sm text-white transition-all duration-200 hover:scale-110 hover:bg-red-500"
           style={{
             left: 96,
             top: 96,
@@ -99,8 +96,8 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
             top: position.y - 100,
           }}
         >
-          <div className="bg-black/80 backdrop-blur-sm rounded-lg border border-white/20 p-2">
-            <h3 className="text-white text-sm font-medium mb-2 capitalize">
+          <div className="rounded-lg border border-white/20 bg-black/80 p-2 backdrop-blur-sm">
+            <h3 className="mb-2 text-sm font-medium capitalize text-white">
               {selectedCategory}
             </h3>
             <div className="space-y-1">
@@ -109,7 +106,7 @@ export function RadialMenu({ isOpen, onClose, position }: RadialMenuProps) {
                 ?.items.map((item) => (
                   <button
                     key={item}
-                    className="block w-full px-3 py-2 text-left text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors duration-150 text-sm capitalize"
+                    className="block w-full rounded px-3 py-2 text-left text-sm capitalize text-white/80 transition-colors duration-150 hover:bg-white/10 hover:text-white"
                     onClick={() => handleObjectSelect(item)}
                   >
                     {item}

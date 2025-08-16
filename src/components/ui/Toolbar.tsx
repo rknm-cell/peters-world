@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useWorldStore } from '~/lib/store';
-import { RadialMenu } from './RadialMenu';
-import { TimeOfDayPicker } from './TimeOfDayPicker';
+import { useState } from "react";
+import { useWorldStore } from "~/lib/store";
+import { RadialMenu } from "./RadialMenu";
+import { TimeOfDayPicker } from "./TimeOfDayPicker";
 
 export function Toolbar() {
   const { isPlacing, setPlacing, objects } = useWorldStore();
@@ -21,32 +21,32 @@ export function Toolbar() {
 
   const handleSaveWorld = async () => {
     // TODO: Implement world saving with tRPC
-    console.log('Saving world:', objects);
+    console.log("Saving world:", objects);
   };
 
   const handleScreenshot = () => {
     // TODO: Implement screenshot functionality
-    console.log('Taking screenshot');
+    console.log("Taking screenshot");
   };
 
   const handleShare = () => {
     // TODO: Implement sharing functionality
-    console.log('Sharing world');
+    console.log("Sharing world");
   };
 
   return (
     <>
       {/* Main toolbar */}
-      <div className="fixed top-4 left-4 z-40">
-        <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-white/20 p-2">
+      <div className="fixed left-4 top-4 z-40">
+        <div className="rounded-lg border border-white/20 bg-black/70 p-2 backdrop-blur-sm">
           <div className="flex items-center space-x-2">
             {/* Add object button */}
             <button
               onClick={handleAddObject}
-              className={`p-3 rounded-lg transition-all duration-200 ${
+              className={`rounded-lg p-3 transition-all duration-200 ${
                 isPlacing
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+                  ? "bg-blue-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
               title="Add Object"
             >
@@ -64,7 +64,7 @@ export function Toolbar() {
             {isPlacing && (
               <button
                 onClick={() => setPlacing(false)}
-                className="p-3 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all duration-200"
+                className="rounded-lg bg-red-500/20 p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
                 title="Cancel"
               >
                 <svg
@@ -79,13 +79,13 @@ export function Toolbar() {
             )}
 
             {/* Separator */}
-            <div className="w-px h-8 bg-white/20" />
+            <div className="h-8 w-px bg-white/20" />
 
             {/* Save button */}
             <button
               onClick={handleSaveWorld}
               disabled={objects.length === 0}
-              className="p-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="rounded-lg bg-green-500/20 p-3 text-green-400 transition-all duration-200 hover:bg-green-500/30 hover:text-green-300 disabled:cursor-not-allowed disabled:opacity-50"
               title="Save World"
             >
               <svg
@@ -101,7 +101,7 @@ export function Toolbar() {
             {/* Screenshot button */}
             <button
               onClick={handleScreenshot}
-              className="p-3 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 hover:text-purple-300 transition-all duration-200"
+              className="rounded-lg bg-purple-500/20 p-3 text-purple-400 transition-all duration-200 hover:bg-purple-500/30 hover:text-purple-300"
               title="Screenshot"
             >
               <svg
@@ -118,7 +118,7 @@ export function Toolbar() {
             <button
               onClick={handleShare}
               disabled={objects.length === 0}
-              className="p-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="rounded-lg bg-blue-500/20 p-3 text-blue-400 transition-all duration-200 hover:bg-blue-500/30 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
               title="Share"
             >
               <svg
@@ -135,14 +135,14 @@ export function Toolbar() {
       </div>
 
       {/* Time of day picker */}
-      <div className="fixed top-4 right-4 z-40">
+      <div className="fixed right-4 top-4 z-40">
         <TimeOfDayPicker />
       </div>
 
       {/* Object count */}
       <div className="fixed bottom-4 right-4 z-40">
-        <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-white/20 px-3 py-2">
-          <span className="text-white/80 text-sm">
+        <div className="rounded-lg border border-white/20 bg-black/70 px-3 py-2 backdrop-blur-sm">
+          <span className="text-sm text-white/80">
             Objects: {objects.length}/{50}
           </span>
         </div>

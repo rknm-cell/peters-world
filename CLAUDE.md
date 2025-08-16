@@ -31,6 +31,13 @@ bun run db:generate  # Generate Drizzle types
 bun run db:studio    # Open Drizzle Studio
 bun run db:migrate   # Run database migrations
 
+# Quality Assurance & CI
+bun run ci           # Full CI pipeline (format, lint, typecheck, build)
+bun run ci:quick     # Quick checks (lint + typecheck)
+bun run pre-commit   # Pre-commit fixes (format + lint fix + typecheck)
+bun run format:check # Check code formatting
+bun run format:write # Auto-fix code formatting
+
 # Testing (if implemented)
 bun test             # Run tests
 bun test --watch     # Watch mode

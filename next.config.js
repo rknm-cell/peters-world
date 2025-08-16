@@ -7,7 +7,12 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   experimental: {
-    optimizePackageImports: ['@trpc/server', '@trpc/client', '@trpc/react-query', '@trpc/next'],
+    optimizePackageImports: [
+      "@trpc/server",
+      "@trpc/client",
+      "@trpc/react-query",
+      "@trpc/next",
+    ],
   },
 };
 

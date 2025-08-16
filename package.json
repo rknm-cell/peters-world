@@ -6,6 +6,8 @@
   "scripts": {
     "build": "next build",
     "check": "next lint && tsc --noEmit",
+    "ci": "bun run format:check && bun run lint && bun run typecheck && bun run build",
+    "ci:quick": "bun run lint && bun run typecheck",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -15,6 +17,7 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "pre-commit": "bun run format:write && bun run lint:fix && bun run typecheck",
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit"

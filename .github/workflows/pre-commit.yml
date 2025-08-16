@@ -1,0 +1,39 @@
+name: Pre-commit Checks
+
+on:
+  workflow_call:  # Allow this to be called by other workflows
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  quick-checks:
+    name: Quick Pre-commit Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: Install dependencies (with cache)
+        run: bun install --frozen-lockfile
+        
+      - name: Check formatting
+        run: bun run format:check
+        
+      - name: Run linting (fast)
+        run: bun run lint
+        
+      - name: Type check
+        run: bun run typecheck
+        
+      - name: Build check (production)
+        run: bun run build
+        env:
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret"
+          NEXTAUTH_URL: "http://localhost:3000"
