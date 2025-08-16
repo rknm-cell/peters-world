@@ -10,6 +10,9 @@ import {
   getDetailedIntersection,
   type PlacementInfo,
 } from "~/lib/utils/placement";
+import { Decoration } from "~/components/three/objects/Decoration";
+import { Tree } from "~/components/three/objects/Tree";
+import { Structure } from "~/components/three/objects/Structure";
 
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
@@ -232,7 +235,7 @@ export function PlacementSystem({
       {children}
 
       {/* Placement preview */}
-      {isPlacing && placementPreview && (
+      {isPlacing && placementPreview && selectedObjectType && (
         <group
           position={[
             placementPreview.position.x,
@@ -245,15 +248,38 @@ export function PlacementSystem({
             placementPreview.rotation.z,
           ]}
         >
-          {/* Preview indicator - ghost version of the object */}
-          <mesh>
-            <sphereGeometry args={[0.1, 8, 8]} />
-            <meshBasicMaterial
-              color={placementPreview.canPlace ? "#00ff00" : "#ff0000"}
-              opacity={0.7}
-              transparent
+          {/* Preview indicator - actual object geometry with transparency */}
+          {selectedObjectType === "rock" || selectedObjectType === "flower" ? (
+            <Decoration
+              type={selectedObjectType}
+              position={[0, 0, 0]}
+              rotation={[0, 0, 0]}
+              scale={[1, 1, 1]}
+              selected={false}
+              objectId="preview"
+              preview={true}
             />
-          </mesh>
+          ) : (selectedObjectType === "pine" || selectedObjectType === "oak" || selectedObjectType === "birch") ? (
+            <Tree
+              type={selectedObjectType}
+              position={[0, 0, 0]}
+              rotation={[0, 0, 0]}
+              scale={[1, 1, 1]}
+              selected={false}
+              objectId="preview"
+              preview={true}
+            />
+          ) : (selectedObjectType === "house" || selectedObjectType === "tower" || selectedObjectType === "bridge") ? (
+            <Structure
+              type={selectedObjectType}
+              position={[0, 0, 0]}
+              rotation={[0, 0, 0]}
+              scale={[1, 1, 1]}
+              selected={false}
+              objectId="preview"
+              preview={true}
+            />
+          ) : null}
 
           {/* Surface normal indicator */}
           {placementPreview.surfaceNormal && (

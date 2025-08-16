@@ -12,6 +12,7 @@ interface DecorationProps {
   scale?: [number, number, number];
   selected?: boolean;
   objectId: string;
+  preview?: boolean;
 }
 
 export function Decoration({
@@ -21,6 +22,7 @@ export function Decoration({
   scale = [1, 1, 1],
   selected = false,
   objectId,
+  preview = false,
 }: DecorationProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -53,14 +55,20 @@ export function Decoration({
       rock: new THREE.MeshToonMaterial({
         color: COLOR_PALETTES.rock.primary,
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
       flower: new THREE.MeshToonMaterial({
         color: "#FF69B4", // Hot pink
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
       stem: new THREE.MeshToonMaterial({
         color: "#32CD32", // Lime green
         gradientMap: gradientTexture,
+        transparent: preview,
+        opacity: preview ? 0.6 : 1.0,
       }),
     };
   }, []);
