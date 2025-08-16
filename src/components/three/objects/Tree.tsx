@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { COLOR_PALETTES } from '~/lib/constants';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { COLOR_PALETTES } from "~/lib/constants";
 
 interface TreeProps {
-  type?: 'pine' | 'oak' | 'birch';
+  type?: "pine" | "oak" | "birch";
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -14,13 +14,13 @@ interface TreeProps {
   objectId: string;
 }
 
-export function Tree({ 
-  type = 'pine', 
-  position, 
-  rotation = [0, 0, 0], 
+export function Tree({
+  type = "pine",
+  position,
+  rotation = [0, 0, 0],
   scale = [1, 1, 1],
   selected = false,
-  objectId 
+  objectId,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -28,12 +28,22 @@ export function Tree({
   const materials = useMemo(() => {
     const gradientTexture = new THREE.DataTexture(
       new Uint8Array([
-        0, 0, 0, 255,        // Dark
-        128, 128, 128, 255,  // Mid
-        255, 255, 255, 255,  // Light
+        0,
+        0,
+        0,
+        255, // Dark
+        128,
+        128,
+        128,
+        255, // Mid
+        255,
+        255,
+        255,
+        255, // Light
       ]),
-      3, 1,
-      THREE.RGBAFormat
+      3,
+      1,
+      THREE.RGBAFormat,
     );
     gradientTexture.magFilter = THREE.NearestFilter;
     gradientTexture.minFilter = THREE.NearestFilter;
@@ -54,17 +64,17 @@ export function Tree({
   // Generate tree geometry based on type
   const geometries = useMemo(() => {
     switch (type) {
-      case 'pine':
+      case "pine":
         return {
           trunk: new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
           leaves: new THREE.ConeGeometry(0.8, 2, 8),
         };
-      case 'oak':
+      case "oak":
         return {
           trunk: new THREE.CylinderGeometry(0.12, 0.18, 0.8, 8),
           leaves: new THREE.SphereGeometry(1, 12, 8),
         };
-      case 'birch':
+      case "birch":
         return {
           trunk: new THREE.CylinderGeometry(0.08, 0.1, 1.2, 8),
           leaves: new THREE.SphereGeometry(0.7, 12, 8),
@@ -87,7 +97,7 @@ export function Tree({
   });
 
   return (
-    <group 
+    <group
       ref={groupRef}
       position={position}
       rotation={rotation}
@@ -102,10 +112,10 @@ export function Tree({
         castShadow
         receiveShadow
       />
-      
+
       {/* Leaves */}
       <mesh
-        position={type === 'pine' ? [0, 1.5, 0] : [0, 1.2, 0]}
+        position={type === "pine" ? [0, 1.5, 0] : [0, 1.2, 0]}
         geometry={geometries.leaves}
         material={materials.leaves}
         castShadow

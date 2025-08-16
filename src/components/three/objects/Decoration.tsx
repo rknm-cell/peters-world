@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { COLOR_PALETTES } from '~/lib/constants';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { COLOR_PALETTES } from "~/lib/constants";
 
 interface DecorationProps {
-  type?: 'rock' | 'flower';
+  type?: "rock" | "flower";
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -14,13 +14,13 @@ interface DecorationProps {
   objectId: string;
 }
 
-export function Decoration({ 
-  type = 'rock', 
-  position, 
-  rotation = [0, 0, 0], 
+export function Decoration({
+  type = "rock",
+  position,
+  rotation = [0, 0, 0],
   scale = [1, 1, 1],
   selected = false,
-  objectId 
+  objectId,
 }: DecorationProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -28,12 +28,22 @@ export function Decoration({
   const materials = useMemo(() => {
     const gradientTexture = new THREE.DataTexture(
       new Uint8Array([
-        0, 0, 0, 255,        // Dark
-        128, 128, 128, 255,  // Mid
-        255, 255, 255, 255,  // Light
+        0,
+        0,
+        0,
+        255, // Dark
+        128,
+        128,
+        128,
+        255, // Mid
+        255,
+        255,
+        255,
+        255, // Light
       ]),
-      3, 1,
-      THREE.RGBAFormat
+      3,
+      1,
+      THREE.RGBAFormat,
     );
     gradientTexture.magFilter = THREE.NearestFilter;
     gradientTexture.minFilter = THREE.NearestFilter;
@@ -45,11 +55,11 @@ export function Decoration({
         gradientMap: gradientTexture,
       }),
       flower: new THREE.MeshToonMaterial({
-        color: '#FF69B4', // Hot pink
+        color: "#FF69B4", // Hot pink
         gradientMap: gradientTexture,
       }),
       stem: new THREE.MeshToonMaterial({
-        color: '#32CD32', // Lime green
+        color: "#32CD32", // Lime green
         gradientMap: gradientTexture,
       }),
     };
@@ -58,7 +68,7 @@ export function Decoration({
   // Generate decoration geometry based on type
   const renderDecoration = () => {
     switch (type) {
-      case 'rock':
+      case "rock":
         return (
           <mesh
             position={[0, 0.15, 0]}
@@ -68,8 +78,8 @@ export function Decoration({
             receiveShadow
           />
         );
-      
-      case 'flower':
+
+      case "flower":
         return (
           <>
             {/* Stem */}
@@ -86,7 +96,7 @@ export function Decoration({
                 position={[
                   Math.cos((i * Math.PI * 2) / 5) * 0.08,
                   0.35,
-                  Math.sin((i * Math.PI * 2) / 5) * 0.08
+                  Math.sin((i * Math.PI * 2) / 5) * 0.08,
                 ]}
                 geometry={new THREE.SphereGeometry(0.05, 6, 4)}
                 material={materials.flower}
@@ -102,7 +112,7 @@ export function Decoration({
             />
           </>
         );
-      
+
       default:
         return (
           <mesh
@@ -119,10 +129,13 @@ export function Decoration({
   // Animation for selected state
   useFrame((state) => {
     if (groupRef.current && selected) {
-      if (type === 'flower') {
-        groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 3) * 0.1;
+      if (type === "flower") {
+        groupRef.current.rotation.y =
+          Math.sin(state.clock.elapsedTime * 3) * 0.1;
       } else {
-        groupRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 4) * 0.05);
+        groupRef.current.scale.setScalar(
+          1 + Math.sin(state.clock.elapsedTime * 4) * 0.05,
+        );
       }
     } else if (groupRef.current) {
       groupRef.current.rotation.y = rotation[1];
@@ -131,7 +144,7 @@ export function Decoration({
   });
 
   return (
-    <group 
+    <group
       ref={groupRef}
       position={position}
       rotation={rotation}

@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useRef, useEffect } from 'react';
-import { useThree } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
-import { LIGHTING_PRESETS } from '~/lib/constants';
-import { Globe } from './Globe';
-import { CameraController } from './CameraController';
-import { PlacementSystem } from './PlacementSystem';
-import { WorldObjects } from './WorldObjects';
-import { GlobeController } from './GlobeController';
+import { useRef, useEffect } from "react";
+import { useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { useWorldStore } from "~/lib/store";
+import { LIGHTING_PRESETS } from "~/lib/constants";
+import { Globe } from "./Globe";
+import { CameraController } from "./CameraController";
+import { PlacementSystem } from "./PlacementSystem";
+import { WorldObjects } from "./WorldObjects";
+import { GlobeController } from "./GlobeController";
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -23,7 +23,7 @@ export function Scene() {
   // Update lighting based on time of day
   useEffect(() => {
     const preset = LIGHTING_PRESETS[timeOfDay];
-    
+
     if (ambientLightRef.current) {
       ambientLightRef.current.color.set(preset.ambientColor);
       ambientLightRef.current.intensity = preset.ambientIntensity;
@@ -37,11 +37,7 @@ export function Scene() {
     }
 
     // Update scene fog
-    scene.fog = new THREE.Fog(
-      preset.fogColor,
-      preset.fogNear,
-      preset.fogFar
-    );
+    scene.fog = new THREE.Fog(preset.fogColor, preset.fogNear, preset.fogFar);
 
     // Update renderer clear color
     gl.setClearColor(preset.fogColor);
@@ -66,25 +62,31 @@ export function Scene() {
       <CameraController />
 
       {/* Globe Controller for rotation - disabled when placing objects */}
-      <GlobeController 
-        globeRef={globeRef} 
+      <GlobeController
+        globeRef={globeRef}
         enabled={!isPlacing}
         onGroupRefReady={(groupRef) => {
           rotationGroupRef.current = groupRef.current;
         }}
       >
         {/* Placement System wraps all interactive objects */}
-        <PlacementSystem globeRef={globeRef} rotationGroupRef={rotationGroupRef}>
+        <PlacementSystem
+          globeRef={globeRef}
+          rotationGroupRef={rotationGroupRef}
+        >
           {/* Main globe */}
           <Globe ref={globeRef} />
-          
+
           {/* All placed objects - these will rotate with the globe */}
           <WorldObjects />
         </PlacementSystem>
       </GlobeController>
 
       {/* Environment */}
-      <fog attach="fog" args={[LIGHTING_PRESETS[timeOfDay].fogColor, 20, 100]} />
+      <fog
+        attach="fog"
+        args={[LIGHTING_PRESETS[timeOfDay].fogColor, 20, 100]}
+      />
     </>
   );
 }

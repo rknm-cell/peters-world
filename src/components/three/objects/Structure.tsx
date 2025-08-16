@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { COLOR_PALETTES } from '~/lib/constants';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { COLOR_PALETTES } from "~/lib/constants";
 
 interface StructureProps {
-  type?: 'house' | 'tower' | 'bridge';
+  type?: "house" | "tower" | "bridge";
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -14,13 +14,13 @@ interface StructureProps {
   objectId: string;
 }
 
-export function Structure({ 
-  type = 'house', 
-  position, 
-  rotation = [0, 0, 0], 
+export function Structure({
+  type = "house",
+  position,
+  rotation = [0, 0, 0],
   scale = [1, 1, 1],
   selected = false,
-  objectId 
+  objectId,
 }: StructureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -28,12 +28,22 @@ export function Structure({
   const materials = useMemo(() => {
     const gradientTexture = new THREE.DataTexture(
       new Uint8Array([
-        0, 0, 0, 255,        // Dark
-        128, 128, 128, 255,  // Mid
-        255, 255, 255, 255,  // Light
+        0,
+        0,
+        0,
+        255, // Dark
+        128,
+        128,
+        128,
+        255, // Mid
+        255,
+        255,
+        255,
+        255, // Light
       ]),
-      3, 1,
-      THREE.RGBAFormat
+      3,
+      1,
+      THREE.RGBAFormat,
     );
     gradientTexture.magFilter = THREE.NearestFilter;
     gradientTexture.minFilter = THREE.NearestFilter;
@@ -41,11 +51,11 @@ export function Structure({
 
     return {
       wall: new THREE.MeshToonMaterial({
-        color: '#D2B48C', // Tan
+        color: "#D2B48C", // Tan
         gradientMap: gradientTexture,
       }),
       roof: new THREE.MeshToonMaterial({
-        color: '#8B4513', // Brown
+        color: "#8B4513", // Brown
         gradientMap: gradientTexture,
       }),
       stone: new THREE.MeshToonMaterial({
@@ -58,7 +68,7 @@ export function Structure({
   // Generate structure geometry based on type
   const renderStructure = () => {
     switch (type) {
-      case 'house':
+      case "house":
         return (
           <>
             {/* House base */}
@@ -79,8 +89,8 @@ export function Structure({
             />
           </>
         );
-      
-      case 'tower':
+
+      case "tower":
         return (
           <>
             {/* Tower base */}
@@ -100,8 +110,8 @@ export function Structure({
             />
           </>
         );
-      
-      case 'bridge':
+
+      case "bridge":
         return (
           <>
             {/* Bridge deck */}
@@ -127,7 +137,7 @@ export function Structure({
             />
           </>
         );
-      
+
       default:
         return (
           <mesh
@@ -144,14 +154,15 @@ export function Structure({
   // Animation for selected state
   useFrame((state) => {
     if (groupRef.current && selected) {
-      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+      groupRef.current.rotation.y =
+        rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
     } else if (groupRef.current) {
       groupRef.current.rotation.y = rotation[1];
     }
   });
 
   return (
-    <group 
+    <group
       ref={groupRef}
       position={position}
       rotation={rotation}

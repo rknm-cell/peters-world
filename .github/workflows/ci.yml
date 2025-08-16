@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, initialize]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        
+      - name: Run linting
+        run: bun run lint
+        
+      - name: Run type checking
+        run: bun run typecheck
+        
+      - name: Build application
+        run: bun run build
+        env:
+          # Provide minimal environment variables for build
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret"
+          NEXTAUTH_URL: "http://localhost:3000"
+          
+      - name: Check build artifacts
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "Build failed - .next directory not found"
+            exit 1
+          fi
+          echo "Build successful - artifacts created"
+
+  # Optional: Add database tests if needed
+  test-database:
+    name: Database Tests
+    runs-on: ubuntu-latest
+    if: false # Disable for now - enable when database tests are added
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        
+      - name: Run database migrations
+        run: bun run db:push
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
+          
+      - name: Run database tests
+        run: echo "Database tests would go here"
+        # Add actual database tests when implemented

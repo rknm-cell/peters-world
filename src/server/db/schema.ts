@@ -1,5 +1,13 @@
 import { sql } from "drizzle-orm";
-import { boolean, index, integer, json, pgTableCreator, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  json,
+  pgTableCreator,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
 /**
@@ -13,7 +21,9 @@ export const createTable = pgTableCreator((name) => `tiny-world_${name}`);
 export const worlds = createTable(
   "world",
   {
-    id: text("id").primaryKey().$defaultFn(() => createId()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
     name: text("name").notNull(),
     data: json("data").notNull(), // Serialized object positions/rotations
     screenshot: text("screenshot"), // URL to screenshot
@@ -38,7 +48,9 @@ export const worlds = createTable(
 export const shares = createTable(
   "share",
   {
-    id: text("id").primaryKey().$defaultFn(() => createId()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
     worldId: text("world_id").notNull(),
     shortCode: text("short_code").unique().notNull(), // 6-char share code
     created: timestamp("created", { withTimezone: true })
@@ -54,14 +66,14 @@ export const shares = createTable(
 export const users = createTable(
   "user",
   {
-    id: text("id").primaryKey().$defaultFn(() => createId()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
     email: text("email").unique().notNull(),
     name: text("name"),
     created: timestamp("created", { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
   },
-  (t) => [
-    index("user_email_idx").on(t.email),
-  ],
+  (t) => [index("user_email_idx").on(t.email)],
 );

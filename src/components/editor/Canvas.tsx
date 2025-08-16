@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { Canvas as R3FCanvas } from '@react-three/fiber';
-import { Suspense } from 'react';
-import { Scene } from './Scene';
+import { Canvas as R3FCanvas } from "@react-three/fiber";
+import { Suspense } from "react";
+import { Scene } from "./Scene";
 
 interface CanvasProps {
   className?: string;
 }
 
-export function Canvas({ className = '' }: CanvasProps) {
+export function Canvas({ className = "" }: CanvasProps) {
   return (
-    <div className={`relative w-full h-full ${className}`}>
+    <div className={`relative h-full w-full ${className}`}>
       <R3FCanvas
         camera={{
           position: [0, 0, 20], // Position camera directly in front of globe
