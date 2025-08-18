@@ -15,7 +15,7 @@ import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebu
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const { timeOfDay, isPlacing, showDebugNormals } = useWorldStore();
+  const { timeOfDay, isPlacing, showDebugNormals, isTerraforming } = useWorldStore();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh>(null);
   const rotationGroupRef = useRef<THREE.Group>(null);
@@ -54,10 +54,10 @@ export function Scene() {
       {/* Camera Controls */}
       <CameraController />
 
-      {/* Globe Controller for rotation - disabled when placing objects */}
+      {/* Globe Controller for rotation - disabled when placing objects or terraforming */}
       <GlobeController
         globeRef={globeRef}
-        enabled={!isPlacing}
+        enabled={!isPlacing && !isTerraforming}
         onGroupRefReady={(groupRef) => {
           rotationGroupRef.current = groupRef.current;
         }}

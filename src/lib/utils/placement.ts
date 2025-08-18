@@ -186,8 +186,8 @@ function checkPlacementValidity(
   const distanceFromCenter = Math.sqrt(
     position.x ** 2 + position.y ** 2 + position.z ** 2,
   );
-  if (distanceFromCenter > 7.0) {
-    // Slightly larger than smooth globe radius (6) for placement buffer
+  if (distanceFromCenter > 9.0) {
+    // Increased buffer for deformed terrain
     return false;
   }
 
