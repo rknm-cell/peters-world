@@ -13,6 +13,7 @@ interface TreeProps {
   selected?: boolean;
   objectId: string;
   preview?: boolean;
+  canPlace?: boolean;
 }
 
 export function Tree({
@@ -23,28 +24,33 @@ export function Tree({
   selected = false,
   objectId,
   preview = false,
+  canPlace = true,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
+    // Use red color for invalid placement previews
+    const trunkColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.trunk;
+    const leavesColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.leaves;
+    
     return {
       trunk: new THREE.MeshStandardMaterial({
-        color: COLOR_PALETTES.tree.trunk,
+        color: trunkColor,
         roughness: 0.9, // Rough bark texture
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
       leaves: new THREE.MeshStandardMaterial({
-        color: COLOR_PALETTES.tree.leaves,
+        color: leavesColor,
         roughness: 0.7, // Slightly rough leaves
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, [preview]);
+  }, [preview, canPlace]);
 
   // Generate tree geometry based on type
   const geometries = useMemo(() => {

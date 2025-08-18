@@ -13,6 +13,7 @@ interface StructureProps {
   selected?: boolean;
   objectId: string;
   preview?: boolean;
+  canPlace?: boolean;
 }
 
 export function Structure({
@@ -23,35 +24,41 @@ export function Structure({
   selected = false,
   objectId,
   preview = false,
+  canPlace = true,
 }: StructureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
+    // Use red color for invalid placement previews
+    const wallColor = preview && !canPlace ? "#ff0000" : "#D2B48C";
+    const roofColor = preview && !canPlace ? "#ff0000" : "#8B4513";
+    const stoneColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.rock.primary;
+    
     return {
       wall: new THREE.MeshStandardMaterial({
-        color: "#D2B48C", // Tan
+        color: wallColor,
         roughness: 0.8, // Slightly rough walls
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
       roof: new THREE.MeshStandardMaterial({
-        color: "#8B4513", // Brown
+        color: roofColor,
         roughness: 0.9, // Rough roof material
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
       stone: new THREE.MeshStandardMaterial({
-        color: COLOR_PALETTES.rock.primary,
+        color: stoneColor,
         roughness: 0.95, // Very rough stone
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, [preview]);
+  }, [preview, canPlace]);
 
   // Generate structure geometry based on type
   const renderStructure = () => {

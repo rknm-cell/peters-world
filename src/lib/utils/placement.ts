@@ -95,11 +95,11 @@ export function calculatePlacement(
     
     // Apply a gradual reduction to rotation as it gets steeper
     // This prevents objects from becoming parallel while maintaining natural appearance
-    if (rotationAngle > Math.PI / 4) { // If rotation is more than 45 degrees
+    if (rotationAngle > Math.PI / 2.2) { // If rotation is more than 82 degrees
       // Gradually reduce the rotation using a smooth curve
-      const excessRotation = rotationAngle - Math.PI / 4;
-      const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2)));
-      rotationAngle = Math.PI / 4 + (excessRotation * reductionFactor);
+      const excessRotation = rotationAngle - Math.PI / 2.2;
+      const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2.2)));
+      rotationAngle = Math.PI / 2.2 + (excessRotation * reductionFactor);
     }
     
     // Create quaternion from axis and angle

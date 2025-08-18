@@ -258,6 +258,7 @@ export function PlacementSystem({
               selected={false}
               objectId="preview"
               preview={true}
+              canPlace={placementPreview.canPlace}
             />
           ) : (selectedObjectType === "pine" || selectedObjectType === "oak" || selectedObjectType === "birch") ? (
             <Tree
@@ -268,6 +269,7 @@ export function PlacementSystem({
               selected={false}
               objectId="preview"
               preview={true}
+              canPlace={placementPreview.canPlace}
             />
           ) : (selectedObjectType === "house" || selectedObjectType === "tower" || selectedObjectType === "bridge") ? (
             <Structure
@@ -278,6 +280,7 @@ export function PlacementSystem({
               selected={false}
               objectId="preview"
               preview={true}
+              canPlace={placementPreview.canPlace}
             />
           ) : null}
 
