@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useWorldStore } from "~/lib/store";
-import { RadialMenu } from "./RadialMenu";
+import { DropdownMenu } from "./DropdownMenu";
 import { TimeOfDayPicker } from "./TimeOfDayPicker";
 
 export function Toolbar() {
   const { isPlacing, setPlacing, objects } = useWorldStore();
-  const [showRadialMenu, setShowRadialMenu] = useState(false);
+  const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
   const handleAddObject = (event: React.MouseEvent) => {
@@ -16,7 +16,7 @@ export function Toolbar() {
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     });
-    setShowRadialMenu(true);
+    setShowDropdownMenu(true);
   };
 
   const handleSaveWorld = async () => {
@@ -148,10 +148,10 @@ export function Toolbar() {
         </div>
       </div>
 
-      {/* Radial menu */}
-      <RadialMenu
-        isOpen={showRadialMenu}
-        onClose={() => setShowRadialMenu(false)}
+      {/* Dropdown menu */}
+      <DropdownMenu
+        isOpen={showDropdownMenu}
+        onClose={() => setShowDropdownMenu(false)}
         position={menuPosition}
       />
     </>
