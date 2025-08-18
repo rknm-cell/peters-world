@@ -25,6 +25,101 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     updateTerrainVertex,
   } = useWorldStore();
 
+  // Main terraforming logic
+  const handleTerraform = useCallback((event: MouseEvent) => {
+    if (!terrainMesh || !terrainVertices.length) return;
+
+    // Use the WebGL renderer's domElement for proper coordinate conversion
+    const canvas = gl.domElement;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Convert mouse position to normalized device coordinates
+    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Raycast to find intersection point
+    raycasterRef.current.setFromCamera(mouseRef.current, camera);
+    const intersects = raycasterRef.current.intersectObject(terrainMesh);
+
+    if (intersects.length === 0) return;
+
+    const intersectionPoint = intersects[0]?.point;
+    if (!intersectionPoint) return;
+    
+    // Get the vertices of the intersected face
+    const geometry = terrainMesh.geometry;
+    const positions = geometry.attributes.position;
+    if (!positions) return;
+    
+    // Find vertices within brush radius and apply terraforming
+    for (let i = 0; i < positions.count; i++) {
+      const vertexPos = new THREE.Vector3(
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i)
+      );
+      
+      const distance = intersectionPoint.distanceTo(vertexPos);
+      
+      if (distance <= brushSize) {
+        // Calculate brush falloff (softer edges)
+        const falloff = Math.max(0, 1 - (distance / brushSize));
+        const strength = brushStrength * falloff;
+        
+        // Find the vertex in our terrain data
+        const vertexIndex = terrainVertices.findIndex(v => 
+          Math.abs(v.x - vertexPos.x) < 0.01 &&
+          Math.abs(v.y - vertexPos.y) < 0.01 &&
+          Math.abs(v.z - vertexPos.z) < 0.01
+        );
+        
+        if (vertexIndex !== -1) {
+          const vertex = terrainVertices[vertexIndex];
+          if (!vertex) continue;
+          
+          switch (terraformMode) {
+            case "raise":
+              updateTerrainVertex(vertexIndex, {
+                height: Math.min(vertex.height + strength, 2.0) // Max height of 2
+              });
+              break;
+              
+            case "lower":
+              updateTerrainVertex(vertexIndex, {
+                height: Math.max(vertex.height - strength, -1.0) // Min height of -1
+              });
+              break;
+              
+            case "water":
+              updateTerrainVertex(vertexIndex, {
+                waterLevel: Math.min(vertex.waterLevel + strength, 1.0) // Max water level of 1
+              });
+              break;
+              
+            case "smooth":
+              // Smooth by averaging with nearby vertices
+              const nearbyVertices = terrainVertices.filter((v, idx) => {
+                if (idx === vertexIndex) return false;
+                const vPos = new THREE.Vector3(v.x, v.y, v.z);
+                return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
+              });
+              
+              if (nearbyVertices.length > 0) {
+                const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
+                const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
+                
+                updateTerrainVertex(vertexIndex, {
+                  height: vertex.height + (avgHeight - vertex.height) * strength * 0.5,
+                  waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * strength * 0.5
+                });
+              }
+              break;
+          }
+        }
+      }
+    }
+  }, [camera, gl, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
+
   // Handle mouse events
   const handleMouseDown = useCallback((event: MouseEvent) => {
     if (!isTerraforming || terraformMode === "none") return;
@@ -84,98 +179,6 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     }
     isMouseDownRef.current = false;
   }, [isPlacing, isTerraforming, terraformMode]);
-
-  // Main terraforming logic
-  const handleTerraform = useCallback((event: MouseEvent) => {
-    if (!terrainMesh || !terrainVertices.length) return;
-
-    // Use the WebGL renderer's domElement for proper coordinate conversion
-    const canvas = gl.domElement;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Convert mouse position to normalized device coordinates
-    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    // Raycast to find intersection point
-    raycasterRef.current.setFromCamera(mouseRef.current, camera);
-    const intersects = raycasterRef.current.intersectObject(terrainMesh);
-
-    if (intersects.length === 0) return;
-
-    const intersectionPoint = intersects[0].point;
-    
-    // Get the vertices of the intersected face
-    const geometry = terrainMesh.geometry;
-    const positions = geometry.attributes.position;
-    
-    // Find vertices within brush radius and apply terraforming
-    for (let i = 0; i < positions.count; i++) {
-      const vertexPos = new THREE.Vector3(
-        positions.getX(i),
-        positions.getY(i),
-        positions.getZ(i)
-      );
-      
-      const distance = intersectionPoint.distanceTo(vertexPos);
-      
-      if (distance <= brushSize) {
-        // Calculate brush falloff (softer edges)
-        const falloff = Math.max(0, 1 - (distance / brushSize));
-        const strength = brushStrength * falloff;
-        
-        // Find the vertex in our terrain data
-        const vertexIndex = terrainVertices.findIndex(v => 
-          Math.abs(v.x - vertexPos.x) < 0.01 &&
-          Math.abs(v.y - vertexPos.y) < 0.01 &&
-          Math.abs(v.z - vertexPos.z) < 0.01
-        );
-        
-        if (vertexIndex !== -1) {
-          const vertex = terrainVertices[vertexIndex];
-          
-          switch (terraformMode) {
-            case "raise":
-              updateTerrainVertex(vertexIndex, {
-                height: Math.min(vertex.height + strength, 2.0) // Max height of 2
-              });
-              break;
-              
-            case "lower":
-              updateTerrainVertex(vertexIndex, {
-                height: Math.max(vertex.height - strength, -1.0) // Min height of -1
-              });
-              break;
-              
-            case "water":
-              updateTerrainVertex(vertexIndex, {
-                waterLevel: Math.min(vertex.waterLevel + strength, 1.0) // Max water level of 1
-              });
-              break;
-              
-            case "smooth":
-              // Smooth by averaging with nearby vertices
-              const nearbyVertices = terrainVertices.filter((v, idx) => {
-                if (idx === vertexIndex) return false;
-                const vPos = new THREE.Vector3(v.x, v.y, v.z);
-                return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
-              });
-              
-              if (nearbyVertices.length > 0) {
-                const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
-                const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
-                
-                updateTerrainVertex(vertexIndex, {
-                  height: vertex.height + (avgHeight - vertex.height) * strength * 0.5,
-                  waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * strength * 0.5
-                });
-              }
-              break;
-          }
-        }
-      }
-    }
-  }, [camera, gl, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
 
   // Add event listeners to the WebGL canvas
   useEffect(() => {

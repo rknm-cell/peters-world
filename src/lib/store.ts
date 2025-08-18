@@ -94,7 +94,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   removeObject: (id: string) => {
     set((state) => ({
-      objects: state.objects.filter((obj) => obj !== id),
+      objects: state.objects.filter((obj) => obj.id !== id),
       selectedObject: state.selectedObject === id ? null : state.selectedObject,
     }));
   },
