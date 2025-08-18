@@ -14,7 +14,6 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
     const meshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const { showWireframe } = useWorldStore();
-    const typedShowWireframe = showWireframe as boolean;
 
     // Create globe geometry - a smooth sphere
     const geometry = useMemo(() => {
@@ -30,9 +29,9 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
         roughness: 0.8, // Slightly rough surface for realistic shadow reception
         metalness: 0.1, // Low metalness for natural appearance
         flatShading: false, // Smooth shading for the sphere
-        wireframe: typedShowWireframe,
+        wireframe: showWireframe,
       });
-    }, [typedShowWireframe]);
+    }, [showWireframe]);
 
     return (
       <group ref={groupRef}>

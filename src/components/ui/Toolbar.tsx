@@ -18,11 +18,7 @@ export function Toolbar() {
   } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const typedExitPlacementMode = exitPlacementMode as () => void;
-const typedSetShowDebugNormals = setShowDebugNormals as (show: boolean) => void;
-const typedSetShowWireframe = setShowWireframe as (show: boolean) => void;
-const typedShowDebugNormals = showDebugNormals as boolean;
-const typedShowWireframe = showWireframe as boolean;
+
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -77,7 +73,7 @@ const typedShowWireframe = showWireframe as boolean;
             {/* Cancel placement */}
             {isPlacing && (
               <button
-                onClick={typedExitPlacementMode}
+                onClick={exitPlacementMode}
                 className="rounded-lg bg-red-500/20 p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
                 title="Cancel"
               >
@@ -105,7 +101,7 @@ const typedShowWireframe = showWireframe as boolean;
 
             {/* Debug normals toggle */}
             <button
-              onClick={() => typedSetShowDebugNormals(!typedShowDebugNormals)}
+              onClick={() => setShowDebugNormals(!showDebugNormals)}
               className={`rounded-lg p-3 transition-all duration-200 ${
                 showDebugNormals
                   ? "bg-orange-500 text-white"
@@ -125,7 +121,7 @@ const typedShowWireframe = showWireframe as boolean;
 
             {/* Wireframe toggle */}
             <button
-              onClick={() => typedSetShowWireframe(!typedShowWireframe)}
+              onClick={() => setShowWireframe(!showWireframe)}
               className={`rounded-lg p-3 transition-all duration-200 ${
                 showWireframe
                   ? "bg-purple-500 text-white"
