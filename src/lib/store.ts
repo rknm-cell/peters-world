@@ -9,7 +9,16 @@ export interface PlacedObject {
   scale: [number, number, number];
 }
 
+export interface TerrainVertex {
+  x: number;
+  y: number;
+  z: number;
+  height: number;
+  waterLevel: number;
+}
+
 export type TimeOfDay = "day" | "sunset" | "night";
+export type TerraformMode = "raise" | "lower" | "water" | "smooth" | "none";
 
 interface WorldState {
   objects: PlacedObject[];
@@ -19,6 +28,13 @@ interface WorldState {
   isPlacing: boolean;
   showDebugNormals: boolean;
   showWireframe: boolean;
+  
+  // Terrain state
+  terrainVertices: TerrainVertex[];
+  terraformMode: TerraformMode;
+  brushSize: number;
+  brushStrength: number;
+  isTerraforming: boolean;
 
   // Actions
   addObject: (type: string, position: Vector3) => void;
@@ -31,9 +47,18 @@ interface WorldState {
   setShowDebugNormals: (show: boolean) => void;
   setShowWireframe: (show: boolean) => void;
   exitPlacementMode: () => void;
+  
+  // Terrain actions
+  setTerraformMode: (mode: TerraformMode) => void;
+  setBrushSize: (size: number) => void;
+  setBrushStrength: (strength: number) => void;
+  setIsTerraforming: (isTerraforming: boolean) => void;
+  updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
+  setTerrainVertices: (vertices: TerrainVertex[]) => void;
+  resetTerrain: () => void;
 }
 
-export const useWorldStore = create<WorldState>((set) => ({
+export const useWorldStore = create<WorldState>((set, _get) => ({
   objects: [],
   selectedObject: null,
   selectedObjectType: null,
@@ -41,6 +66,13 @@ export const useWorldStore = create<WorldState>((set) => ({
   isPlacing: false,
   showDebugNormals: false,
   showWireframe: false,
+  
+  // Terrain state
+  terrainVertices: [],
+  terraformMode: "none",
+  brushSize: 0.5,
+  brushStrength: 0.1,
+  isTerraforming: false,
 
   addObject: (type: string, position: Vector3) => {
     const id = Math.random().toString(36).substring(7);
@@ -62,7 +94,7 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   removeObject: (id: string) => {
     set((state) => ({
-      objects: state.objects.filter((obj) => obj.id !== id),
+      objects: state.objects.filter((obj) => obj !== id),
       selectedObject: state.selectedObject === id ? null : state.selectedObject,
     }));
   },
@@ -101,5 +133,38 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   setShowWireframe: (show: boolean) => {
     set({ showWireframe: show });
+  },
+  
+  // Terrain actions
+  setTerraformMode: (mode: TerraformMode) => {
+    set({ terraformMode: mode });
+  },
+  
+  setBrushSize: (size: number) => {
+    set({ brushSize: size });
+  },
+  
+  setBrushStrength: (strength: number) => {
+    set({ brushStrength: strength });
+  },
+  
+  setIsTerraforming: (isTerraforming: boolean) => {
+    set({ isTerraforming });
+  },
+  
+  updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => {
+    set((state) => ({
+      terrainVertices: state.terrainVertices.map((vertex, i) =>
+        i === index ? { ...vertex, ...updates } : vertex
+      ),
+    }));
+  },
+  
+  setTerrainVertices: (vertices: TerrainVertex[]) => {
+    set({ terrainVertices: vertices });
+  },
+  
+  resetTerrain: () => {
+    set({ terrainVertices: [] });
   },
 }));
