@@ -88,7 +88,7 @@ src/
 │   │   ├── PlacementSystem.tsx  // Object placement logic
 │   │   └── CameraController.tsx // Mobile-friendly controls
 │   ├── ui/
-│   │   ├── RadialMenu.tsx      // Object selection menu
+│   │   ├── DropdownMenu.tsx      // Object selection menu
 │   │   ├── TimeOfDayPicker.tsx // Weather/lighting presets
 │   │   ├── Toolbar.tsx         // Save/share/screenshot
 │   │   └── GlassPanel.tsx      // Reusable glass-morphism container

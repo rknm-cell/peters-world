@@ -47,7 +47,7 @@ src/
 │   │   └── PlacementSystem.tsx # Object placement logic
 │   ├── ui/                # UI components
 │   │   ├── Toolbar.tsx    # Editor toolbar
-│   │   ├── RadialMenu.tsx # Object selection menu
+│   │   ├── DropdownMenu.tsx # Object selection menu
 │   │   └── TimeOfDayPicker.tsx # Lighting presets
 │   └── three/             # Three.js objects and materials
 ├── lib/                   # Utilities and store

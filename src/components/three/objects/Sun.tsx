@@ -28,11 +28,13 @@ export function Sun({
         color: '#FFFFFF', // Bright white
         transparent: true,
         opacity: 0.95,
+        fog: false, // Sun is unaffected by fog
       }),
       glow: new THREE.MeshBasicMaterial({
         color: '#FFD700', // Golden yellow accent
         transparent: true,
         opacity: 0.4 * glowIntensity,
+        fog: false, // Glow is unaffected by fog
       }),
     };
   }, [glowIntensity]);
@@ -95,7 +97,7 @@ export function Sun({
         ref={sunMeshRef}
         geometry={geometries.sun}
         material={materials.sun}
-        scale={[1, 1, 1]}
+        scale={[.7, .7, .7]}
       />
 
       {/* Sun rays effect */}
@@ -114,6 +116,7 @@ export function Sun({
               color="#FFD700" 
               transparent 
               opacity={1} 
+              fog={false} // Sun rays are unaffected by fog
             />
           </mesh>
         ))}

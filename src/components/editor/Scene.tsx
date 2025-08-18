@@ -74,12 +74,6 @@ export function Scene() {
           <WorldObjects />
         </PlacementSystem>
       </GlobeController>
-
-      {/* Environment */}
-      <fog
-        attach="fog"
-        args={[LIGHTING_PRESETS[timeOfDay].fogColor, 20, 100]}
-      />
     </>
   );
 }
