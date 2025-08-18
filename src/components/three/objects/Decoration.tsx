@@ -13,6 +13,7 @@ interface DecorationProps {
   selected?: boolean;
   objectId: string;
   preview?: boolean;
+  canPlace?: boolean;
 }
 
 export function Decoration({
@@ -23,35 +24,41 @@ export function Decoration({
   selected = false,
   objectId,
   preview = false,
+  canPlace = true,
 }: DecorationProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
+    // Use red color for invalid placement previews
+    const rockColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.rock.primary;
+    const flowerColor = preview && !canPlace ? "#ff0000" : "#FF69B4";
+    const stemColor = preview && !canPlace ? "#ff0000" : "#32CD32";
+    
     return {
       rock: new THREE.MeshStandardMaterial({
-        color: COLOR_PALETTES.rock.primary,
+        color: rockColor,
         roughness: 0.95, // Very rough stone surface
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
       flower: new THREE.MeshStandardMaterial({
-        color: "#FF69B4", // Hot pink
+        color: flowerColor,
         roughness: 0.3, // Smooth flower petals
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
       stem: new THREE.MeshStandardMaterial({
-        color: "#32CD32", // Lime green
+        color: stemColor,
         roughness: 0.8, // Slightly rough stem
         metalness: 0.0, // Non-metallic
         transparent: preview,
         opacity: preview ? 0.6 : 1.0,
       }),
     };
-  }, [preview]);
+  }, [preview, canPlace]);
 
   // Generate decoration geometry based on type
   const renderDecoration = () => {
