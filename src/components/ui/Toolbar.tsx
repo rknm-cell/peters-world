@@ -111,6 +111,26 @@ export function Toolbar() {
               </svg>
             </button>
 
+            {/* Wireframe toggle */}
+            <button
+              onClick={() => useWorldStore.getState().setShowWireframe(!useWorldStore.getState().showWireframe)}
+              className={`rounded-lg p-3 transition-all duration-200 ${
+                useWorldStore.getState().showWireframe
+                  ? "bg-purple-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title="Toggle Wireframe View"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M3,3H21V5H3V3M3,7H21V9H3V7M3,11H21V13H3V11M3,15H21V17H3V15M3,19H21V21H3V19Z" />
+              </svg>
+            </button>
+
             {/* Separator */}
             <div className="h-8 w-px bg-white/20" />
 

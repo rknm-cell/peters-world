@@ -4,7 +4,6 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { COLOR_PALETTES } from "~/lib/constants";
 
 // Define the tree types based on available GLB files
 type TreeType = 
@@ -46,42 +45,50 @@ export function Tree({
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Load the GLB file based on tree type
-  const { scene } = useGLTF(`/${type}.glb`);
-
+  // Load the GLB file
+  const gltfResult = useGLTF(`/${type}.glb`);
+  
   // Clone the scene to avoid sharing between instances
   const treeModel = useMemo(() => {
-    if (!scene) return null;
+    if (!gltfResult || !gltfResult.scene) {
+      return null;
+    }
+
+    const clonedScene = gltfResult.scene.clone(true);
+
+    // Reset transformations
+    clonedScene.position.set(0, 0, 0);
+    clonedScene.rotation.set(0, 0, 0);
+    clonedScene.scale.set(1, 1, 1);
+
+    // Scale to target height
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size = new THREE.Vector3();
+    box.getSize(size);
     
-    const clonedScene = scene.clone();
+    const targetHeight = 1.2; // Increased from 0.3 to 1.2 units (20% of globe radius)
+    const currentHeight = Math.max(size.y, 0.001);
+    const scaleFactor = targetHeight / currentHeight;
     
-    // Apply materials that work well with directional lighting and shadows
-    clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Create new materials to avoid sharing between instances
-        const material = child.material.clone();
-        
-        if (preview && !canPlace) {
-          // Use red color for invalid placement previews
-          material.color.setHex(0xff0000);
-          material.transparent = true;
-          material.opacity = 0.6;
-        }
-        
-        // Ensure materials work well with lighting
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.roughness = 0.8;
-          material.metalness = 0.0;
-        }
-        
-        child.material = material;
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
+    // IMPORTANT: Calculate the base offset BEFORE scaling
+    // This ensures trees stay on the surface regardless of final size
+    const baseOffset = -box.min.y;
+    
+    // Apply scaling
+    clonedScene.scale.setScalar(scaleFactor);
+    
+    // Apply the pre-calculated offset (this keeps trees on the surface)
+    clonedScene.position.y = baseOffset;
+
+    console.log(`Tree ready:`, { 
+      targetHeight, 
+      scaleFactor, 
+      'original base offset': baseOffset,
+      'tree will stay on surface': true
     });
-    
+
     return clonedScene;
-  }, [scene, preview, canPlace]);
+  }, [gltfResult?.scene, type]);
 
   // Animation for selected state
   useFrame((state) => {
@@ -93,7 +100,37 @@ export function Tree({
   });
 
   if (!treeModel) {
-    return null;
+    // Fallback to a simple visible tree
+    return (
+      <group
+        ref={groupRef}
+        position={position}
+        rotation={rotation}
+        scale={scale}
+        userData={{ isPlacedObject: true, objectId }}
+      >
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.2, 8, 6]} />
+          <meshBasicMaterial color="#ff0000" />
+        </mesh>
+        
+        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.2, 0.3, 2, 8]} />
+          <meshStandardMaterial color="#8B4513" />
+        </mesh>
+        <mesh position={[0, 2.5, 0]} castShadow receiveShadow>
+          <coneGeometry args={[1.6, 4, 8]} />
+          <meshStandardMaterial color="#228B22" />
+        </mesh>
+        
+        {selected && (
+          <mesh position={[0, -0.1, 0]}>
+            <ringGeometry args={[0.8, 1.0, 16]} />
+            <meshBasicMaterial color="#ffff00" transparent opacity={0.6} />
+          </mesh>
+        )}
+      </group>
+    );
   }
 
   return (
@@ -104,10 +141,23 @@ export function Tree({
       scale={scale}
       userData={{ isPlacedObject: true, objectId }}
     >
-      {/* Render the GLB model */}
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.1, 8, 6]} />
+        <meshBasicMaterial color="#ff0000" />
+      </mesh>
+      
+      <mesh position={[0, -0.05, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
+        <meshBasicMaterial color="#00ff00" transparent opacity={0.7} />
+      </mesh>
+      
       <primitive object={treeModel} />
 
-      {/* Selection indicator */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[2, 4, 2]} />
+        <meshBasicMaterial color="#00ff00" wireframe={true} transparent opacity={0.3} />
+      </mesh>
+
       {selected && (
         <mesh position={[0, -0.1, 0]}>
           <ringGeometry args={[0.8, 1.0, 16]} />

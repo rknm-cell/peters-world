@@ -81,34 +81,22 @@ export function PlacementSystem({
         );
 
         if (detailedIntersection && currentObjectType) {
-          // Convert world coordinates to local coordinates of the rotating group
-          const localPoint = detailedIntersection.point.clone();
-          const localNormal = detailedIntersection.normal.clone();
-
-          if (rotationGroupRef?.current) {
-            // Convert world point to local space of the rotating group
-            const worldToLocal = new THREE.Matrix4()
-              .copy(rotationGroupRef.current.matrixWorld)
-              .invert();
-            localPoint.applyMatrix4(worldToLocal);
-
-            // Convert world normal to local space (without translation)
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-              rotationGroupRef.current.matrixWorld,
-            );
-            localNormal.applyMatrix3(normalMatrix.invert()).normalize();
-          }
+          // Use the world coordinates directly - no need to convert to local space
+          // since WorldObjects is rendered as a child of the rotating group
+          const worldPoint = detailedIntersection.point.clone();
+          const worldNormal = detailedIntersection.normal.clone();
 
           const placementInfo = calculatePlacement(
             currentObjectType,
-            localPoint,
-            localNormal,
+            worldPoint,
+            worldNormal,
             objectsRef.current,
           );
 
-          if (placementInfo.canPlace && selectedObjectType) {
+          const selectedType = selectedObjectTypeRef.current;
+          if (placementInfo.canPlace && selectedType) {
             // Use the local coordinates for placement
-            addObject(selectedObjectType, placementInfo.position);
+            addObject(selectedType, placementInfo.position);
 
             // Update the last placed object with the exact rotation from the preview
             const newObjects = useWorldStore.getState().objects;
@@ -192,26 +180,14 @@ export function PlacementSystem({
         );
 
         if (detailedIntersection) {
-          // Convert world coordinates to local coordinates for preview
-          const localPoint = detailedIntersection.point.clone();
-          const localNormal = detailedIntersection.normal.clone();
-
-          if (rotationGroupRef?.current) {
-            const worldToLocal = new THREE.Matrix4()
-              .copy(rotationGroupRef.current.matrixWorld)
-              .invert();
-            localPoint.applyMatrix4(worldToLocal);
-
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-              rotationGroupRef.current.matrixWorld,
-            );
-            localNormal.applyMatrix3(normalMatrix.invert()).normalize();
-          }
+          // Use world coordinates directly for preview as well
+          const worldPoint = detailedIntersection.point.clone();
+          const worldNormal = detailedIntersection.normal.clone();
 
           const placementInfo = calculatePlacement(
             selectedObjectType,
-            localPoint,
-            localNormal,
+            worldPoint,
+            worldNormal,
             objects,
           );
 
