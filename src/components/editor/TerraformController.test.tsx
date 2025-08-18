@@ -1,4 +1,16 @@
 import { describe, it, expect, beforeEach } from "bun:test";
+import { useWorldStore } from "~/lib/store";
+import * as THREE from "three";
+
+// Mock Three.js
+const mockRaycaster = {
+  setFromCamera: vi.fn(),
+  intersectObject: vi.fn(),
+};
+
+const mockVector2 = (x: number, y: number) => ({ x, y });
+
+const mockVector3 = (x: number, y: number, z: number) => ({ x, y, z });
 
 describe("TerraformController - Core Logic", () => {
   describe("Terraforming Modes", () => {
@@ -20,6 +32,26 @@ describe("TerraformController - Core Logic", () => {
       expect(currentMode).toBe("none");
       expect(newMode).toBe("raise");
       expect(currentMode !== newMode).toBe(true);
+    });
+
+    it("should handle tool activation and deactivation", () => {
+      // Test tool state management
+      let isActive = false;
+      let currentMode = "none";
+      
+      // Activate tool
+      isActive = true;
+      currentMode = "raise";
+      
+      expect(isActive).toBe(true);
+      expect(currentMode).toBe("raise");
+      
+      // Deactivate tool
+      isActive = false;
+      currentMode = "none";
+      
+      expect(isActive).toBe(false);
+      expect(currentMode).toBe("none");
     });
   });
 

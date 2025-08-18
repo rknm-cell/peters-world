@@ -1,4 +1,41 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, vi } from "bun:test";
+import { useWorldStore } from "~/lib/store";
+import * as THREE from "three";
+
+// Mock Three.js
+const mockSphereGeometry = {
+  attributes: {
+    position: {
+      count: 4,
+      getX: (i: number) => [0, 1, 0, -1][i],
+      getY: (i: number) => [0, 0, 1, 0][i],
+      getZ: (i: number) => [6, 6, 6, 6][i],
+    },
+  },
+};
+
+const mockMeshStandardMaterial = {};
+
+const mockVector3 = (x: number, y: number, z: number) => ({ x, y, z });
+
+const mockMesh = {
+  geometry: {
+    attributes: {
+      position: {
+        count: 4,
+        getX: (i: number) => [0, 1, 0, -1][i],
+        getY: (i: number) => [0, 0, 1, 0][i],
+        getZ: (i: number) => [6, 6, 6, 6][i],
+        setXYZ: vi.fn() as any,
+        needsUpdate: false,
+      },
+    },
+    computeVertexNormals: vi.fn() as any,
+  },
+};
+
+const mockGroup = {};
+
 
 describe("TerrainSystem - Core Logic", () => {
   describe("Terrain Vertex Structure", () => {
