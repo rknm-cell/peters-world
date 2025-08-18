@@ -13,6 +13,7 @@ import {
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
+import { OBJECT_TYPES } from "~/lib/constants";
 
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
@@ -105,7 +106,7 @@ export function PlacementSystem({
             objectsRef.current,
           );
 
-          if (placementInfo.canPlace) {
+          if (placementInfo.canPlace && selectedObjectType) {
             // Use the local coordinates for placement
             addObject(selectedObjectType, placementInfo.position);
 
@@ -289,9 +290,9 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType === "pine" || selectedObjectType === "oak" || selectedObjectType === "birch") ? (
+          ) : (selectedObjectType && OBJECT_TYPES.trees.includes(selectedObjectType)) ? (
             <Tree
-              type={selectedObjectType}
+              type={selectedObjectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall"}
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}

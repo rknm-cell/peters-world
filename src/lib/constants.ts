@@ -72,7 +72,22 @@ export const WORLD_LIMITS = {
 
 // Object types available for placement
 export const OBJECT_TYPES = {
-  trees: ["pine", "oak", "birch", "palm", "cherry"],
+  trees: [
+    "tree", // Generic tree
+    "tree-baobab",
+    "tree-beech", 
+    "tree-birch",
+    "tree-conifer",
+    "tree-elipse",
+    "tree-fir",
+    "tree-forest",
+    "tree-lime",
+    "tree-maple",
+    "tree-oak",
+    "tree-round",
+    "tree-spruce",
+    "tree-tall"
+  ],
   structures: ["house", "tower", "bridge"],
   decorations: ["rock", "flower"],
 } as const;

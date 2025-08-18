@@ -2,11 +2,29 @@
 
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { COLOR_PALETTES } from "~/lib/constants";
 
+// Define the tree types based on available GLB files
+type TreeType = 
+  | "tree" 
+  | "tree-baobab"
+  | "tree-beech" 
+  | "tree-birch"
+  | "tree-conifer"
+  | "tree-elipse"
+  | "tree-fir"
+  | "tree-forest"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-spruce"
+  | "tree-tall";
+
 interface TreeProps {
-  type?: "pine" | "oak" | "birch";
+  type: TreeType;
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -17,7 +35,7 @@ interface TreeProps {
 }
 
 export function Tree({
-  type = "pine",
+  type,
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
@@ -28,55 +46,42 @@ export function Tree({
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Create materials that work well with directional lighting and shadows
-  const materials = useMemo(() => {
-    // Use red color for invalid placement previews
-    const trunkColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.trunk;
-    const leavesColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.leaves;
-    
-    return {
-      trunk: new THREE.MeshStandardMaterial({
-        color: trunkColor,
-        roughness: 0.9, // Rough bark texture
-        metalness: 0.0, // Non-metallic
-        transparent: preview,
-        opacity: preview ? 0.6 : 1.0,
-      }),
-      leaves: new THREE.MeshStandardMaterial({
-        color: leavesColor,
-        roughness: 0.7, // Slightly rough leaves
-        metalness: 0.0, // Non-metallic
-        transparent: preview,
-        opacity: preview ? 0.6 : 1.0,
-      }),
-    };
-  }, [preview, canPlace]);
+  // Load the GLB file based on tree type
+  const { scene } = useGLTF(`/${type}.glb`);
 
-  // Generate tree geometry based on type
-  const geometries = useMemo(() => {
-    switch (type) {
-      case "pine":
-        return {
-          trunk: new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
-          leaves: new THREE.ConeGeometry(0.8, 2, 8),
-        };
-      case "oak":
-        return {
-          trunk: new THREE.CylinderGeometry(0.12, 0.18, 0.8, 8),
-          leaves: new THREE.SphereGeometry(1, 12, 8),
-        };
-      case "birch":
-        return {
-          trunk: new THREE.CylinderGeometry(0.08, 0.1, 1.2, 8),
-          leaves: new THREE.SphereGeometry(0.7, 12, 8),
-        };
-      default:
-        return {
-          trunk: new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
-          leaves: new THREE.ConeGeometry(0.8, 2, 8),
-        };
-    }
-  }, [type]);
+  // Clone the scene to avoid sharing between instances
+  const treeModel = useMemo(() => {
+    if (!scene) return null;
+    
+    const clonedScene = scene.clone();
+    
+    // Apply materials that work well with directional lighting and shadows
+    clonedScene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // Create new materials to avoid sharing between instances
+        const material = child.material.clone();
+        
+        if (preview && !canPlace) {
+          // Use red color for invalid placement previews
+          material.color.setHex(0xff0000);
+          material.transparent = true;
+          material.opacity = 0.6;
+        }
+        
+        // Ensure materials work well with lighting
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = 0.8;
+          material.metalness = 0.0;
+        }
+        
+        child.material = material;
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
+    return clonedScene;
+  }, [scene, preview, canPlace]);
 
   // Animation for selected state
   useFrame((state) => {
@@ -87,6 +92,10 @@ export function Tree({
     }
   });
 
+  if (!treeModel) {
+    return null;
+  }
+
   return (
     <group
       ref={groupRef}
@@ -95,23 +104,8 @@ export function Tree({
       scale={scale}
       userData={{ isPlacedObject: true, objectId }}
     >
-      {/* Trunk */}
-      <mesh
-        position={[0, 0.4, 0]}
-        geometry={geometries.trunk}
-        material={materials.trunk}
-        castShadow
-        receiveShadow
-      />
-
-      {/* Leaves */}
-      <mesh
-        position={type === "pine" ? [0, 1.5, 0] : [0, 1.2, 0]}
-        geometry={geometries.leaves}
-        material={materials.leaves}
-        castShadow
-        receiveShadow
-      />
+      {/* Render the GLB model */}
+      <primitive object={treeModel} />
 
       {/* Selection indicator */}
       {selected && (

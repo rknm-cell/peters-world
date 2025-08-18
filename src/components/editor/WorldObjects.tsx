@@ -8,7 +8,21 @@ import { OBJECT_TYPES } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 
 // Define proper types for object categories
-type TreeType = "pine" | "oak" | "birch";
+type TreeType = 
+  | "tree" 
+  | "tree-baobab"
+  | "tree-beech" 
+  | "tree-birch"
+  | "tree-conifer"
+  | "tree-elipse"
+  | "tree-fir"
+  | "tree-forest"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-spruce"
+  | "tree-tall";
 type StructureType = "house" | "tower" | "bridge";
 type DecorationType = "rock" | "flower";
 
@@ -52,7 +66,7 @@ export function WorldObjects() {
     }
 
     // Default fallback for unknown types
-    return <Tree key={obj.id} type="pine" {...props} />;
+    return <Tree key={obj.id} type="tree" {...props} />;
   };
 
   return <>{objects.map(renderObject)}</>;

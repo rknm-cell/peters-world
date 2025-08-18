@@ -3,17 +3,61 @@ import * as THREE from "three";
 // Define object-specific metadata for proper placement
 export const OBJECT_METADATA = {
   // Trees
-  pine: {
+  tree: {
     bottomOffset: -0.15, // Embed slightly into surface
     baseRadius: 0.15, // For collision detection
   },
-  oak: {
+  "tree-baobab": {
+    bottomOffset: -0.15,
+    baseRadius: 0.2,
+  },
+  "tree-beech": {
     bottomOffset: -0.15,
     baseRadius: 0.18,
   },
-  birch: {
+  "tree-birch": {
     bottomOffset: -0.15,
     baseRadius: 0.1,
+  },
+  "tree-conifer": {
+    bottomOffset: -0.15,
+    baseRadius: 0.12,
+  },
+  "tree-elipse": {
+    bottomOffset: -0.15,
+    baseRadius: 0.16,
+  },
+  "tree-fir": {
+    bottomOffset: -0.15,
+    baseRadius: 0.14,
+  },
+  "tree-forest": {
+    bottomOffset: -0.15,
+    baseRadius: 0.25,
+  },
+  "tree-lime": {
+    bottomOffset: -0.15,
+    baseRadius: 0.17,
+  },
+  "tree-maple": {
+    bottomOffset: -0.15,
+    baseRadius: 0.19,
+  },
+  "tree-oak": {
+    bottomOffset: -0.15,
+    baseRadius: 0.18,
+  },
+  "tree-round": {
+    bottomOffset: -0.15,
+    baseRadius: 0.15,
+  },
+  "tree-spruce": {
+    bottomOffset: -0.15,
+    baseRadius: 0.13,
+  },
+  "tree-tall": {
+    bottomOffset: -0.15,
+    baseRadius: 0.11,
   },
 
   // Structures
@@ -64,7 +108,7 @@ export function calculatePlacement(
 ): PlacementInfo {
   const metadata =
     OBJECT_METADATA[objectType as keyof typeof OBJECT_METADATA] ||
-    OBJECT_METADATA.pine; // Default fallback
+    OBJECT_METADATA.tree; // Default fallback
 
   // Calculate the final position - embed slightly into surface
   const finalPosition = intersectionPoint.clone();
@@ -154,7 +198,7 @@ function checkPlacementValidity(
 
     const existingMetadata =
       OBJECT_METADATA[existing.type as keyof typeof OBJECT_METADATA] ||
-      OBJECT_METADATA.pine;
+      OBJECT_METADATA.tree;
 
     // Calculate minimum distance based on object dimensions
     // Use the larger of the two radii plus a small buffer
