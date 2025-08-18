@@ -17,6 +17,7 @@ interface WorldState {
   selectedObjectType: string | null;
   timeOfDay: TimeOfDay;
   isPlacing: boolean;
+  showDebugNormals: boolean;
 
   // Actions
   addObject: (type: string, position: Vector3) => void;
@@ -26,6 +27,7 @@ interface WorldState {
   setPlacing: (placing: boolean) => void;
   updateObject: (id: string, updates: Partial<PlacedObject>) => void;
   setSelectedObjectType: (type: string | null) => void;
+  setShowDebugNormals: (show: boolean) => void;
 }
 
 export const useWorldStore = create<WorldState>((set) => ({
@@ -34,6 +36,7 @@ export const useWorldStore = create<WorldState>((set) => ({
   selectedObjectType: null,
   timeOfDay: "day",
   isPlacing: false,
+  showDebugNormals: false,
 
   addObject: (type: string, position: Vector3) => {
     const id = Math.random().toString(36).substring(7);
@@ -81,5 +84,9 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   setSelectedObjectType: (type: string | null) => {
     set({ selectedObjectType: type });
+  },
+
+  setShowDebugNormals: (show: boolean) => {
+    set({ showDebugNormals: show });
   },
 }));

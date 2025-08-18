@@ -74,8 +74,8 @@ export function calculatePlacement(
     surfaceNormal.clone().multiplyScalar(metadata.bottomOffset),
   );
 
-  // Calculate rotation - align perfectly to surface normal
-  // This makes objects stand upright on the surface without flipping
+  // Calculate rotation - align with surface normal but limit excessive rotation
+  // This prevents objects from becoming parallel to the surface on steep slopes
   const up = new THREE.Vector3(0, 1, 0);
   
   // Create a rotation that makes the object's up vector align with the surface normal
@@ -91,7 +91,16 @@ export function calculatePlacement(
     const rotationAxis = new THREE.Vector3().crossVectors(up, surfaceNormal).normalize();
     
     // Calculate the rotation angle
-    const rotationAngle = Math.acos(up.dot(surfaceNormal));
+    let rotationAngle = Math.acos(up.dot(surfaceNormal));
+    
+    // Apply a gradual reduction to rotation as it gets steeper
+    // This prevents objects from becoming parallel while maintaining natural appearance
+    if (rotationAngle > Math.PI / 4) { // If rotation is more than 45 degrees
+      // Gradually reduce the rotation using a smooth curve
+      const excessRotation = rotationAngle - Math.PI / 4;
+      const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2)));
+      rotationAngle = Math.PI / 4 + (excessRotation * reductionFactor);
+    }
     
     // Create quaternion from axis and angle
     quaternion.setFromAxisAngle(rotationAxis, rotationAngle);

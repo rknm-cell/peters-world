@@ -9,6 +9,8 @@ export function Toolbar() {
   const { isPlacing, setPlacing, objects } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
+  const setShowDebugNormals = useWorldStore((state) => state.setShowDebugNormals);
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -77,6 +79,29 @@ export function Toolbar() {
                 </svg>
               </button>
             )}
+
+            {/* Separator */}
+            <div className="h-8 w-px bg-white/20" />
+
+            {/* Debug normals toggle */}
+            <button
+              onClick={() => setShowDebugNormals(!showDebugNormals)}
+              className={`rounded-lg p-3 transition-all duration-200 ${
+                showDebugNormals
+                  ? "bg-orange-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title="Toggle Surface Normal Debug"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z" />
+              </svg>
+            </button>
 
             {/* Separator */}
             <div className="h-8 w-px bg-white/20" />
