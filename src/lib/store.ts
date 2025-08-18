@@ -28,6 +28,7 @@ interface WorldState {
   updateObject: (id: string, updates: Partial<PlacedObject>) => void;
   setSelectedObjectType: (type: string | null) => void;
   setShowDebugNormals: (show: boolean) => void;
+  exitPlacementMode: () => void;
 }
 
 export const useWorldStore = create<WorldState>((set) => ({
@@ -51,7 +52,8 @@ export const useWorldStore = create<WorldState>((set) => ({
     set((state) => ({
       objects: [...state.objects, newObject],
       selectedObject: id,
-      isPlacing: false,
+      // Keep isPlacing as true so user can continue placing more objects
+      isPlacing: true,
     }));
   },
 
@@ -72,6 +74,10 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   setPlacing: (placing: boolean) => {
     set({ isPlacing: placing });
+  },
+
+  exitPlacementMode: () => {
+    set({ isPlacing: false, selectedObjectType: null });
   },
 
   updateObject: (id: string, updates: Partial<PlacedObject>) => {

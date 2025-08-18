@@ -6,7 +6,7 @@ import { DropdownMenu } from "./DropdownMenu";
 import { TimeOfDayPicker } from "./TimeOfDayPicker";
 
 export function Toolbar() {
-  const { isPlacing, setPlacing, objects } = useWorldStore();
+  const { isPlacing, setPlacing, objects, selectedObjectType, exitPlacementMode } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
@@ -65,7 +65,7 @@ export function Toolbar() {
             {/* Cancel placement */}
             {isPlacing && (
               <button
-                onClick={() => setPlacing(false)}
+                onClick={exitPlacementMode}
                 className="rounded-lg bg-red-500/20 p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
                 title="Cancel"
               >
@@ -78,6 +78,14 @@ export function Toolbar() {
                   <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                 </svg>
               </button>
+            )}
+
+            {/* Currently selected object type indicator */}
+            {isPlacing && selectedObjectType && (
+              <div className="flex items-center rounded-lg bg-blue-500/20 px-3 py-2 text-sm text-blue-300">
+                <span className="mr-2">Placing:</span>
+                <span className="capitalize font-medium">{selectedObjectType}</span>
+              </div>
             )}
 
             {/* Separator */}

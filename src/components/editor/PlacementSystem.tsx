@@ -39,6 +39,24 @@ export function PlacementSystem({
   const mouse = useRef(new Vector2());
   const [placementPreview, setPlacementPreview] =
     useState<PlacementInfo | null>(null);
+    
+  // Use refs for values that don't need to trigger callback recreation
+  const objectsRef = useRef(objects);
+  const isPlacingRef = useRef(isPlacing);
+  const selectedObjectTypeRef = useRef(selectedObjectType);
+  
+  // Update refs when values change
+  React.useEffect(() => {
+    objectsRef.current = objects;
+  }, [objects]);
+  
+  React.useEffect(() => {
+    isPlacingRef.current = isPlacing;
+  }, [isPlacing]);
+  
+  React.useEffect(() => {
+    selectedObjectTypeRef.current = selectedObjectType;
+  }, [selectedObjectType]);
 
   // Handle click/tap events for placement and selection
   const handlePointerDown = useCallback(
@@ -54,13 +72,14 @@ export function PlacementSystem({
       raycaster.current.setFromCamera(mouse.current, camera);
 
       // Check for intersections with the globe
-      if (globeRef.current && isPlacing && selectedObjectType) {
+      if (globeRef.current && isPlacingRef.current && selectedObjectTypeRef.current) {
+        const currentObjectType = selectedObjectTypeRef.current;
         const detailedIntersection = getDetailedIntersection(
           raycaster.current,
           globeRef.current,
         );
 
-        if (detailedIntersection) {
+        if (detailedIntersection && currentObjectType) {
           // Convert world coordinates to local coordinates of the rotating group
           const localPoint = detailedIntersection.point.clone();
           const localNormal = detailedIntersection.normal.clone();
@@ -80,10 +99,10 @@ export function PlacementSystem({
           }
 
           const placementInfo = calculatePlacement(
-            selectedObjectType,
+            currentObjectType,
             localPoint,
             localNormal,
-            objects,
+            objectsRef.current,
           );
 
           if (placementInfo.canPlace) {
@@ -224,11 +243,21 @@ export function PlacementSystem({
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
 
+    // Add keyboard event listener for Escape key to exit placement mode
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isPlacing) {
+        useWorldStore.getState().exitPlacementMode();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gl.domElement, handlePointerDown, handlePointerMove]);
+  }, [gl.domElement, handlePointerDown, handlePointerMove, isPlacing]);
 
   return (
     <>
