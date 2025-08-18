@@ -35,7 +35,7 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     
     isMouseDownRef.current = true;
     handleTerraform(event);
-  }, [isTerraforming, terraformMode]);
+  }, [isTerraforming, terraformMode, handleTerraform]);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
     if (!isMouseDownRef.current || !isTerraforming || terraformMode === "none") return;
@@ -45,7 +45,7 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     event.stopPropagation();
     
     handleTerraform(event);
-  }, [isTerraforming, terraformMode]);
+  }, [isTerraforming, terraformMode, handleTerraform]);
 
   const handleMouseUp = useCallback((event: MouseEvent) => {
     if (isTerraforming && terraformMode !== "none") {
@@ -66,7 +66,7 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     isMouseDownRef.current = true;
     // PointerEvent extends MouseEvent, so we can reuse the same logic
     handleTerraform(event as unknown as MouseEvent);
-  }, [isPlacing, isTerraforming, terraformMode]);
+  }, [isPlacing, isTerraforming, terraformMode, handleTerraform]);
 
   const handlePointerMove = useCallback((event: PointerEvent) => {
     if (isPlacing) return;
@@ -74,7 +74,7 @@ export function TerraformController({ terrainMesh }: TerraformControllerProps) {
     event.preventDefault();
     event.stopPropagation();
     handleTerraform(event as unknown as MouseEvent);
-  }, [isPlacing, isTerraforming, terraformMode]);
+  }, [isPlacing, isTerraforming, terraformMode, handleTerraform]);
 
   const handlePointerUp = useCallback((event: PointerEvent) => {
     if (isPlacing) return;

@@ -58,7 +58,7 @@ interface WorldState {
   resetTerrain: () => void;
 }
 
-export const useWorldStore = create<WorldState>((set, get) => ({
+export const useWorldStore = create<WorldState>((set, _get) => ({
   objects: [],
   selectedObject: null,
   selectedObjectType: null,

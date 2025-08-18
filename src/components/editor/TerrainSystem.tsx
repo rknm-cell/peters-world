@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useCallback } from "react";
-import * as THREE from "three";
-import { useWorldStore } from "~/lib/store";
+import { useRef, useMemo, useEffect, useCallback } from 'react';
+import * as THREE from 'three';
+import { useWorldStore } from '~/lib/store';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
@@ -12,10 +12,6 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const {
     terrainVertices,
-    terraformMode,
-    brushSize,
-    brushStrength,
-    isTerraforming,
     setTerrainVertices,
   } = useWorldStore();
 
@@ -36,12 +32,12 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
         height: number;
         waterLevel: number;
       }> = [];
-      
+
       for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
         const y = positions.getY(i);
         const z = positions.getZ(i);
-        
+
         vertices.push({
           x,
           y,
@@ -50,10 +46,10 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
           waterLevel: 0, // No initial water
         });
       }
-      
+
       setTerrainVertices(vertices);
     }
-  }, [baseGeometry, terrainVertices.length, setTerrainVertices]);
+  }, [baseGeometry, setTerrainVertices, terrainVertices.length]);
 
   // Apply terrain deformation to geometry
   const applyTerrainDeformation = useCallback(() => {
@@ -61,44 +57,44 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
 
     const geometry = meshRef.current.geometry;
     const positions = geometry.attributes.position;
-    
+
     // Apply height and water modifications to each vertex
     for (let i = 0; i < positions.count; i++) {
       const vertex = terrainVertices[i];
       if (!vertex) continue;
-      
+
       // Calculate the original direction from center
       const originalX = positions.getX(i);
       const originalY = positions.getY(i);
       const originalZ = positions.getZ(i);
-      
+
       // Normalize to get direction
       const length = Math.sqrt(originalX * originalX + originalY * originalY + originalZ * originalZ);
       const dirX = originalX / length;
       const dirY = originalY / length;
       const dirZ = originalZ / length;
-      
+
       // Apply height deformation
       const heightOffset = dirX * vertex.height + dirY * vertex.height + dirZ * vertex.height;
-      
+
       // Apply water level (water creates depressions)
       const waterOffset = -vertex.waterLevel * 0.3; // Water creates valleys
-      
+
       // Calculate new position
       const newLength = 6 + heightOffset + waterOffset;
       const newX = dirX * newLength;
       const newY = dirY * newLength;
       const newZ = dirZ * newLength;
-      
+
       positions.setXYZ(i, newX, newY, newZ);
     }
-    
+
     positions.needsUpdate = true;
     geometry.computeVertexNormals();
-    
+
     // Notify parent component of terrain update
     onTerrainUpdate?.(geometry);
-  }, [terrainVertices, onTerrainUpdate]);
+  }, [onTerrainUpdate, terrainVertices]);
 
   // Apply terrain deformation whenever vertices change
   useEffect(() => {
@@ -136,7 +132,7 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
         receiveShadow
         castShadow
       />
-      
+
       {/* Water overlay mesh (will be positioned based on water levels) */}
       {terrainVertices.some(v => v.waterLevel > 0) && (
         <mesh
