@@ -15,12 +15,10 @@ import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebu
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const timeOfDay = useWorldStore((state) => state.timeOfDay);
-  const isPlacing = useWorldStore((state) => state.isPlacing);
-  const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
+  const { timeOfDay, isPlacing, showDebugNormals } = useWorldStore();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
-  const globeRef = useRef<THREE.Mesh | null>(null);
-  const rotationGroupRef = useRef<THREE.Group | null>(null);
+  const globeRef = useRef<THREE.Mesh>(null);
+  const rotationGroupRef = useRef<THREE.Group>(null);
 
   // Update lighting based on time of day
   useEffect(() => {

@@ -40,8 +40,8 @@ export function Tree({
   scale = [1, 1, 1],
   selected = false,
   objectId,
-  preview = false,
-  canPlace = true,
+  preview: _preview = false,
+  canPlace: _canPlace = true,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -66,29 +66,24 @@ export function Tree({
     const size = new THREE.Vector3();
     box.getSize(size);
     
-    const targetHeight = 1.2; // Increased from 0.3 to 1.2 units (20% of globe radius)
+    const targetHeight = 1.2; // Target height in units
     const currentHeight = Math.max(size.y, 0.001);
     const scaleFactor = targetHeight / currentHeight;
-    
-    // IMPORTANT: Calculate the base offset BEFORE scaling
-    // This ensures trees stay on the surface regardless of final size
-    const baseOffset = -box.min.y;
     
     // Apply scaling
     clonedScene.scale.setScalar(scaleFactor);
     
-    // Apply the pre-calculated offset (this keeps trees on the surface)
-    clonedScene.position.y = baseOffset;
+    // Reset position to origin - let PlacementSystem handle positioning
+    clonedScene.position.set(0, 0, 0);
 
     console.log(`Tree ready:`, { 
       targetHeight, 
-      scaleFactor, 
-      'original base offset': baseOffset,
-      'tree will stay on surface': true
+      scaleFactor,
+      'tree will be positioned by PlacementSystem': true
     });
 
     return clonedScene;
-  }, [gltfResult?.scene, type]);
+  }, [gltfResult]);
 
   // Animation for selected state
   useFrame((state) => {
@@ -152,11 +147,6 @@ export function Tree({
       </mesh>
       
       <primitive object={treeModel} />
-
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[2, 4, 2]} />
-        <meshBasicMaterial color="#00ff00" wireframe={true} transparent opacity={0.3} />
-      </mesh>
 
       {selected && (
         <mesh position={[0, -0.1, 0]}>

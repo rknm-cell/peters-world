@@ -1,19 +1,24 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
-import { Raycaster, Vector2, Mesh } from "three";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useThree, useFrame } from "@react-three/fiber";
 import { useWorldStore } from "~/lib/store";
+import { OBJECT_TYPES } from "~/lib/constants";
+import { Decoration } from "~/components/three/objects/Decoration";
+import { Tree } from "~/components/three/objects/Tree";
+import { Structure } from "~/components/three/objects/Structure";
+import type * as THREE from "three";
+import { Raycaster, Vector2, Mesh } from "three";
 import {
   calculatePlacement,
   getDetailedIntersection,
   type PlacementInfo,
 } from "~/lib/utils/placement";
-import { Decoration } from "~/components/three/objects/Decoration";
-import { Tree } from "~/components/three/objects/Tree";
-import { Structure } from "~/components/three/objects/Structure";
-import { OBJECT_TYPES } from "~/lib/constants";
+
+// Type guard function to check if an object type is a tree
+function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall" {
+  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall");
+}
 
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
@@ -23,7 +28,7 @@ interface PlacementSystemProps {
 
 export function PlacementSystem({
   globeRef,
-  rotationGroupRef,
+  rotationGroupRef: _rotationGroupRef,
   children,
 }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
@@ -47,15 +52,15 @@ export function PlacementSystem({
   const selectedObjectTypeRef = useRef(selectedObjectType);
   
   // Update refs when values change
-  React.useEffect(() => {
+  useEffect(() => {
     objectsRef.current = objects;
   }, [objects]);
   
-  React.useEffect(() => {
+  useEffect(() => {
     isPlacingRef.current = isPlacing;
   }, [isPlacing]);
   
-  React.useEffect(() => {
+  useEffect(() => {
     selectedObjectTypeRef.current = selectedObjectType;
   }, [selectedObjectType]);
 
@@ -148,10 +153,6 @@ export function PlacementSystem({
       camera,
       gl.domElement,
       globeRef,
-      rotationGroupRef,
-      isPlacing,
-      selectedObjectType,
-      objects,
       addObject,
       selectObject,
       removeObject,
@@ -201,10 +202,9 @@ export function PlacementSystem({
       camera,
       gl.domElement,
       globeRef,
-      rotationGroupRef,
       isPlacing,
-      selectedObjectType,
       objects,
+      selectedObjectType,
     ],
   );
 
@@ -214,7 +214,7 @@ export function PlacementSystem({
   });
 
   // Add event listeners
-  React.useEffect(() => {
+  useEffect(() => {
     const canvas = gl.domElement;
 
     canvas.addEventListener("pointerdown", handlePointerDown);
@@ -223,7 +223,7 @@ export function PlacementSystem({
     // Add keyboard event listener for Escape key to exit placement mode
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isPlacing) {
-        useWorldStore.getState().exitPlacementMode();
+        useWorldStore.setState({ isPlacing: false, selectedObjectType: null });
       }
     };
 
@@ -266,9 +266,9 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType && OBJECT_TYPES.trees.includes(selectedObjectType)) ? (
+          ) : (selectedObjectType && isTreeType(selectedObjectType)) ? (
             <Tree
-              type={selectedObjectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall"}
+              type={selectedObjectType}
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}

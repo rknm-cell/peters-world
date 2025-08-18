@@ -6,11 +6,23 @@ import { DropdownMenu } from "./DropdownMenu";
 import { TimeOfDayPicker } from "./TimeOfDayPicker";
 
 export function Toolbar() {
-  const { isPlacing, setPlacing, objects, selectedObjectType, exitPlacementMode } = useWorldStore();
+  const { 
+    isPlacing, 
+    objects, 
+    selectedObjectType, 
+    exitPlacementMode,
+    showDebugNormals,
+    setShowDebugNormals,
+    showWireframe,
+    setShowWireframe
+  } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
-  const setShowDebugNormals = useWorldStore((state) => state.setShowDebugNormals);
+  const typedExitPlacementMode = exitPlacementMode as () => void;
+const typedSetShowDebugNormals = setShowDebugNormals as (show: boolean) => void;
+const typedSetShowWireframe = setShowWireframe as (show: boolean) => void;
+const typedShowDebugNormals = showDebugNormals as boolean;
+const typedShowWireframe = showWireframe as boolean;
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -65,7 +77,7 @@ export function Toolbar() {
             {/* Cancel placement */}
             {isPlacing && (
               <button
-                onClick={exitPlacementMode}
+                onClick={typedExitPlacementMode}
                 className="rounded-lg bg-red-500/20 p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
                 title="Cancel"
               >
@@ -93,7 +105,7 @@ export function Toolbar() {
 
             {/* Debug normals toggle */}
             <button
-              onClick={() => setShowDebugNormals(!showDebugNormals)}
+              onClick={() => typedSetShowDebugNormals(!typedShowDebugNormals)}
               className={`rounded-lg p-3 transition-all duration-200 ${
                 showDebugNormals
                   ? "bg-orange-500 text-white"
@@ -113,9 +125,9 @@ export function Toolbar() {
 
             {/* Wireframe toggle */}
             <button
-              onClick={() => useWorldStore.getState().setShowWireframe(!useWorldStore.getState().showWireframe)}
+              onClick={() => typedSetShowWireframe(!typedShowWireframe)}
               className={`rounded-lg p-3 transition-all duration-200 ${
-                useWorldStore.getState().showWireframe
+                showWireframe
                   ? "bg-purple-500 text-white"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
