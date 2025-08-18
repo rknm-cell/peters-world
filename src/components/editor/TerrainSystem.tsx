@@ -25,6 +25,8 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
   useEffect(() => {
     if (baseGeometry && terrainVertices.length === 0) {
       const positions = baseGeometry.attributes.position;
+      if (!positions) return;
+      
       const vertices: Array<{
         x: number;
         y: number;
@@ -57,6 +59,7 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
 
     const geometry = meshRef.current.geometry;
     const positions = geometry.attributes.position;
+    if (!positions) return;
 
     // Apply height and water modifications to each vertex
     for (let i = 0; i < positions.count; i++) {
