@@ -11,11 +11,13 @@ import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";
 import { GlobeController } from "./GlobeController";
 import { Sun } from '~/components/three/objects/Sun';
+import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
   const timeOfDay = useWorldStore((state) => state.timeOfDay);
   const isPlacing = useWorldStore((state) => state.isPlacing);
+  const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh | null>(null);
   const rotationGroupRef = useRef<THREE.Group | null>(null);
@@ -74,6 +76,9 @@ export function Scene() {
           <WorldObjects />
         </PlacementSystem>
       </GlobeController>
+
+      {/* Debug surface normals - toggle with toolbar button */}
+      {showDebugNormals && <SurfaceNormalDebug />}
     </>
   );
 }
