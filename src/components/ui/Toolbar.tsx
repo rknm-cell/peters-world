@@ -6,11 +6,19 @@ import { DropdownMenu } from "./DropdownMenu";
 import { TimeOfDayPicker } from "./TimeOfDayPicker";
 
 export function Toolbar() {
-  const { isPlacing, setPlacing, objects } = useWorldStore();
+  const { 
+    isPlacing, 
+    objects, 
+    selectedObjectType, 
+    exitPlacementMode,
+    showDebugNormals,
+    setShowDebugNormals,
+    showWireframe,
+    setShowWireframe
+  } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const showDebugNormals = useWorldStore((state) => state.showDebugNormals);
-  const setShowDebugNormals = useWorldStore((state) => state.setShowDebugNormals);
+
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -65,7 +73,7 @@ export function Toolbar() {
             {/* Cancel placement */}
             {isPlacing && (
               <button
-                onClick={() => setPlacing(false)}
+                onClick={exitPlacementMode}
                 className="rounded-lg bg-red-500/20 p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
                 title="Cancel"
               >
@@ -78,6 +86,14 @@ export function Toolbar() {
                   <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                 </svg>
               </button>
+            )}
+
+            {/* Currently selected object type indicator */}
+            {isPlacing && selectedObjectType && (
+              <div className="flex items-center rounded-lg bg-blue-500/20 px-3 py-2 text-sm text-blue-300">
+                <span className="mr-2">Placing:</span>
+                <span className="capitalize font-medium">{selectedObjectType}</span>
+              </div>
             )}
 
             {/* Separator */}
@@ -100,6 +116,26 @@ export function Toolbar() {
                 fill="currentColor"
               >
                 <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z" />
+              </svg>
+            </button>
+
+            {/* Wireframe toggle */}
+            <button
+              onClick={() => setShowWireframe(!showWireframe)}
+              className={`rounded-lg p-3 transition-all duration-200 ${
+                showWireframe
+                  ? "bg-purple-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title="Toggle Wireframe View"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M3,3H21V5H3V3M3,7H21V9H3V7M3,11H21V13H3V11M3,15H21V17H3V15M3,19H21V21H3V19Z" />
               </svg>
             </button>
 

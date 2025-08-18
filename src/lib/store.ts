@@ -18,6 +18,7 @@ interface WorldState {
   timeOfDay: TimeOfDay;
   isPlacing: boolean;
   showDebugNormals: boolean;
+  showWireframe: boolean;
 
   // Actions
   addObject: (type: string, position: Vector3) => void;
@@ -28,6 +29,8 @@ interface WorldState {
   updateObject: (id: string, updates: Partial<PlacedObject>) => void;
   setSelectedObjectType: (type: string | null) => void;
   setShowDebugNormals: (show: boolean) => void;
+  setShowWireframe: (show: boolean) => void;
+  exitPlacementMode: () => void;
 }
 
 export const useWorldStore = create<WorldState>((set) => ({
@@ -37,6 +40,7 @@ export const useWorldStore = create<WorldState>((set) => ({
   timeOfDay: "day",
   isPlacing: false,
   showDebugNormals: false,
+  showWireframe: false,
 
   addObject: (type: string, position: Vector3) => {
     const id = Math.random().toString(36).substring(7);
@@ -51,7 +55,8 @@ export const useWorldStore = create<WorldState>((set) => ({
     set((state) => ({
       objects: [...state.objects, newObject],
       selectedObject: id,
-      isPlacing: false,
+      // Keep isPlacing as true so user can continue placing more objects
+      isPlacing: true,
     }));
   },
 
@@ -74,6 +79,10 @@ export const useWorldStore = create<WorldState>((set) => ({
     set({ isPlacing: placing });
   },
 
+  exitPlacementMode: () => {
+    set({ isPlacing: false, selectedObjectType: null });
+  },
+
   updateObject: (id: string, updates: Partial<PlacedObject>) => {
     set((state) => ({
       objects: state.objects.map((obj) =>
@@ -88,5 +97,9 @@ export const useWorldStore = create<WorldState>((set) => ({
 
   setShowDebugNormals: (show: boolean) => {
     set({ showDebugNormals: show });
+  },
+
+  setShowWireframe: (show: boolean) => {
+    set({ showWireframe: show });
   },
 }));

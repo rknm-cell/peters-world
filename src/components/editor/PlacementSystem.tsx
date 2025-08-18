@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
-import { Raycaster, Vector2, Mesh } from "three";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useThree, useFrame } from "@react-three/fiber";
 import { useWorldStore } from "~/lib/store";
+import { OBJECT_TYPES } from "~/lib/constants";
+import { Decoration } from "~/components/three/objects/Decoration";
+import { Tree } from "~/components/three/objects/Tree";
+import { Structure } from "~/components/three/objects/Structure";
+import type * as THREE from "three";
+import { Raycaster, Vector2, Mesh } from "three";
 import {
   calculatePlacement,
   getDetailedIntersection,
   type PlacementInfo,
 } from "~/lib/utils/placement";
-import { Decoration } from "~/components/three/objects/Decoration";
-import { Tree } from "~/components/three/objects/Tree";
-import { Structure } from "~/components/three/objects/Structure";
+
+// Type guard function to check if an object type is a tree
+function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall" {
+  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall");
+}
 
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
@@ -22,7 +28,7 @@ interface PlacementSystemProps {
 
 export function PlacementSystem({
   globeRef,
-  rotationGroupRef,
+  rotationGroupRef: _rotationGroupRef,
   children,
 }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
@@ -39,6 +45,24 @@ export function PlacementSystem({
   const mouse = useRef(new Vector2());
   const [placementPreview, setPlacementPreview] =
     useState<PlacementInfo | null>(null);
+    
+  // Use refs for values that don't need to trigger callback recreation
+  const objectsRef = useRef(objects);
+  const isPlacingRef = useRef(isPlacing);
+  const selectedObjectTypeRef = useRef(selectedObjectType);
+  
+  // Update refs when values change
+  useEffect(() => {
+    objectsRef.current = objects;
+  }, [objects]);
+  
+  useEffect(() => {
+    isPlacingRef.current = isPlacing;
+  }, [isPlacing]);
+  
+  useEffect(() => {
+    selectedObjectTypeRef.current = selectedObjectType;
+  }, [selectedObjectType]);
 
   // Handle click/tap events for placement and selection
   const handlePointerDown = useCallback(
@@ -54,41 +78,30 @@ export function PlacementSystem({
       raycaster.current.setFromCamera(mouse.current, camera);
 
       // Check for intersections with the globe
-      if (globeRef.current && isPlacing && selectedObjectType) {
+      if (globeRef.current && isPlacingRef.current && selectedObjectTypeRef.current) {
+        const currentObjectType = selectedObjectTypeRef.current;
         const detailedIntersection = getDetailedIntersection(
           raycaster.current,
           globeRef.current,
         );
 
-        if (detailedIntersection) {
-          // Convert world coordinates to local coordinates of the rotating group
-          const localPoint = detailedIntersection.point.clone();
-          const localNormal = detailedIntersection.normal.clone();
-
-          if (rotationGroupRef?.current) {
-            // Convert world point to local space of the rotating group
-            const worldToLocal = new THREE.Matrix4()
-              .copy(rotationGroupRef.current.matrixWorld)
-              .invert();
-            localPoint.applyMatrix4(worldToLocal);
-
-            // Convert world normal to local space (without translation)
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-              rotationGroupRef.current.matrixWorld,
-            );
-            localNormal.applyMatrix3(normalMatrix.invert()).normalize();
-          }
+        if (detailedIntersection && currentObjectType) {
+          // Use the world coordinates directly - no need to convert to local space
+          // since WorldObjects is rendered as a child of the rotating group
+          const worldPoint = detailedIntersection.point.clone();
+          const worldNormal = detailedIntersection.normal.clone();
 
           const placementInfo = calculatePlacement(
-            selectedObjectType,
-            localPoint,
-            localNormal,
-            objects,
+            currentObjectType,
+            worldPoint,
+            worldNormal,
+            objectsRef.current,
           );
 
-          if (placementInfo.canPlace) {
+          const selectedType = selectedObjectTypeRef.current;
+          if (placementInfo.canPlace && selectedType) {
             // Use the local coordinates for placement
-            addObject(selectedObjectType, placementInfo.position);
+            addObject(selectedType, placementInfo.position);
 
             // Update the last placed object with the exact rotation from the preview
             const newObjects = useWorldStore.getState().objects;
@@ -140,10 +153,6 @@ export function PlacementSystem({
       camera,
       gl.domElement,
       globeRef,
-      rotationGroupRef,
-      isPlacing,
-      selectedObjectType,
-      objects,
       addObject,
       selectObject,
       removeObject,
@@ -172,26 +181,14 @@ export function PlacementSystem({
         );
 
         if (detailedIntersection) {
-          // Convert world coordinates to local coordinates for preview
-          const localPoint = detailedIntersection.point.clone();
-          const localNormal = detailedIntersection.normal.clone();
-
-          if (rotationGroupRef?.current) {
-            const worldToLocal = new THREE.Matrix4()
-              .copy(rotationGroupRef.current.matrixWorld)
-              .invert();
-            localPoint.applyMatrix4(worldToLocal);
-
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(
-              rotationGroupRef.current.matrixWorld,
-            );
-            localNormal.applyMatrix3(normalMatrix.invert()).normalize();
-          }
+          // Use world coordinates directly for preview as well
+          const worldPoint = detailedIntersection.point.clone();
+          const worldNormal = detailedIntersection.normal.clone();
 
           const placementInfo = calculatePlacement(
             selectedObjectType,
-            localPoint,
-            localNormal,
+            worldPoint,
+            worldNormal,
             objects,
           );
 
@@ -205,10 +202,9 @@ export function PlacementSystem({
       camera,
       gl.domElement,
       globeRef,
-      rotationGroupRef,
       isPlacing,
-      selectedObjectType,
       objects,
+      selectedObjectType,
     ],
   );
 
@@ -218,17 +214,27 @@ export function PlacementSystem({
   });
 
   // Add event listeners
-  React.useEffect(() => {
+  useEffect(() => {
     const canvas = gl.domElement;
 
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
 
+    // Add keyboard event listener for Escape key to exit placement mode
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isPlacing) {
+        useWorldStore.setState({ isPlacing: false, selectedObjectType: null });
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gl.domElement, handlePointerDown, handlePointerMove]);
+  }, [gl.domElement, handlePointerDown, handlePointerMove, isPlacing]);
 
   return (
     <>
@@ -260,7 +266,7 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType === "pine" || selectedObjectType === "oak" || selectedObjectType === "birch") ? (
+          ) : (selectedObjectType && isTreeType(selectedObjectType)) ? (
             <Tree
               type={selectedObjectType}
               position={[0, 0, 0]}

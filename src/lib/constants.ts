@@ -37,8 +37,8 @@ export const LIGHTING_PRESETS = {
     directionalIntensity: 1.0,
     directionalPosition: [10, 10, 5] as [number, number, number],
     fogColor: "#87CEEB",
-    fogNear: 20,
-    fogFar: 100,
+    fogNear: 50, // Move fog further away so trees are visible
+    fogFar: 150, // Extend fog range
   },
   sunset: {
     ambientColor: "#ff8c42",
@@ -47,8 +47,8 @@ export const LIGHTING_PRESETS = {
     directionalIntensity: 0.8,
     directionalPosition: [5, 3, 5] as [number, number, number],
     fogColor: "#ff8c42",
-    fogNear: 15,
-    fogFar: 80,
+    fogNear: 40, // Move fog further away
+    fogFar: 120, // Extend fog range
   },
   night: {
     ambientColor: "#1e3a8a",
@@ -57,8 +57,8 @@ export const LIGHTING_PRESETS = {
     directionalIntensity: 0.5,
     directionalPosition: [2, 8, 3] as [number, number, number],
     fogColor: "#1e293b",
-    fogNear: 10,
-    fogFar: 60,
+    fogNear: 30, // Move fog further away
+    fogFar: 100, // Extend fog range
   },
 } as const;
 
@@ -72,7 +72,22 @@ export const WORLD_LIMITS = {
 
 // Object types available for placement
 export const OBJECT_TYPES = {
-  trees: ["pine", "oak", "birch", "palm", "cherry"],
+  trees: [
+    "tree", // Generic tree
+    "tree-baobab",
+    "tree-beech", 
+    "tree-birch",
+    "tree-conifer",
+    "tree-elipse",
+    "tree-fir",
+    "tree-forest",
+    "tree-lime",
+    "tree-maple",
+    "tree-oak",
+    "tree-round",
+    "tree-spruce",
+    "tree-tall"
+  ],
   structures: ["house", "tower", "bridge"],
   decorations: ["rock", "flower"],
 } as const;

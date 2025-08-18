@@ -2,11 +2,28 @@
 
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { COLOR_PALETTES } from "~/lib/constants";
+
+// Define the tree types based on available GLB files
+type TreeType = 
+  | "tree" 
+  | "tree-baobab"
+  | "tree-beech" 
+  | "tree-birch"
+  | "tree-conifer"
+  | "tree-elipse"
+  | "tree-fir"
+  | "tree-forest"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-spruce"
+  | "tree-tall";
 
 interface TreeProps {
-  type?: "pine" | "oak" | "birch";
+  type: TreeType;
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -17,66 +34,56 @@ interface TreeProps {
 }
 
 export function Tree({
-  type = "pine",
+  type,
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
   selected = false,
   objectId,
-  preview = false,
-  canPlace = true,
+  preview: _preview = false,
+  canPlace: _canPlace = true,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Create materials that work well with directional lighting and shadows
-  const materials = useMemo(() => {
-    // Use red color for invalid placement previews
-    const trunkColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.trunk;
-    const leavesColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.tree.leaves;
-    
-    return {
-      trunk: new THREE.MeshStandardMaterial({
-        color: trunkColor,
-        roughness: 0.9, // Rough bark texture
-        metalness: 0.0, // Non-metallic
-        transparent: preview,
-        opacity: preview ? 0.6 : 1.0,
-      }),
-      leaves: new THREE.MeshStandardMaterial({
-        color: leavesColor,
-        roughness: 0.7, // Slightly rough leaves
-        metalness: 0.0, // Non-metallic
-        transparent: preview,
-        opacity: preview ? 0.6 : 1.0,
-      }),
-    };
-  }, [preview, canPlace]);
-
-  // Generate tree geometry based on type
-  const geometries = useMemo(() => {
-    switch (type) {
-      case "pine":
-        return {
-          trunk: new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
-          leaves: new THREE.ConeGeometry(0.8, 2, 8),
-        };
-      case "oak":
-        return {
-          trunk: new THREE.CylinderGeometry(0.12, 0.18, 0.8, 8),
-          leaves: new THREE.SphereGeometry(1, 12, 8),
-        };
-      case "birch":
-        return {
-          trunk: new THREE.CylinderGeometry(0.08, 0.1, 1.2, 8),
-          leaves: new THREE.SphereGeometry(0.7, 12, 8),
-        };
-      default:
-        return {
-          trunk: new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
-          leaves: new THREE.ConeGeometry(0.8, 2, 8),
-        };
+  // Load the GLB file
+  const gltfResult = useGLTF(`/${type}.glb`);
+  
+  // Clone the scene to avoid sharing between instances
+  const treeModel = useMemo(() => {
+    if (!gltfResult || !gltfResult.scene) {
+      return null;
     }
-  }, [type]);
+
+    const clonedScene = gltfResult.scene.clone(true);
+
+    // Reset transformations
+    clonedScene.position.set(0, 0, 0);
+    clonedScene.rotation.set(0, 0, 0);
+    clonedScene.scale.set(1, 1, 1);
+
+    // Scale to target height
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    
+    const targetHeight = 1.2; // Target height in units
+    const currentHeight = Math.max(size.y, 0.001);
+    const scaleFactor = targetHeight / currentHeight;
+    
+    // Apply scaling
+    clonedScene.scale.setScalar(scaleFactor);
+    
+    // Reset position to origin - let PlacementSystem handle positioning
+    clonedScene.position.set(0, 0, 0);
+
+    console.log(`Tree ready:`, { 
+      targetHeight, 
+      scaleFactor,
+      'tree will be positioned by PlacementSystem': true
+    });
+
+    return clonedScene;
+  }, [gltfResult]);
 
   // Animation for selected state
   useFrame((state) => {
@@ -87,6 +94,40 @@ export function Tree({
     }
   });
 
+  if (!treeModel) {
+    // Fallback to a simple visible tree
+    return (
+      <group
+        ref={groupRef}
+        position={position}
+        rotation={rotation}
+        scale={scale}
+        userData={{ isPlacedObject: true, objectId }}
+      >
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.2, 8, 6]} />
+          <meshBasicMaterial color="#ff0000" />
+        </mesh>
+        
+        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.2, 0.3, 2, 8]} />
+          <meshStandardMaterial color="#8B4513" />
+        </mesh>
+        <mesh position={[0, 2.5, 0]} castShadow receiveShadow>
+          <coneGeometry args={[1.6, 4, 8]} />
+          <meshStandardMaterial color="#228B22" />
+        </mesh>
+        
+        {selected && (
+          <mesh position={[0, -0.1, 0]}>
+            <ringGeometry args={[0.8, 1.0, 16]} />
+            <meshBasicMaterial color="#ffff00" transparent opacity={0.6} />
+          </mesh>
+        )}
+      </group>
+    );
+  }
+
   return (
     <group
       ref={groupRef}
@@ -95,25 +136,18 @@ export function Tree({
       scale={scale}
       userData={{ isPlacedObject: true, objectId }}
     >
-      {/* Trunk */}
-      <mesh
-        position={[0, 0.4, 0]}
-        geometry={geometries.trunk}
-        material={materials.trunk}
-        castShadow
-        receiveShadow
-      />
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.1, 8, 6]} />
+        <meshBasicMaterial color="#ff0000" />
+      </mesh>
+      
+      <mesh position={[0, -0.05, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
+        <meshBasicMaterial color="#00ff00" transparent opacity={0.7} />
+      </mesh>
+      
+      <primitive object={treeModel} />
 
-      {/* Leaves */}
-      <mesh
-        position={type === "pine" ? [0, 1.5, 0] : [0, 1.2, 0]}
-        geometry={geometries.leaves}
-        material={materials.leaves}
-        castShadow
-        receiveShadow
-      />
-
-      {/* Selection indicator */}
       {selected && (
         <mesh position={[0, -0.1, 0]}>
           <ringGeometry args={[0.8, 1.0, 16]} />
