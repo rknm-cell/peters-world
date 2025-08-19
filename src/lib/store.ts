@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Vector3 } from "three";
+import { TerrainOctree } from "./utils/spatial-partitioning";
 
 export interface PlacedObject {
   id: string;
@@ -31,6 +32,7 @@ interface WorldState {
   
   // Terrain state
   terrainVertices: TerrainVertex[];
+  terrainOctree: TerrainOctree | null;
   terraformMode: TerraformMode;
   brushSize: number;
   brushStrength: number;
@@ -55,6 +57,7 @@ interface WorldState {
   setIsTerraforming: (isTerraforming: boolean) => void;
   updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
   setTerrainVertices: (vertices: TerrainVertex[]) => void;
+  updateTerrainOctree: () => void;
   resetTerrain: () => void;
 }
 
@@ -69,6 +72,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   
   // Terrain state
   terrainVertices: [],
+  terrainOctree: null,
   terraformMode: "none",
   brushSize: 0.5,
   brushStrength: 0.1,
@@ -164,7 +168,19 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     set({ terrainVertices: vertices });
   },
   
+  updateTerrainOctree: () => {
+    set((state) => {
+      if (state.terrainVertices.length === 0) {
+        return { terrainOctree: null };
+      }
+      
+      const octree = new TerrainOctree(6);
+      octree.partitionVertices(state.terrainVertices);
+      return { terrainOctree: octree };
+    });
+  },
+  
   resetTerrain: () => {
-    set({ terrainVertices: [] });
+    set({ terrainVertices: [], terrainOctree: null });
   },
 }));
