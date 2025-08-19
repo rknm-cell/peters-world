@@ -6,8 +6,8 @@ interface WaterMaterialProps {
   waterVertices: Array<{ waterLevel: number }>;
 }
 
-// Custom water shader material
-const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
+// Water material that receives proper lighting like the globe using custom shader with Three.js lighting
+const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }> }) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   
   // Animate water over time
@@ -17,20 +17,27 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
     }
   });
 
+  // Custom shader material that uses Three.js built-in lighting
   const shaderMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
+        ...THREE.UniformsLib.lights, // Include Three.js lighting uniforms
         uTime: { value: 0 },
-        uWaterColor: { value: new THREE.Color(0x4A90E2) }, // Cel-shaded blue
-        uShadowColor: { value: new THREE.Color(0x2B5A87) }, // Darker blue for shadows
-        uFoamColor: { value: new THREE.Color(0x87CEEB) }, // Light blue for edges
+        uWaterColor: { value: new THREE.Color(0x4A90E2) },
+        uShadowColor: { value: new THREE.Color(0x2B5A87) },
+        uFoamColor: { value: new THREE.Color(0x87CEEB) },
         uOpacity: { value: 0.9 },
       },
+      lights: true, // Enable Three.js lighting
       vertexShader: `
+        #include <common>
+        #include <lights_pars_begin>
+        
         varying vec2 vUv;
         varying vec3 vNormal;
         varying float vWaterLevel;
         varying vec3 vWorldPosition;
+        varying vec3 vViewPosition;
         
         attribute float waterLevel;
         
@@ -38,21 +45,29 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
           vUv = uv;
           vNormal = normalize(normalMatrix * normal);
           vWaterLevel = waterLevel;
-          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          vViewPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
           
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
+        #include <common>
+        #include <lights_pars_begin>
+        
         uniform vec3 uWaterColor;
         uniform vec3 uShadowColor;
         uniform vec3 uFoamColor;
         uniform float uOpacity;
+        uniform float uTime;
         
         varying vec2 vUv;
         varying vec3 vNormal;
         varying float vWaterLevel;
         varying vec3 vWorldPosition;
+        varying vec3 vViewPosition;
         
         void main() {
           // Discard fragments where there's no water
@@ -60,38 +75,47 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
             discard;
           }
           
-          // Cel-shading lighting calculation
-          vec3 lightDirection = normalize(vec3(0.5, 1.0, 0.3));
-          float NdotL = dot(normalize(vNormal), lightDirection);
+          // Get lighting from Three.js directional lights (same as MeshStandardMaterial)
+          vec3 normal = normalize(vNormal);
           
-          // Cel-shading: quantize lighting into discrete steps
-          float lightIntensity = NdotL * 0.5 + 0.5; // Remap to 0-1
+          // Calculate lighting using Three.js lighting system
+          vec3 totalDiffuse = vec3(0.0);
           
-          // Create 3 lighting levels (cel-shaded steps)
-          float celLevel;
-          if (lightIntensity > 0.75) {
-            celLevel = 1.0; // Full light
-          } else if (lightIntensity > 0.4) {
-            celLevel = 0.7; // Medium light  
-          } else {
-            celLevel = 0.4; // Shadow
-          }
+          #if NUM_DIR_LIGHTS > 0
+            for (int i = 0; i < NUM_DIR_LIGHTS; i++) {
+              vec3 lightDirection = directionalLights[i].direction;
+              vec3 lightColor = directionalLights[i].color;
+              
+              float NdotL = max(dot(normal, lightDirection), 0.0);
+              
+              // Cel-shading: quantize lighting into discrete steps (like MeshToonMaterial)
+              float lightIntensity = NdotL;
+              float celLevel;
+              if (lightIntensity > 0.75) {
+                celLevel = 1.0;
+              } else if (lightIntensity > 0.4) {
+                celLevel = 0.7;
+              } else {
+                celLevel = 0.4;
+              }
+              
+              totalDiffuse += lightColor * celLevel;
+            }
+          #endif
           
-          // Choose color based on cel-shading level
-          vec3 baseColor;
-          if (celLevel > 0.9) {
-            baseColor = uWaterColor;
-          } else if (celLevel > 0.6) {
-            baseColor = mix(uShadowColor, uWaterColor, 0.6);
-          } else {
-            baseColor = uShadowColor;
-          }
+          // Apply lighting to water colors
+          vec3 lightedWaterColor = uWaterColor * totalDiffuse;
+          vec3 lightedShadowColor = uShadowColor * totalDiffuse;
           
-          // Add foam at water edges (low water level areas)
+          // Add foam at water edges
           float edgeFactor = 1.0 - smoothstep(0.1, 0.4, vWaterLevel);
-          vec3 finalColor = mix(baseColor, uFoamColor, edgeFactor * 0.5);
+          vec3 finalColor = mix(lightedWaterColor, uFoamColor, edgeFactor * 0.5);
           
-          // Flat opacity based on water level
+          // Add subtle animation
+          float wave = sin(vWorldPosition.x * 2.0 + uTime) * sin(vWorldPosition.z * 2.0 + uTime) * 0.1;
+          finalColor += vec3(wave * 0.1);
+          
+          // Water opacity
           float alpha = uOpacity * smoothstep(0.01, 0.1, vWaterLevel);
           
           gl_FragColor = vec4(finalColor, alpha);
@@ -99,12 +123,11 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
       `,
       transparent: true,
       side: THREE.DoubleSide,
-      depthWrite: false, // Don't write to depth buffer for transparent water
-      depthTest: true,   // But still test depth
-      alphaTest: 0.01,   // Discard very transparent pixels
-      ...props
+      depthWrite: false,
+      depthTest: true,
+      alphaTest: 0.01,
     });
-  }, [props]);
+  }, []);
 
   return <primitive ref={materialRef} object={shaderMaterial} attach="material" />;
 };
@@ -119,7 +142,7 @@ export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
   
   const waterCount = waterVertices.filter(v => v.waterLevel > 0.01).length;
   const maxWaterLevel = Math.max(...waterVertices.map(v => v.waterLevel));
-  console.log(`WaterMaterial: Rendering water shader with ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
+  console.log(`WaterMaterial: Rendering water with toon material, ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
   
-  return <WaterShaderMaterial />;
+  return <WaterToonMaterial waterVertices={waterVertices} />;
 }
