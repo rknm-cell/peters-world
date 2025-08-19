@@ -20,6 +20,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     brushSize,
     brushStrength,
     terrainVertices,
+    terrainOctree,
     updateTerrainVertex,
   } = useWorldStore();
 
@@ -40,7 +41,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
 
   // Terraforming action handler working with TerrainSystem
   const handleTerraformAction = useCallback((_event: PointerEvent) => {
-    if (!terrainMesh || !terrainVertices.length) return;
+    if (!terrainMesh || !terrainVertices.length || !terrainOctree) return;
 
     // Raycast to find intersection point
     raycasterRef.current.setFromCamera(mouseRef.current, camera);
@@ -51,21 +52,23 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     const intersectionPoint = intersects[0]?.point;
     if (!intersectionPoint) return;
     
-    // Work with the original sphere geometry positions to find affected vertices
-    const geometry = terrainMesh.geometry;
-    const positionAttribute = geometry.attributes.position;
-    if (!positionAttribute) return;
+    // Use spatial partitioning to get only affected vertices
+    const affectedVertexIndices = terrainOctree.getVerticesInRadius(intersectionPoint, brushSize);
     
-    // Apply terraforming by updating the store - TerrainSystem will handle the visual updates
-    for (let i = 0; i < positionAttribute.count && i < terrainVertices.length; i++) {
-      const vertex = terrainVertices[i];
-      if (!vertex) continue;
+    // Apply terraforming only to affected vertices
+    affectedVertexIndices.forEach(vertexIndex => {
+      const vertex = terrainVertices[vertexIndex];
+      if (!vertex) return;
       
       // Get the current vertex position (already deformed by TerrainSystem)
+      const geometry = terrainMesh.geometry;
+      const positionAttribute = geometry.attributes.position;
+      if (!positionAttribute) return;
+      
       const vertexPos = new THREE.Vector3(
-        positionAttribute.getX(i),
-        positionAttribute.getY(i),
-        positionAttribute.getZ(i)
+        positionAttribute.getX(vertexIndex),
+        positionAttribute.getY(vertexIndex),
+        positionAttribute.getZ(vertexIndex)
       );
       
       const distance = intersectionPoint.distanceTo(vertexPos);
@@ -80,7 +83,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             // Cubic falloff for smoother terrain
             falloff = Math.pow(1 - normalizedDistance, 3);
             strength = brushStrength * falloff * 2.0; // Increased strength for visibility
-            updateTerrainVertex(i, {
+            updateTerrainVertex(vertexIndex, {
               height: Math.min(vertex.height + strength, 6.0)
             });
             break;
@@ -88,7 +91,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
           case "lower":
             falloff = Math.pow(1 - normalizedDistance, 3);
             strength = brushStrength * falloff * 2.0;
-            updateTerrainVertex(i, {
+            updateTerrainVertex(vertexIndex, {
               height: Math.max(vertex.height - strength, -4.0)
             });
             break;
@@ -101,24 +104,23 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             // Normal click adds water, Shift+click removes water
             if (isShiftPressedRef.current) {
               // Remove water
-              updateTerrainVertex(i, {
+              updateTerrainVertex(vertexIndex, {
                 waterLevel: Math.max(vertex.waterLevel - strength, 0.0)
               });
             } else {
               // Add water
-              updateTerrainVertex(i, {
+              updateTerrainVertex(vertexIndex, {
                 waterLevel: Math.min(vertex.waterLevel + strength, 1.0)
               });
             }
             break;
             
           case "smooth":
-            // Find nearby vertices for smoothing
-            const nearbyVertices = terrainVertices.filter((v, idx) => {
-              if (idx === i) return false;
-              const vPos = new THREE.Vector3(v.x, v.y, v.z);
-              return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
-            });
+            // Find nearby vertices for smoothing using spatial partitioning
+            const nearbyIndices = terrainOctree.getVerticesInRadius(vertexPos, brushSize * 0.5);
+            const nearbyVertices = nearbyIndices
+              .map(idx => terrainVertices[idx])
+              .filter(v => v && v !== vertex);
             
             if (nearbyVertices.length > 0) {
               falloff = Math.max(0, 1 - normalizedDistance);
@@ -126,7 +128,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
               const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
               const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
               
-              updateTerrainVertex(i, {
+              updateTerrainVertex(vertexIndex, {
                 height: vertex.height + (avgHeight - vertex.height) * smoothStrength,
                 waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * smoothStrength * 0.5
               });
@@ -134,8 +136,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             break;
         }
       }
-    }
-  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
+    });
+  }, [camera, terrainMesh, terrainVertices, terrainOctree, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
 
   // Globe rotation handler
   const handleGlobeRotation = useCallback(() => {

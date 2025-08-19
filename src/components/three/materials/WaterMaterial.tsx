@@ -79,7 +79,7 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
         
         void main() {
           // Discard fragments where there's no water
-          if (vAlpha < 0.01) {
+          if (vAlpha < 0.1) {
             discard;
           }
           
@@ -107,6 +107,7 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
           vec3 finalColor = animatedColor + specular * vec3(1.0);
           
           // Use vertex alpha combined with animation for final transparency
+          // Ensure water is only visible where it's been painted
           float alpha = uOpacity * vAlpha * (0.9 + ripple * 0.1);
           
           gl_FragColor = vec4(finalColor, alpha);
@@ -128,7 +129,11 @@ export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
   // Check if there's any water to render
   const hasWater = waterVertices.some(v => v.waterLevel > 0.01);
   
-  if (!hasWater) return null;
+  if (!hasWater) {
+    console.log('WaterMaterial: No water detected');
+    return null;
+  }
   
+  console.log(`WaterMaterial: Creating water shader material`);
   return <WaterShaderMaterial />;
 }

@@ -4,6 +4,7 @@ import { Canvas } from "~/components/editor/Canvas";
 import { Toolbar } from "~/components/ui/Toolbar";
 import { TerraformToolbar } from "~/components/ui/TerraformToolbar";
 import { Instructions } from "~/components/ui/Instructions";
+import { PerformanceDebug } from "~/components/ui/PerformanceDebug";
 
 export default function CreatePage() {
   return (
@@ -12,6 +13,7 @@ export default function CreatePage() {
       <Toolbar />
       <TerraformToolbar />
       <Instructions />
+      <PerformanceDebug />
     </div>
   );
 }

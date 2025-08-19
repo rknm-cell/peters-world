@@ -42,7 +42,11 @@ export function WaterSurface({ terrainVertices, radius = 6 }: WaterSurfaceProps)
       let totalWaterLevel = 0;
       let totalWeight = 0;
       
-      // Sample nearby terrain vertices for water level
+      // Sample nearby terrain vertices for water level (optimized sampling)
+      // Only sample vertices within a reasonable radius to avoid O(n²) complexity
+      const sampleRadius = 1.0; // Increased from 0.5 for better coverage
+      let sampleCount = 0;
+      
       for (const terrainVertex of terrainVertices) {
         if (!terrainVertex) continue;
         
@@ -53,10 +57,14 @@ export function WaterSurface({ terrainVertices, radius = 6 }: WaterSurfaceProps)
         );
         
         // Use inverse distance weighting for smooth interpolation
-        if (distance < 0.5) { // Sample radius
+        if (distance < sampleRadius) { // Sample radius
           const weight = 1.0 / (distance + 0.01); // Avoid division by zero
           totalWaterLevel += terrainVertex.waterLevel * weight;
           totalWeight += weight;
+          sampleCount++;
+          
+          // Limit samples to prevent excessive computation
+          if (sampleCount > 50) break;
         }
       }
       
