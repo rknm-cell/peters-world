@@ -1,21 +1,20 @@
 "use client";
 
-import { useRef, useMemo, forwardRef, useState, useEffect } from "react";
+import { useRef, useMemo, forwardRef } from "react";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
 import { TerrainSystem } from "./TerrainSystem";
-import { TerraformController } from "./TerraformController";
 
 interface GlobeProps {
   onRotationChange?: (rotation: [number, number, number]) => void;
+  onTerrainMeshReady?: (mesh: THREE.Mesh) => void;
 }
 
 export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
-  ({ onRotationChange: _onRotationChange }, ref) => {
+  ({ onRotationChange: _onRotationChange, onTerrainMeshReady }, ref) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const { showWireframe } = useWorldStore();
-    const [terrainMesh, setTerrainMesh] = useState<THREE.Mesh | null>(null);
 
     // Create a simple sphere for reference (this will be replaced by TerrainSystem)
     const geometry = useMemo(() => {
@@ -28,8 +27,8 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
     const material = useMemo(() => {
       return new THREE.MeshStandardMaterial({
         color: 0x4a7c59, // Earthy green
-        roughness: 0.8, // Slightly rough surface for realistic shadow reception
-        metalness: 0.1, // Low metalness for natural appearance
+        roughness: 0.4, // Slightly rough surface for realistic shadow reception
+        // metalness: 0.1, // Low metalness for natural appearance
         flatShading: false, // Smooth shading for the sphere
         wireframe: showWireframe,
         transparent: true,
@@ -37,12 +36,6 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
       });
     }, [showWireframe]);
 
-    // Capture mesh instance once mounted so we can safely pass it down
-    useEffect(() => {
-      if (meshRef.current) {
-        setTerrainMesh(meshRef.current);
-      }
-    }, []);
 
     return (
       <group ref={groupRef}>
@@ -58,6 +51,7 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
         
         {/* Terrain System - this will handle the actual terrain */}
         <TerrainSystem 
+          onTerrainMeshReady={onTerrainMeshReady}
           onTerrainUpdate={(geometry) => {
             // Update the reference mesh if needed
             if (meshRef.current) {
@@ -65,13 +59,6 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
             }
           }}
         />
-        
-        {/* Terraform Controller - handles mouse interactions */}
-        {terrainMesh && (
-          <TerraformController 
-            terrainMesh={terrainMesh}
-          />
-        )}
       </group>
     );
   },

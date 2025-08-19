@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
@@ -9,16 +9,17 @@ import { Globe } from "./Globe";
 import { CameraController } from "./CameraController";
 import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";
-import { GlobeController } from "./GlobeController";
+import { InputManager } from "./InputManager";
 import { Sun } from '~/components/three/objects/Sun';
 import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const { timeOfDay, isPlacing, showDebugNormals, isTerraforming } = useWorldStore();
+  const { timeOfDay, showDebugNormals } = useWorldStore();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh>(null);
   const rotationGroupRef = useRef<THREE.Group>(null);
+  const [terrainMesh, setTerrainMesh] = useState<THREE.Mesh | null>(null);
 
   // Update lighting based on time of day
   useEffect(() => {
@@ -54,26 +55,30 @@ export function Scene() {
       {/* Camera Controls */}
       <CameraController />
 
-      {/* Globe Controller for rotation - disabled when placing objects or terraforming */}
-      <GlobeController
-        globeRef={globeRef}
-        enabled={!isPlacing && !isTerraforming}
-        onGroupRefReady={(groupRef) => {
-          rotationGroupRef.current = groupRef.current;
-        }}
-      >
+      {/* Rotation group that contains all rotatable content */}
+      <group ref={rotationGroupRef}>
         {/* Placement System wraps all interactive objects */}
         <PlacementSystem
           globeRef={globeRef}
           rotationGroupRef={rotationGroupRef}
         >
           {/* Main globe */}
-          <Globe ref={globeRef} />
+          <Globe 
+            ref={globeRef} 
+            onTerrainMeshReady={setTerrainMesh}
+          />
 
           {/* All placed objects - these will rotate with the globe */}
           <WorldObjects />
         </PlacementSystem>
-      </GlobeController>
+      </group>
+      
+      {/* Unified Input Manager handles all interactions */}
+      <InputManager
+        globeRef={globeRef}
+        terrainMesh={terrainMesh}
+        rotationGroupRef={rotationGroupRef}
+      />
 
       {/* Debug surface normals - toggle with toolbar button */}
       {showDebugNormals && <SurfaceNormalDebug />}
