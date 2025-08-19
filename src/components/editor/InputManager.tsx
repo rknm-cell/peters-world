@@ -29,6 +29,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const raycasterRef = useRef(new THREE.Raycaster());
   const isDraggingRef = useRef(false);
   const rotationSpeedRef = useRef(0.005);
+  const isShiftPressedRef = useRef(false);
 
   // Determine current interaction mode
   const getInteractionMode = useCallback(() => {
@@ -91,6 +92,46 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
               height: Math.max(vertex.height - strength, -4.0)
             });
             break;
+            
+          case "water":
+            // Linear falloff for smooth water edges
+            falloff = Math.max(0, 1 - normalizedDistance);
+            strength = brushStrength * falloff * 1.5;
+            
+            // Normal click adds water, Shift+click removes water
+            if (isShiftPressedRef.current) {
+              // Remove water
+              updateTerrainVertex(i, {
+                waterLevel: Math.max(vertex.waterLevel - strength, 0.0)
+              });
+            } else {
+              // Add water
+              updateTerrainVertex(i, {
+                waterLevel: Math.min(vertex.waterLevel + strength, 1.0)
+              });
+            }
+            break;
+            
+          case "smooth":
+            // Find nearby vertices for smoothing
+            const nearbyVertices = terrainVertices.filter((v, idx) => {
+              if (idx === i) return false;
+              const vPos = new THREE.Vector3(v.x, v.y, v.z);
+              return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
+            });
+            
+            if (nearbyVertices.length > 0) {
+              falloff = Math.max(0, 1 - normalizedDistance);
+              const smoothStrength = brushStrength * falloff * 1.0;
+              const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
+              const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
+              
+              updateTerrainVertex(i, {
+                height: vertex.height + (avgHeight - vertex.height) * smoothStrength,
+                waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * smoothStrength * 0.5
+              });
+            }
+            break;
         }
       }
     }
@@ -125,6 +166,9 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     previousMouseRef.current.copy(mouseRef.current);
     
+    // Track shift key state
+    isShiftPressedRef.current = event.shiftKey;
+    
     isDraggingRef.current = true;
     
     switch (mode) {
@@ -156,6 +200,9 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     // Update mouse position
     mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    // Update shift key state
+    isShiftPressedRef.current = event.shiftKey;
     
     switch (mode) {
       case 'placing':

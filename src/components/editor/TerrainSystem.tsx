@@ -3,6 +3,7 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
+import { WaterSurface } from '../three/effects/WaterSurface';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
@@ -117,6 +118,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
   // Create material with water visualization
   const material = useMemo(() => {
+    // Base terrain material
     return new THREE.MeshStandardMaterial({
       color: 0x4a7c59, // Earthy green
       roughness: 0.8,
@@ -125,16 +127,8 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     });
   }, []);
 
-  // Add water material overlay
-  const waterMaterial = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      color: 0x006994, // Ocean blue
-      transparent: true,
-      opacity: 0.7,
-      roughness: 0.1,
-      metalness: 0.3,
-    });
-  }, []);
+  // Water creates depressions in the terrain - no separate water mesh needed
+  // The water effect is achieved by the waterOffset in applyTerrainDeformation
 
   return (
     <>
@@ -147,15 +141,8 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         castShadow
       />
 
-      {/* Water overlay mesh (will be positioned based on water levels) */}
-      {terrainVertices.some(v => v.waterLevel > 0) && (
-        <mesh
-          geometry={baseGeometry}
-          material={waterMaterial}
-          receiveShadow
-          castShadow
-        />
-      )}
+      {/* Animated water surface using shaders */}
+      <WaterSurface terrainVertices={terrainVertices} radius={6} />
     </>
   );
 }
