@@ -136,12 +136,12 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
   // The water effect is achieved by the waterOffset in applyTerrainDeformation
 
   // Debug: Check if we have water
-  const hasWater = terrainVertices.some(v => v.waterLevel > 0.1); // Match WaterSurface threshold
-  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.1).length;
+  const hasWater = terrainVertices.some(v => v.waterLevel > 0.01); // Match WaterSurface threshold
+  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.01).length;
   
   if (hasWater) {
     console.log(`TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map(v => v.waterLevel))}`);
-    console.log(`TerrainSystem: Water levels:`, terrainVertices.filter(v => v.waterLevel > 0.1).map(v => v.waterLevel).slice(0, 10));
+    console.log(`TerrainSystem: Water levels:`, terrainVertices.filter(v => v.waterLevel > 0.01).map(v => v.waterLevel).slice(0, 10));
   }
 
   return (
