@@ -36,7 +36,7 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
         
         uniform float uTime;
         
-        attribute float alpha;
+        attribute float waterLevel;
         
         // Enhanced wave function with multiple frequencies
         float wave(vec2 pos, float time) {
@@ -49,13 +49,13 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
         void main() {
           vUv = uv;
           vNormal = normal;
-          vAlpha = alpha;
+          vAlpha = waterLevel;
           
           vec3 pos = position;
           
           // Add wave animation only where there's water
-          if (alpha > 0.1) {
-            pos.y += wave(pos.xz, uTime);
+          if (waterLevel > 0.01) {
+            pos.y += wave(pos.xz, uTime) * waterLevel;
           }
           
           vPosition = pos;
@@ -79,7 +79,7 @@ const WaterShaderMaterial = (props: THREE.ShaderMaterialParameters) => {
         
         void main() {
           // Discard fragments where there's no water
-          if (vAlpha < 0.1) {
+          if (vAlpha < 0.01) {
             discard;
           }
           
@@ -130,10 +130,12 @@ export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
   const hasWater = waterVertices.some(v => v.waterLevel > 0.01);
   
   if (!hasWater) {
-    console.log('WaterMaterial: No water detected');
     return null;
   }
   
-  console.log(`WaterMaterial: Creating water shader material`);
+  const waterCount = waterVertices.filter(v => v.waterLevel > 0.01).length;
+  const maxWaterLevel = Math.max(...waterVertices.map(v => v.waterLevel));
+  console.log(`WaterMaterial: Rendering water shader with ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
+  
   return <WaterShaderMaterial />;
 }
