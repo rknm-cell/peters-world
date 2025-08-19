@@ -6,9 +6,10 @@ import { useWorldStore } from '~/lib/store';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
+  onTerrainMeshReady?: (mesh: THREE.Mesh) => void;
 }
 
-export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
+export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSystemProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const {
     terrainVertices,
@@ -77,14 +78,17 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
       const dirY = originalY / length;
       const dirZ = originalZ / length;
 
-      // Apply height deformation
-      const heightOffset = dirX * vertex.height + dirY * vertex.height + dirZ * vertex.height;
+      // Apply height deformation along the normal direction
+      // For proper sphere deformation, we apply height along the surface normal
+      const heightOffset = vertex.height;
 
       // Apply water level (water creates depressions)
-      const waterOffset = -vertex.waterLevel * 0.3; // Water creates valleys
+      const waterOffset = -vertex.waterLevel * 0.4; // Slightly deeper water depressions
 
-      // Calculate new position
-      const newLength = 6 + heightOffset + waterOffset;
+      // Calculate new position with improved scaling
+      // Use a more dramatic scaling for better mountain/valley visibility
+      const totalOffset = heightOffset + waterOffset;
+      const newLength = 6 + totalOffset * 0.8; // Scale factor for dramatic terrain
       const newX = dirX * newLength;
       const newY = dirY * newLength;
       const newZ = dirZ * newLength;
@@ -103,6 +107,13 @@ export function TerrainSystem({ onTerrainUpdate }: TerrainSystemProps) {
   useEffect(() => {
     applyTerrainDeformation();
   }, [applyTerrainDeformation]);
+
+  // Notify parent when terrain mesh is ready for terraforming
+  useEffect(() => {
+    if (meshRef.current && onTerrainMeshReady) {
+      onTerrainMeshReady(meshRef.current);
+    }
+  }, [onTerrainMeshReady]);
 
   // Create material with water visualization
   const material = useMemo(() => {

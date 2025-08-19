@@ -144,13 +144,16 @@ export function TerraformToolbar() {
               <input
                 type="range"
                 min="0.01"
-                max="0.5"
+                max="1.0"
                 step="0.01"
                 value={brushStrength}
                 onChange={(e) => setBrushStrength(parseFloat(e.target.value))}
                 className="w-full"
               />
               <div className="text-xs text-white/40">{brushStrength.toFixed(2)}</div>
+              <div className="text-xs text-white/30 mt-1">
+                {brushStrength < 0.3 ? "Gentle slopes" : brushStrength < 0.7 ? "Moderate terrain" : "Dramatic peaks/valleys"}
+              </div>
             </div>
           </div>
         )}
@@ -169,9 +172,16 @@ export function TerraformToolbar() {
         {/* Instructions */}
         {isTerraforming && (
           <div className="mt-3 rounded-lg bg-blue-500/20 p-2 text-xs text-blue-300">
-            <div className="font-medium">How to use:</div>
-            <div>Click and drag to apply the selected tool</div>
-            <div>Adjust brush size and strength above</div>
+            <div className="font-medium">How to create terrain:</div>
+            <div className="mt-1">
+              <strong>Hills:</strong> Low strength + large brush
+            </div>
+            <div>
+              <strong>Mountains:</strong> High strength + small brush
+            </div>
+            <div>
+              <strong>Valleys:</strong> Lower tool with moderate settings
+            </div>
             <div className="mt-1 text-blue-200">Globe rotation is disabled while terraforming</div>
           </div>
         )}
