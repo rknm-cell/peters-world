@@ -182,6 +182,12 @@ export function TerraformToolbar() {
             <div>
               <strong>Valleys:</strong> Lower tool with moderate settings
             </div>
+            <div>
+              <strong>Water:</strong> Paint lakes, rivers (Shift+drag to remove)
+            </div>
+            <div>
+              <strong>Smooth:</strong> Blend and soften terrain transitions
+            </div>
             <div className="mt-1 text-blue-200">Globe rotation is disabled while terraforming</div>
           </div>
         )}

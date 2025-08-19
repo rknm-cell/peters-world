@@ -30,11 +30,10 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
         roughness: 0.4, // Slightly rough surface for realistic shadow reception
         // metalness: 0.1, // Low metalness for natural appearance
         flatShading: false, // Smooth shading for the sphere
-        wireframe: showWireframe,
         transparent: true,
         opacity: 0.3, // Make it semi-transparent so TerrainSystem shows through
       });
-    }, [showWireframe]);
+    }, []);
 
 
     return (
@@ -59,6 +58,21 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
             }
           }}
         />
+        
+        {/* Separate wireframe overlay that doesn't interfere with water */}
+        {showWireframe && (
+          <mesh
+            geometry={geometry}
+            material={new THREE.MeshBasicMaterial({
+              color: 0xffffff,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.3,
+              depthTest: false, // Don't interfere with depth testing
+            })}
+            position={[0, 0, 0]}
+          />
+        )}
       </group>
     );
   },
