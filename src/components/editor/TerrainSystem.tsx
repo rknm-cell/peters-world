@@ -25,11 +25,11 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
   // Initialize terrain vertices from geometry
   useEffect(() => {
-    if (baseGeometry && terrainVertices.length === 0) {
+    if (baseGeometry && Array.isArray(terrainVertices) && terrainVertices.length === 0) {
       const positions = baseGeometry.attributes.position;
       if (!positions) return;
       
-      const vertices: Array<{
+      const newVertices: Array<{
         x: number;
         y: number;
         z: number;
@@ -42,7 +42,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         const y = positions.getY(i);
         const z = positions.getZ(i);
 
-        vertices.push({
+        newVertices.push({
           x,
           y,
           z,
@@ -51,13 +51,13 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         });
       }
 
-      setTerrainVertices(vertices);
+      setTerrainVertices(newVertices);
     }
-  }, [baseGeometry, setTerrainVertices, terrainVertices.length]);
+  }, [baseGeometry, setTerrainVertices, terrainVertices]);
 
   // Apply terrain deformation to geometry
   const applyTerrainDeformation = useCallback(() => {
-    if (!meshRef.current || terrainVertices.length === 0) return;
+    if (!meshRef.current || !Array.isArray(terrainVertices) || terrainVertices.length === 0) return;
 
     const geometry = meshRef.current.geometry;
     const positions = geometry.attributes.position;
@@ -124,11 +124,21 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       roughness: 0.8,
       metalness: 0.1,
       flatShading: false,
+      depthWrite: true,  // Ensure terrain writes to depth buffer
+      depthTest: true,   // Ensure terrain tests depth
     });
   }, []);
 
   // Water creates depressions in the terrain - no separate water mesh needed
   // The water effect is achieved by the waterOffset in applyTerrainDeformation
+
+  // Debug: Check if we have water
+  const hasWater = terrainVertices.some(v => v.waterLevel > 0.01);
+  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.01).length;
+  
+  if (hasWater) {
+    console.log(`TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map(v => v.waterLevel))}`);
+  }
 
   return (
     <>
@@ -139,10 +149,13 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         material={material}
         receiveShadow
         castShadow
+        renderOrder={0} // Ensure terrain renders first
       />
 
       {/* Animated water surface using shaders */}
-      <WaterSurface terrainVertices={terrainVertices} radius={6} />
+      {hasWater && (
+        <WaterSurface terrainVertices={terrainVertices} radius={6} />
+      )}
     </>
   );
 }
