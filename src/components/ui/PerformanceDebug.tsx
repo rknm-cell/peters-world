@@ -1,5 +1,6 @@
 "use client";
 
+import * as THREE from "three";
 import { useWorldStore } from "../../lib/store";
 
 export function PerformanceDebug() {
@@ -10,7 +11,7 @@ export function PerformanceDebug() {
   const stats = terrainOctree.getStats();
   const totalVertices = terrainVertices.length;
   const affectedVertices = terrainOctree.getVerticesInRadius(
-    { x: 0, y: 0, z: 0 } as any, 
+    new THREE.Vector3(0, 0, 0), 
     1.0
   ).length;
   

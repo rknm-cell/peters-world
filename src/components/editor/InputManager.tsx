@@ -120,7 +120,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             const nearbyIndices = terrainOctree.getVerticesInRadius(vertexPos, brushSize * 0.5);
             const nearbyVertices = nearbyIndices
               .map(idx => terrainVertices[idx])
-              .filter(v => v && v !== vertex);
+              .filter((v): v is NonNullable<typeof v> => v !== undefined && v !== vertex);
             
             if (nearbyVertices.length > 0) {
               falloff = Math.max(0, 1 - normalizedDistance);

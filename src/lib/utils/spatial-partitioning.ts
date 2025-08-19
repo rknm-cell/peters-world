@@ -9,11 +9,11 @@ export interface TerrainVertex {
 }
 
 export class TerrainOctree {
-  private nodes: Map<string, number[]> = new Map();
-  private cellSize: number = 0.5; // Smaller cells for more precise partitioning
+  private nodes = new Map<string, number[]>();
+  private cellSize = 0.5; // Smaller cells for more precise partitioning
   private bounds: THREE.Box3;
   
-  constructor(radius: number = 6) {
+  constructor(radius = 6) {
     // Create bounding box for the sphere
     this.bounds = new THREE.Box3(
       new THREE.Vector3(-radius, -radius, -radius),
