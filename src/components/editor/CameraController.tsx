@@ -1,8 +1,15 @@
 "use client";
 
 import { OrbitControls } from "@react-three/drei";
+import { useWorldStore } from "~/lib/store";
 
 export function CameraController() {
+  const { isPlacing, terraformMode } = useWorldStore();
+  
+  // Only disable camera rotation when placing objects or terraforming
+  // This allows users to freely rotate the camera to view the globe from different angles
+  const shouldDisableRotation = isPlacing || terraformMode !== "none";
+  
   // Configure controls for globe viewing
   const controlsProps = {
     // Target the center of the globe
@@ -23,7 +30,7 @@ export function CameraController() {
     // Disable panning to keep globe centered
     enablePan: false,
     enableZoom: true,
-    enableRotate: true,
+    enableRotate: !shouldDisableRotation, // Disable rotation only when placing/terraforming
 
     // Smooth zoom and rotation
     zoomSpeed: 0.8,

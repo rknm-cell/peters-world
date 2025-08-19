@@ -11,7 +11,7 @@ interface InputManagerProps {
   rotationGroupRef: React.RefObject<THREE.Group | null>;
 }
 
-export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRef }: InputManagerProps) {
+export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRef: _rotationGroupRef }: InputManagerProps) {
   const { gl, camera } = useThree();
   const {
     isPlacing,
@@ -28,17 +28,16 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const previousMouseRef = useRef(new THREE.Vector2());
   const raycasterRef = useRef(new THREE.Raycaster());
   const isDraggingRef = useRef(false);
-  const rotationSpeedRef = useRef(0.005);
   const isShiftPressedRef = useRef(false);
 
   // Determine current interaction mode
   const getInteractionMode = useCallback(() => {
     if (isPlacing) return 'placing';
     if (isTerraforming && terraformMode !== 'none') return 'terraforming';
-    return 'rotating';
+    return 'idle';
   }, [isPlacing, isTerraforming, terraformMode]);
 
-  // Terraforming action handler working with TerrainSystem (simplified without spatial partitioning)
+  // Terraforming action handler
   const handleTerraformAction = useCallback((_event: PointerEvent) => {
     if (!terrainMesh || !terrainVertices.length) return;
 
@@ -51,31 +50,26 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     const intersectionPoint = intersects[0]?.point;
     if (!intersectionPoint) return;
     
-    // Work with the original sphere geometry positions to find affected vertices
+    // Apply terraforming by updating the store
     const geometry = terrainMesh.geometry;
     const positionAttribute = geometry.attributes.position;
     if (!positionAttribute) return;
     
-    // Apply terraforming by updating the store - TerrainSystem will handle the visual updates
-    // Optimize by only checking vertices that could possibly be affected
-    const maxCheckDistance = brushSize * 1.5; // Slightly larger than brush size
+    const maxCheckDistance = brushSize * 1.5;
     let processedVertices = 0;
     
     for (let i = 0; i < positionAttribute.count && i < terrainVertices.length; i++) {
       const vertex = terrainVertices[i];
       if (!vertex) continue;
       
-      // Quick distance check using original vertex positions (faster)
       const quickDistance = Math.sqrt(
         Math.pow(intersectionPoint.x - vertex.x, 2) +
         Math.pow(intersectionPoint.y - vertex.y, 2) +
         Math.pow(intersectionPoint.z - vertex.z, 2)
       );
       
-      // Skip vertices that are definitely too far away
       if (quickDistance > maxCheckDistance) continue;
       
-      // Get the current vertex position (already deformed by TerrainSystem)
       const vertexPos = new THREE.Vector3(
         positionAttribute.getX(i),
         positionAttribute.getY(i),
@@ -92,9 +86,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         
         switch (terraformMode) {
           case "raise":
-            // Cubic falloff for smoother terrain
             falloff = Math.pow(1 - normalizedDistance, 3);
-            strength = brushStrength * falloff * 2.0; // Increased strength for visibility
+            strength = brushStrength * falloff * 2.0;
             updateTerrainVertex(i, {
               height: Math.min(vertex.height + strength, 6.0)
             });
@@ -109,18 +102,14 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             break;
             
           case "water":
-            // Linear falloff for smooth water edges
             falloff = Math.max(0, 1 - normalizedDistance);
-            strength = brushStrength * falloff * 3.0; // Increased strength for more visible water
+            strength = brushStrength * falloff * 3.0;
             
-            // Normal click adds water, Shift+click removes water
             if (isShiftPressedRef.current) {
-              // Remove water
               updateTerrainVertex(i, {
                 waterLevel: Math.max(vertex.waterLevel - strength, 0.0)
               });
             } else {
-              // Add water - make it much more visible
               updateTerrainVertex(i, {
                 waterLevel: Math.min(vertex.waterLevel + strength, 1.0)
               });
@@ -128,7 +117,6 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             break;
             
           case "smooth":
-            // Find nearby vertices for smoothing
             const nearbyVertices = terrainVertices.filter((v, idx) => {
               if (idx === i) return false;
               const vPos = new THREE.Vector3(v.x, v.y, v.z);
@@ -151,29 +139,10 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
       }
     }
     
-    // Debug performance
     if (terraformMode === 'water' && processedVertices > 0) {
       console.log(`Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`);
     }
   }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
-
-  // Globe rotation handler
-  const handleGlobeRotation = useCallback(() => {
-    if (!rotationGroupRef.current) return;
-    
-    const deltaX = mouseRef.current.x - previousMouseRef.current.x;
-    const deltaY = mouseRef.current.y - previousMouseRef.current.y;
-
-    // Apply rotation to the entire group (globe + objects)
-    rotationGroupRef.current.rotation.y += deltaX * rotationSpeedRef.current * 50;
-    rotationGroupRef.current.rotation.x += deltaY * rotationSpeedRef.current * 50;
-
-    // Clamp X rotation to prevent flipping
-    rotationGroupRef.current.rotation.x = Math.max(
-      -Math.PI / 2,
-      Math.min(Math.PI / 2, rotationGroupRef.current.rotation.x),
-    );
-  }, [rotationGroupRef]);
 
   // Unified pointer down handler
   const handlePointerDown = useCallback((event: PointerEvent) => {
@@ -203,8 +172,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         handleTerraformAction(event);
         break;
         
-      case 'rotating':
-        canvas.style.cursor = "grabbing";
+      case 'idle':
+        // No action needed
         break;
     }
   }, [getInteractionMode, gl.domElement, handleTerraformAction]);
@@ -234,15 +203,14 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         handleTerraformAction(event);
         break;
         
-      case 'rotating':
-        handleGlobeRotation();
+      case 'idle':
+        // No action needed
         break;
     }
     
     previousMouseRef.current.copy(mouseRef.current);
-  }, [getInteractionMode, gl.domElement, handleTerraformAction, handleGlobeRotation]);
+  }, [getInteractionMode, gl.domElement, handleTerraformAction]);
 
-  // Unified pointer up handler
   const handlePointerUp = useCallback(() => {
     const mode = getInteractionMode();
     const canvas = gl.domElement;
@@ -257,8 +225,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         canvas.style.cursor = "crosshair";
         break;
         
-      case 'rotating':
-        canvas.style.cursor = "grab";
+      case 'idle':
+        canvas.style.cursor = "default";
         break;
     }
   }, [getInteractionMode, gl.domElement]);
@@ -278,8 +246,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         canvas.style.cursor = "crosshair";
         canvas.style.touchAction = "none";
         break;
-      case 'rotating':
-        canvas.style.cursor = "grab";
+      case 'idle':
+        canvas.style.cursor = "default";
         canvas.style.touchAction = "auto";
         break;
     }
