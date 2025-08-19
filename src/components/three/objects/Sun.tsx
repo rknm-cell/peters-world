@@ -64,7 +64,7 @@ export function Sun({
   useFrame((state) => {
     if (groupRef.current) {
       // Rotate the sun around the globe at a constant speed
-      const rotationSpeed = 0.15; // Adjust this value to control rotation speed (0.1 = slow, 0.3 = fast)
+      const rotationSpeed = 0.075; // Adjust this value to control rotation speed (0.1 = slow, 0.3 = fast)
       const time = state.clock.elapsedTime;
       
       // Calculate the sun's position in a circular orbit
