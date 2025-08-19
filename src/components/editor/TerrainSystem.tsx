@@ -86,13 +86,12 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       // For proper sphere deformation, we apply height along the surface normal
       const heightOffset = vertex.height;
 
-      // Apply water level (water creates depressions)
-      const waterOffset = -vertex.waterLevel * 0.4; // Slightly deeper water depressions
+      // Water no longer affects terrain deformation - it's painted on top
+      // const waterOffset = -vertex.waterLevel * 0.4; // Removed water depressions
 
       // Calculate new position with improved scaling
       // Use a more dramatic scaling for better mountain/valley visibility
-      const totalOffset = heightOffset + waterOffset;
-      const newLength = 6 + totalOffset * 0.8; // Scale factor for dramatic terrain
+      const newLength = 6 + heightOffset * 0.8; // Scale factor for dramatic terrain
       const newX = dirX * newLength;
       const newY = dirY * newLength;
       const newZ = dirZ * newLength;

@@ -27,8 +27,8 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
     const material = useMemo(() => {
       return new THREE.MeshStandardMaterial({
         color: 0x4a7c59, // Earthy green
-        roughness: 0.4, // Slightly rough surface for realistic shadow reception
-        // metalness: 0.1, // Low metalness for natural appearance
+        roughness: 0.2, // Slightly rough surface for realistic shadow reception
+        metalness: 0.1, // Low metalness for natural appearance
         flatShading: false, // Smooth shading for the sphere
         transparent: true,
         opacity: 0.3, // Make it semi-transparent so TerrainSystem shows through
