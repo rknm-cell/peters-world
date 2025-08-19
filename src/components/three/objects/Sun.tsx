@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useMemo, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
 import { LIGHTING_PRESETS } from '~/lib/constants';
@@ -50,13 +51,6 @@ export function Sun({
   // Update sun position and lighting based on time of day
   useEffect(() => {
     const preset = LIGHTING_PRESETS[timeOfDay];
-    
-    if (groupRef.current) {
-      // Position the sun far away for proper distant lighting
-      const [x, y, z] = preset.directionalPosition;
-      // Scale up the position to move sun much further away
-      groupRef.current.position.set(x * 3, y * 3, z * 3);
-    }
 
     if (directionalLightRef.current) {
       // Update the sun's directional light
@@ -66,8 +60,25 @@ export function Sun({
     }
   }, [timeOfDay]);
 
-  // Remove animation - sun should be static
-  // useFrame removed - no more bouncing or rotation
+  // Add automatic rotation around the globe
+  useFrame((state) => {
+    if (groupRef.current) {
+      // Rotate the sun around the globe at a constant speed
+      const rotationSpeed = 0.15; // Adjust this value to control rotation speed (0.1 = slow, 0.3 = fast)
+      const time = state.clock.elapsedTime;
+      
+      // Calculate the sun's position in a circular orbit
+      const orbitRadius = 20; // Distance from the center of the globe
+      const x = Math.cos(time * rotationSpeed) * orbitRadius;
+      const z = Math.sin(time * rotationSpeed) * orbitRadius;
+      const y = 10; // Keep the sun elevated
+      
+      groupRef.current.position.set(x, y, z);
+      
+      // Make the sun always face the center of the globe
+      groupRef.current.lookAt(0, 0, 0);
+    }
+  });
 
   return (
     <group ref={groupRef}>
