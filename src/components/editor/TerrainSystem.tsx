@@ -30,6 +30,16 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       const positions = baseGeometry.attributes.position;
       if (!positions) return;
       
+      // Initialize vertex colors for natural green terrain
+      const colorArray = new Float32Array(positions.count * 3);
+      const naturalGreen = new THREE.Color(0x4a7c59); // Base green
+      for (let i = 0; i < positions.count; i++) {
+        colorArray[i * 3] = naturalGreen.r;
+        colorArray[i * 3 + 1] = naturalGreen.g;
+        colorArray[i * 3 + 2] = naturalGreen.b;
+      }
+      baseGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+      
       const newVertices: Array<{
         x: number;
         y: number;
