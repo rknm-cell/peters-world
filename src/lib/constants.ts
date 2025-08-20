@@ -70,6 +70,55 @@ export const WORLD_LIMITS = {
   placementHeight: 0.5, // Legacy - now handled by surface attachment
 } as const;
 
+// Tree lifecycle stages and models
+export const TREE_LIFECYCLE = {
+  // Youth stages using bush models
+  youth: {
+    small: "bush-small",
+    medium: "bush-medium", 
+    mediumHigh: "bush-medium-high",
+    big: "bush-big"
+  },
+  // Adult stages - existing tree models
+  adult: [
+    "tree", "tree-baobab", "tree-beech", "tree-birch", "tree-conifer",
+    "tree-elipse", "tree-fir", "tree-forest", "tree-lime", "tree-maple", 
+    "tree-oak", "tree-round", "tree-spruce", "tree-tall"
+  ],
+  // Death stages
+  death: {
+    standing: ["dead-tree-1", "dead-tree-2", "dead-tree-3", "dead-tree-4"],
+    broken: "broke-tree",
+    logs: ["log-a", "log-b"],
+    smallLogs: ["log-small-a", "log-small-b"]
+  }
+} as const;
+
+// Tree lifecycle configuration
+export const TREE_LIFECYCLE_CONFIG = {
+  // Time in seconds for each stage
+  stageDurations: {
+    youthSmall: 30,      // 30 seconds
+    youthMedium: 25,     // 25 seconds
+    youthMediumHigh: 20, // 20 seconds
+    youthBig: 15,        // 15 seconds
+    adult: 60,           // 1 minute - check for death every minute
+    deadStanding: 60,    // 1 minute
+    broken: 60,          // 1 minute
+    logs: Infinity,      // Logs stay forever (final stage)
+  },
+  // Probability of dying - 1% chance per minute for adult trees
+  deathProbability: {
+    youthSmall: 0.05,     // 5% chance of dying (youth stages keep original rates)
+    youthMedium: 0.03,    // 3% chance
+    youthMediumHigh: 0.02, // 2% chance
+    youthBig: 0.01,       // 1% chance
+    adult: 0.01,          // 1% chance per minute for adult trees
+  },
+  // Check interval in milliseconds (1 minute)
+  checkInterval: 60000, // 60 seconds = 1 minute
+} as const;
+
 // Object types available for placement
 export const OBJECT_TYPES = {
   trees: [

@@ -12,6 +12,7 @@ import { WorldObjects } from "./WorldObjects";
 import { InputManager } from "./InputManager";
 import { Sun } from '~/components/three/objects/Sun';
 import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
+import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -82,6 +83,9 @@ export function Scene() {
 
       {/* Debug surface normals - toggle with toolbar button */}
       {showDebugNormals && <SurfaceNormalDebug />}
+      
+      {/* Tree lifecycle manager - handles automatic tree aging */}
+      <TreeLifecycleManager />
     </>
   );
 }

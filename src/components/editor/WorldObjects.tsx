@@ -4,31 +4,38 @@ import { useWorldStore } from "~/lib/store";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
-import { OBJECT_TYPES } from "~/lib/constants";
+import { OBJECT_TYPES, TREE_LIFECYCLE } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 
-// Define proper types for object categories
+// Define proper types for object categories - now includes all lifecycle stages
 type TreeType = 
-  | "tree" 
-  | "tree-baobab"
-  | "tree-beech" 
-  | "tree-birch"
-  | "tree-conifer"
-  | "tree-elipse"
-  | "tree-fir"
-  | "tree-forest"
-  | "tree-lime"
-  | "tree-maple"
-  | "tree-oak"
-  | "tree-round"
-  | "tree-spruce"
-  | "tree-tall";
+  // Youth stages (bush models)
+  | "bush-small" | "bush-medium" | "bush-medium-high" | "bush-big"
+  // Adult trees
+  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer"
+  | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" 
+  | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall"
+  // Death stages
+  | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
+  | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
 type StructureType = "house" | "tower" | "bridge";
 type DecorationType = "rock" | "flower";
 
 // Type guard functions to check object types
 function isTreeType(type: string): type is TreeType {
-  return OBJECT_TYPES.trees.includes(type as TreeType);
+  // Check if it's a traditional tree, or any lifecycle stage model
+  return (
+    (OBJECT_TYPES.trees as readonly string[]).includes(type) ||
+    type === TREE_LIFECYCLE.youth.small ||
+    type === TREE_LIFECYCLE.youth.medium ||
+    type === TREE_LIFECYCLE.youth.mediumHigh ||
+    type === TREE_LIFECYCLE.youth.big ||
+    (TREE_LIFECYCLE.adult as readonly string[]).includes(type) ||
+    (TREE_LIFECYCLE.death.standing as readonly string[]).includes(type) ||
+    type === TREE_LIFECYCLE.death.broken ||
+    (TREE_LIFECYCLE.death.logs as readonly string[]).includes(type) ||
+    (TREE_LIFECYCLE.death.smallLogs as readonly string[]).includes(type)
+  );
 }
 
 function isStructureType(type: string): type is StructureType {
@@ -54,7 +61,14 @@ export function WorldObjects() {
 
     // Determine object category and render appropriate component
     if (isTreeType(obj.type)) {
-      return <Tree key={obj.id} type={obj.type} {...props} />;
+      return (
+        <Tree 
+          key={obj.id} 
+          type={obj.type} 
+          lifecycleStage={obj.treeLifecycle?.stage}
+          {...props} 
+        />
+      );
     }
 
     if (isStructureType(obj.type)) {
