@@ -5,23 +5,19 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
+import type { TreeLifecycleStage } from "~/lib/store";
 
-// Define the tree types based on available GLB files
+// Define the tree types based on available GLB files - includes all lifecycle stages
 type TreeType = 
-  | "tree" 
-  | "tree-baobab"
-  | "tree-beech" 
-  | "tree-birch"
-  | "tree-conifer"
-  | "tree-elipse"
-  | "tree-fir"
-  | "tree-forest"
-  | "tree-lime"
-  | "tree-maple"
-  | "tree-oak"
-  | "tree-round"
-  | "tree-spruce"
-  | "tree-tall";
+  // Youth stages (bush models)
+  | "bush-small" | "bush-medium" | "bush-medium-high" | "bush-big"
+  // Adult trees
+  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer"
+  | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" 
+  | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall"
+  // Death stages
+  | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
+  | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
 
 interface TreeProps {
   type: TreeType;
@@ -32,6 +28,7 @@ interface TreeProps {
   objectId: string;
   preview?: boolean;
   canPlace?: boolean;
+  lifecycleStage?: TreeLifecycleStage;
 }
 
 export function Tree({
@@ -43,6 +40,7 @@ export function Tree({
   objectId,
   preview = false,
   canPlace = true,
+  lifecycleStage,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -51,6 +49,21 @@ export function Tree({
   
   // Handle loading state
   const isLoading = !gltfResult.scene;
+  
+  // Get target height based on lifecycle stage
+  const getTargetHeight = (stage?: TreeLifecycleStage): number => {
+    switch (stage) {
+      case "youth-small": return 0.3;
+      case "youth-medium": return 0.6;
+      case "youth-medium-high": return 0.9;
+      case "youth-big": return 1.1;
+      case "adult": return 1.2;
+      case "dead-standing": return 1.0;
+      case "broken": return 0.6;
+      case "logs": return 0.3;
+      default: return 1.2;
+    }
+  };
   
   // Clone the scene to avoid sharing between instances
   const treeModel = useMemo(() => {
@@ -76,7 +89,7 @@ export function Tree({
       const size = new THREE.Vector3();
       box.getSize(size);
       
-      const targetHeight = 1.2; // Target height in units
+      const targetHeight = getTargetHeight(lifecycleStage);
       const currentHeight = Math.max(size.y, 0.001);
       const scaleFactor = targetHeight / currentHeight;
       
@@ -129,7 +142,7 @@ export function Tree({
       console.error(`Tree ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfResult, preview, canPlace, type, isLoading]);
+  }, [gltfResult, preview, canPlace, type, isLoading, lifecycleStage]);
 
   // Animation for selected state
   useFrame((state) => {
@@ -273,6 +286,25 @@ export function Tree({
         <mesh position={[0, -0.1, 0]}>
           <ringGeometry args={[0.8, 1.0, 16]} />
           <meshBasicMaterial color="#ffff00" transparent opacity={0.6} />
+        </mesh>
+      )}
+
+      {/* Lifecycle stage indicator - small colored dot */}
+      {lifecycleStage && !preview && (
+        <mesh position={[0.5, 0.1, 0]}>
+          <sphereGeometry args={[0.05, 8, 6]} />
+          <meshBasicMaterial 
+            color={
+              lifecycleStage.startsWith("youth") ? "#00ff00" :     // Green for youth
+              lifecycleStage === "adult" ? "#0066ff" :             // Blue for adult
+              lifecycleStage === "dead-standing" ? "#ff6600" :     // Orange for dead
+              lifecycleStage === "broken" ? "#ff3300" :            // Red for broken  
+              lifecycleStage === "logs" ? "#8B4513" :              // Brown for logs (permanent)
+              "#999999"                                            // Gray fallback
+            } 
+            transparent 
+            opacity={0.8}
+          />
         </mesh>
       )}
     </group>
