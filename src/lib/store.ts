@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import type { Vector3 } from "three";
+import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
 import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG } from "./constants";
+import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
 
 export type TreeLifecycleStage = 
   | "youth-small" | "youth-medium" | "youth-medium-high" | "youth-big"
@@ -46,6 +48,10 @@ interface WorldState {
   showDebugNormals: boolean;
   showWireframe: boolean;
   showForestDebug: boolean;
+  showLifecycleDebug: boolean;
+  
+  // Globe reference for spawning
+  globeRef: THREE.Mesh | null;
   
   // Terrain state
   terrainVertices: TerrainVertex[];
@@ -66,6 +72,7 @@ interface WorldState {
   setShowDebugNormals: (show: boolean) => void;
   setShowWireframe: (show: boolean) => void;
   setShowForestDebug: (show: boolean) => void;
+  setShowLifecycleDebug: (show: boolean) => void;
   exitPlacementMode: () => void;
   
   // Tree lifecycle actions
@@ -73,6 +80,7 @@ interface WorldState {
   updateTreeStage: (id: string, stage: TreeLifecycleStage) => void;
   tickTreeLifecycles: () => void;
   attemptTreeSpawning: () => void;
+  setGlobeRef: (globe: THREE.Mesh | null) => void;
   
   // Forest detection actions
   detectForests: () => void;
@@ -98,6 +106,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   showDebugNormals: false,
   showWireframe: false,
   showForestDebug: false,
+  showLifecycleDebug: false,
+  
+  // Globe reference
+  globeRef: null,
   
   // Terrain state
   terrainVertices: [],
@@ -166,6 +178,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
 
   setPlacing: (placing: boolean) => {
+    console.log(`📍 isPlacing changed: ${placing}`);
     set({ isPlacing: placing });
   },
 
@@ -197,8 +210,13 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     set({ showForestDebug: show });
   },
   
+  setShowLifecycleDebug: (show: boolean) => {
+    set({ showLifecycleDebug: show });
+  },
+  
   // Terrain actions
   setTerraformMode: (mode: TerraformMode) => {
+    console.log(`🔧 terraformMode changed: ${mode}`);
     set({ terraformMode: mode });
   },
   
@@ -542,79 +560,147 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     });
   },
 
-  // Tree spawning function
+  // Tree spawning function with proper surface placement
   attemptTreeSpawning: () => {
     set((state) => {
+      console.log("🌱 Tree spawning attempt started...");
+      console.log("🎮 Pre-spawn state:", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
+      
+      // Check if we have globe reference for surface placement
+      if (!state.globeRef) {
+        console.warn("❌ Tree spawning: No globe reference available");
+        return state;
+      }
+
       // Find all trees that can spawn (adult stage trees)
       const eligibleSpawners = state.objects.filter(obj => 
         obj.treeLifecycle && 
         (TREE_LIFECYCLE_CONFIG.spawning.eligibleSpawnerStages as readonly string[]).includes(obj.treeLifecycle.stage)
       );
 
+      console.log(`🌳 Found ${eligibleSpawners.length} eligible spawner trees (adult stage)`);
+      
       if (eligibleSpawners.length === 0) {
+        console.log("❌ No eligible spawner trees found");
         return state; // No eligible spawner trees
       }
 
-      const newTrees: PlacedObject[] = [];
+      console.log(`🎲 Spawn probability: ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability * 100}% per tree`);
 
-      eligibleSpawners.forEach(spawnerTree => {
+      const newTrees: PlacedObject[] = [];
+      const raycaster = new THREE.Raycaster();
+
+      eligibleSpawners.forEach((spawnerTree, index) => {
+        const randomRoll = Math.random();
+        console.log(`🌳 Tree ${index + 1}: Random roll = ${randomRoll.toFixed(3)}, needed < ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability}`);
+        
         // 4% chance to spawn a new tree
-        if (Math.random() < TREE_LIFECYCLE_CONFIG.spawning.spawnProbability) {
+        if (randomRoll < TREE_LIFECYCLE_CONFIG.spawning.spawnProbability) {
+          console.log(`✅ Tree ${index + 1} wins spawn roll! Attempting to spawn...`);
           // Generate random position around the spawner tree
           const angle = Math.random() * 2 * Math.PI;
           const distance = TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min + 
             Math.random() * (TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.max - TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min);
           
-          const newPosition: [number, number, number] = [
-            spawnerTree.position[0] + Math.cos(angle) * distance,
-            spawnerTree.position[1], // Keep same Y level
-            spawnerTree.position[2] + Math.sin(angle) * distance
-          ];
-
-          // Check if position is too close to existing trees (minimum 1.0 unit spacing)
-          const tooClose = state.objects.some(existingTree => {
-            if (!existingTree.treeLifecycle) return false;
-            const dx = existingTree.position[0] - newPosition[0];
-            const dy = existingTree.position[1] - newPosition[1];
-            const dz = existingTree.position[2] - newPosition[2];
-            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            return distance < 1.0; // Minimum spacing
-          });
-
-          if (!tooClose) {
-            // Create new tree starting at youth-small stage
-            const newTreeId = Math.random().toString(36).substring(7);
+          // Calculate horizontal position around parent
+          const horizontalX = spawnerTree.position[0] + Math.cos(angle) * distance;
+          const horizontalZ = spawnerTree.position[2] + Math.sin(angle) * distance;
+          
+          // Cast ray from above down to globe surface
+          const rayOrigin = new THREE.Vector3(horizontalX, 20, horizontalZ); // Start high above
+          const rayDirection = new THREE.Vector3(0, -1, 0); // Point straight down
+          
+          raycaster.set(rayOrigin, rayDirection);
+          
+          // Get intersection with globe surface
+          const detailedIntersection = state.globeRef ? getDetailedIntersection(raycaster, state.globeRef) : null;
+          
+          console.log(`🎯 Raycast from [${horizontalX.toFixed(2)}, 20, ${horizontalZ.toFixed(2)}] result:`, detailedIntersection ? "HIT" : "MISS");
+          
+          if (detailedIntersection) {
+            console.log(`📍 Surface hit at [${detailedIntersection.point.x.toFixed(2)}, ${detailedIntersection.point.y.toFixed(2)}, ${detailedIntersection.point.z.toFixed(2)}]`);
+            // Use placement system to get proper position and rotation
             const parentAdultType = spawnerTree.treeLifecycle?.adultTreeType ?? "tree";
+            const spawnTreeType = TREE_LIFECYCLE.youth.small;
             
-            const newTree: PlacedObject = {
-              id: newTreeId,
-              type: TREE_LIFECYCLE.youth.small, // Start as small bush
-              position: newPosition,
-              rotation: [0, Math.random() * Math.PI * 2, 0], // Random rotation
-              scale: [1, 1, 1],
-              treeLifecycle: {
-                stage: "youth-small",
-                stageStartTime: Date.now(),
-                adultTreeType: parentAdultType, // Will grow into same type as parent
-                isPartOfForest: false,
-              }
-            };
+            const placementInfo = calculatePlacement(
+              spawnTreeType,
+              detailedIntersection.point,
+              detailedIntersection.normal,
+              state.objects
+            );
+            
+            console.log(`🏗️ Placement validation result: ${placementInfo.canPlace ? "CAN PLACE" : "CANNOT PLACE"}`);
+            
+            if (placementInfo.canPlace) {
+              // Create new tree starting at youth-small stage
+              const newTreeId = Math.random().toString(36).substring(7);
+              
+              const newTree: PlacedObject = {
+                id: newTreeId,
+                type: spawnTreeType, // Start as small bush
+                position: [
+                  placementInfo.position.x,
+                  placementInfo.position.y,
+                  placementInfo.position.z
+                ],
+                rotation: [
+                  placementInfo.rotation.x,
+                  placementInfo.rotation.y + Math.random() * Math.PI * 2, // Add random Y rotation
+                  placementInfo.rotation.z
+                ],
+                scale: [1, 1, 1],
+                treeLifecycle: {
+                  stage: "youth-small",
+                  stageStartTime: Date.now(),
+                  adultTreeType: parentAdultType, // Will grow into same type as parent
+                  isPartOfForest: false,
+                }
+              };
 
-            newTrees.push(newTree);
+              newTrees.push(newTree);
+              
+              console.log(`🌿 NEW TREE SPAWNED! ID: ${newTreeId}, Type: ${spawnTreeType}`);
+              console.log(`📊 Parent: [${spawnerTree.position.join(', ')}], Spawn: [${newTree.position.join(', ')}]`);
+            } else {
+              console.log(`❌ Cannot place tree - collision or boundary issue`);
+            }
+          } else {
+            console.log(`❌ Raycast missed globe surface`);
           }
+        } else {
+          console.log(`❌ Tree ${index + 1} failed spawn roll`);
         }
       });
 
+      console.log(`📈 Spawning result: ${newTrees.length} new trees created`);
+      
       if (newTrees.length > 0) {
+        // Add spawned trees directly without affecting placement state
         const updatedObjects = [...state.objects, ...newTrees];
+        
+        console.log(`🌲 Total trees now: ${updatedObjects.filter(obj => obj.treeLifecycle).length}`);
+        console.log("🎮 Post-spawn state (returning):", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
         
         // Run forest detection after spawning (with delay to avoid race conditions)
         setTimeout(() => _get().detectForests(), 200);
         
-        return { objects: updatedObjects };
+        // Return ONLY the objects array, don't change any UI state - preserve existing state
+        return { 
+          objects: updatedObjects,
+          isPlacing: state.isPlacing,
+          terraformMode: state.terraformMode
+        };
       }
 
+      console.log("❌ No new trees spawned this cycle");
+      console.log("🎮 Post-spawn state (no spawn, returning):", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
       return state; // No new trees spawned
     });
+  },
+
+  // Set globe reference for surface placement
+  setGlobeRef: (globe: THREE.Mesh | null) => {
+    set({ globeRef: globe });
   },
 }));

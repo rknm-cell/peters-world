@@ -16,7 +16,9 @@ export function Toolbar() {
     showWireframe,
     setShowWireframe,
     showForestDebug,
-    setShowForestDebug
+    setShowForestDebug,
+    showLifecycleDebug,
+    setShowLifecycleDebug
   } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -158,6 +160,26 @@ export function Toolbar() {
                 fill="currentColor"
               >
                 <path d="M11,1L7,4V6L11,3L15,6V4L11,1M11,8L7,11V13L11,10L15,13V11L11,8M6,7V9L2,12V14L6,11V13L10,10V12L14,9V11L18,8V10L22,7V5L18,8L14,11V9L10,12V10L6,7M11,15L7,18V20L11,17L15,20V18L11,15M11,22L7,19V17L11,20L15,17V19L11,22Z" />
+              </svg>
+            </button>
+
+            {/* Tree lifecycle debug toggle */}
+            <button
+              onClick={() => setShowLifecycleDebug(!showLifecycleDebug)}
+              className={`rounded-lg p-3 transition-all duration-200 ${
+                showLifecycleDebug
+                  ? "bg-yellow-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title="Toggle Tree Lifecycle Debug View"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
               </svg>
             </button>
 

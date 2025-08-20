@@ -7,6 +7,7 @@ import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
 import type { TreeLifecycleStage } from "~/lib/store";
 import { useWorldStore } from "~/lib/store";
+import { TREE_LIFECYCLE_CONFIG } from "~/lib/constants";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
 type TreeType = 
@@ -45,6 +46,7 @@ export function Tree({
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
   const showForestDebug = useWorldStore((state) => state.showForestDebug);
+  const showLifecycleDebug = useWorldStore((state) => state.showLifecycleDebug);
   const objects = useWorldStore((state) => state.objects);
   
   // Get current tree object to check forest status
@@ -343,6 +345,116 @@ export function Tree({
           />
         </mesh>
       )}
+
+      {/* Comprehensive lifecycle debug visualization */}
+      {showLifecycleDebug && !preview && currentTree?.treeLifecycle && (() => {
+        const lifecycle = currentTree.treeLifecycle;
+        const now = Date.now();
+        const stageAge = (now - lifecycle.stageStartTime) / 1000; // seconds
+        
+        // Get stage duration and progress
+        const getStageDuration = (stage: string) => {
+          switch (stage) {
+            case "youth-small": return TREE_LIFECYCLE_CONFIG.stageDurations.youthSmall;
+            case "youth-medium": return TREE_LIFECYCLE_CONFIG.stageDurations.youthMedium;
+            case "youth-medium-high": return TREE_LIFECYCLE_CONFIG.stageDurations.youthMediumHigh;
+            case "youth-big": return TREE_LIFECYCLE_CONFIG.stageDurations.youthBig;
+            case "adult": return TREE_LIFECYCLE_CONFIG.stageDurations.adult;
+            case "dead-standing": return TREE_LIFECYCLE_CONFIG.stageDurations.deadStanding;
+            case "broken": return TREE_LIFECYCLE_CONFIG.stageDurations.broken;
+            case "logs": return Infinity;
+            default: return 60;
+          }
+        };
+        
+        const stageDuration = getStageDuration(lifecycle.stage);
+        const progress = stageDuration === Infinity ? 1 : Math.min(stageAge / stageDuration, 1);
+        const timeRemaining = stageDuration === Infinity ? 0 : Math.max(stageDuration - stageAge, 0);
+        
+        return (
+          <>
+            {/* Stage name label */}
+            <mesh position={[0, 3.0, 0]}>
+              <planeGeometry args={[2.5, 0.4]} />
+              <meshBasicMaterial 
+                color="#000000" 
+                transparent 
+                opacity={0.8}
+              />
+            </mesh>
+            
+            {/* Progress bar background */}
+            <mesh position={[0, 2.5, 0]}>
+              <planeGeometry args={[2.0, 0.2]} />
+              <meshBasicMaterial 
+                color="#333333" 
+                transparent 
+                opacity={0.9}
+              />
+            </mesh>
+            
+            {/* Progress bar fill */}
+            <mesh position={[-1.0 + progress, 2.5, 0.01]}>
+              <planeGeometry args={[2.0 * progress, 0.18]} />
+              <meshBasicMaterial 
+                color={
+                  lifecycle.stage.startsWith("youth") ? "#00ff00" :
+                  lifecycle.stage === "adult" ? "#0066ff" :
+                  lifecycle.stage === "dead-standing" ? "#ff6600" :
+                  lifecycle.stage === "broken" ? "#ff3300" :
+                  "#8B4513"
+                }
+                transparent 
+                opacity={0.8}
+              />
+            </mesh>
+            
+            {/* Age display */}
+            <mesh position={[0, 2.0, 0]}>
+              <planeGeometry args={[1.8, 0.3]} />
+              <meshBasicMaterial 
+                color="#444444" 
+                transparent 
+                opacity={0.8}
+              />
+            </mesh>
+            
+            {/* Spawning indicator for adult trees */}
+            {lifecycle.stage === "adult" && (
+              <mesh position={[0, 1.5, 0]}>
+                <sphereGeometry args={[0.15, 8, 6]} />
+                <meshBasicMaterial 
+                  color="#ffff00"
+                  transparent 
+                  opacity={0.6 + Math.sin(now * 0.005) * 0.3} // Pulsing effect
+                />
+              </mesh>
+            )}
+            
+            {/* Next stage indicator */}
+            {stageDuration !== Infinity && (
+              <mesh position={[0, 1.0, 0]}>
+                <planeGeometry args={[1.5, 0.25]} />
+                <meshBasicMaterial 
+                  color={timeRemaining < 10 ? "#ff0000" : "#00aa00"}
+                  transparent 
+                  opacity={0.7}
+                />
+              </mesh>
+            )}
+            
+            {/* Connection line to ground */}
+            <mesh position={[0, 1.25, 0]} rotation={[0, 0, 0]}>
+              <cylinderGeometry args={[0.01, 0.01, 2.5, 4]} />
+              <meshBasicMaterial 
+                color="#ffffff" 
+                transparent 
+                opacity={0.3}
+              />
+            </mesh>
+          </>
+        );
+      })()}
 
       {/* Simplified forest debug visualization - only show basic status indicator */}
       {showForestDebug && !preview && currentTree?.treeLifecycle && (
