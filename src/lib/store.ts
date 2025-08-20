@@ -132,9 +132,14 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     // Initialize tree lifecycle if it's a tree
     if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type) || type === "tree") {
       const adultTreeType = type === "tree" ? TREE_LIFECYCLE.adult[Math.floor(Math.random() * TREE_LIFECYCLE.adult.length)] : type;
+      // Stagger initial start times - place trees at random points within their adult stage
+      const baseTime = Date.now();
+      const adultStageDurationMs = TREE_LIFECYCLE_CONFIG.stageDurations.adult * 1000;
+      const randomOffset = Math.random() * adultStageDurationMs; // Random progress within adult stage
+      
       newObject.treeLifecycle = {
         stage: "adult",
-        stageStartTime: Date.now(),
+        stageStartTime: baseTime - randomOffset, // Subtract to place at different points in stage
         adultTreeType,
         isPartOfForest: false, // Initially not part of a forest
       };
@@ -349,7 +354,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 treeLifecycle: {
                   ...obj.treeLifecycle!,
                   stage: newStage,
-                  stageStartTime: now,
+                  stageStartTime: now, // No offset - stages advance consistently
                   deathTreeType,
                 }
               }
@@ -510,7 +515,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
             treeLifecycle: {
               ...obj.treeLifecycle,
               stage: newStage,
-              stageStartTime: now,
+              stageStartTime: now, // No offset - stages advance consistently once started
               deathTreeType,
             }
           };
@@ -788,7 +793,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 scale: [1, 1, 1],
                 treeLifecycle: {
                   stage: "youth-small",
-                  stageStartTime: Date.now(),
+                  stageStartTime: Date.now() - Math.random() * TREE_LIFECYCLE_CONFIG.stageDurations.youthSmall * 1000, // Random point within youth-small stage
                   adultTreeType: parentAdultType, // Will grow into same type as parent
                   isPartOfForest: false,
                 }
