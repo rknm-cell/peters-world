@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, forwardRef } from "react";
+import { useRef, useMemo, forwardRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
 import { TerrainSystem } from "./TerrainSystem";
@@ -14,7 +14,27 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
   ({ onRotationChange: _onRotationChange, onTerrainMeshReady }, ref) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
-    const { showWireframe } = useWorldStore();
+    const { showWireframe, setGlobeRef } = useWorldStore();
+    
+    // Callback ref to set globe reference when mesh is mounted
+    const handleMeshRef = useCallback((mesh: THREE.Mesh | null) => {
+      // Set both the forwarded ref and internal ref
+      if (typeof ref === 'function') {
+        ref(mesh);
+      } else if (ref) {
+        ref.current = mesh;
+      }
+      meshRef.current = mesh;
+      
+      // Set globe reference for tree spawning
+      if (mesh) {
+        console.log("🌍 Globe mesh mounted - setting reference for tree spawning");
+        setGlobeRef(mesh);
+      } else {
+        console.log("🌍 Globe mesh unmounted - clearing reference");
+        setGlobeRef(null);
+      }
+    }, [ref, setGlobeRef]);
 
     // Create a simple sphere for reference (this will be replaced by TerrainSystem)
     const geometry = useMemo(() => {
@@ -40,7 +60,7 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
       <group ref={groupRef}>
         {/* Reference sphere (semi-transparent) */}
         <mesh
-          ref={ref ?? meshRef}
+          ref={handleMeshRef}
           geometry={geometry}
           material={material}
           receiveShadow
