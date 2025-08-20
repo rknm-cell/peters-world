@@ -65,8 +65,8 @@ export function Tree({
       case "youth-big": return 1.1;
       case "adult": return 1.2;
       case "dead-standing": return 1.0;
-      case "broken": return 0.6;
-      case "logs": return 0.3;
+      case "broken": return 0.2; // Much smaller - broken trees should be small stumps
+      case "logs": return 0.15; // Logs should be very small
       default: return 1.2;
     }
   };
@@ -97,13 +97,43 @@ export function Tree({
       
       const targetHeight = getTargetHeight(lifecycleStage);
       const currentHeight = Math.max(size.y, 0.001);
-      const scaleFactor = targetHeight / currentHeight;
+      let scaleFactor = targetHeight / currentHeight;
+      
+      // DIRECT FIX: Force specific scaling for broken trees
+      if (type === "dead_tree/tree-dead-broken") {
+        // Apply an extremely small fixed scale for broken trees
+        scaleFactor = 0.05; // Very tiny scale to counteract huge model
+        console.log(`BROKEN TREE - Forcing tiny scale:`, {
+          type,
+          originalSize: size,
+          originalHeight: currentHeight,
+          originalWidth: size.x,
+          originalDepth: size.z,
+          forcedScaleFactor: scaleFactor,
+          finalHeight: currentHeight * scaleFactor
+        });
+      } else if (lifecycleStage === "logs") {
+        // Similar treatment for logs
+        scaleFactor = 0.2;
+      } else {
+        // Normal scaling logic for other trees
+        // Safety check: prevent extreme scaling
+        scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
+      }
       
       // Apply scaling
       clonedScene.scale.setScalar(scaleFactor);
       
       // Reset position to origin - let PlacementSystem handle positioning
       clonedScene.position.set(0, 0, 0);
+
+      // Enable shadows for all meshes in the tree model
+      clonedScene.traverse((child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
       // If this is a preview, modify the materials to be transparent
       if (preview) {
@@ -169,9 +199,9 @@ export function Tree({
         scale={scale}
         userData={{ isPlacedObject: !preview, objectId }}
       >
-        <mesh position={[0, 0, 0]}>
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <sphereGeometry args={[0.2, 8, 6]} />
-          <meshBasicMaterial 
+          <meshStandardMaterial 
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#ff0000"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}

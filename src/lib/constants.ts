@@ -74,10 +74,10 @@ export const WORLD_LIMITS = {
 export const TREE_LIFECYCLE = {
   // Youth stages using bush models
   youth: {
-    small: "bush-small",
-    medium: "bush-medium", 
-    mediumHigh: "bush-medium-high",
-    big: "bush-big"
+    small: "bush/bush-small",
+    medium: "bush/bush-medium", 
+    mediumHigh: "bush/bush-medium-high",
+    big: "bush/bush-big"
   },
   // Adult stages - existing tree models
   adult: [
@@ -87,10 +87,10 @@ export const TREE_LIFECYCLE = {
   ],
   // Death stages
   death: {
-    standing: ["dead-tree-1", "dead-tree-2", "dead-tree-3", "dead-tree-4"],
-    broken: "broke-tree",
-    logs: ["log-a", "log-b"],
-    smallLogs: ["log-small-a", "log-small-b"]
+    standing: ["dead_tree/tree-dead-1", "dead_tree/tree-dead-2", "dead_tree/tree-dead-3", "dead_tree/tree-dead-4"],
+    broken: "dead_tree/tree-dead-broken",
+    logs: ["dead_tree/tree-dead-log-a", "dead_tree/tree-dead-log-b"],
+    smallLogs: ["dead_tree/tree-dead-log-small-a", "dead_tree/tree-dead-log-small-b"]
   }
 } as const;
 
@@ -117,6 +117,16 @@ export const TREE_LIFECYCLE_CONFIG = {
   },
   // Check interval in milliseconds (1 minute)
   checkInterval: 60000, // 60 seconds = 1 minute
+  // Tree spawning configuration
+  spawning: {
+    spawnProbability: 0.04, // 4% chance per check cycle
+    spawnRadius: {
+      min: 1.5, // Minimum distance from parent tree
+      max: 3.0, // Maximum distance from parent tree
+    },
+    maxTreesPerSpawnAttempt: 1, // Only spawn 1 tree per attempt
+    eligibleSpawnerStages: ["adult"] as const, // Only adult trees can spawn new trees
+  },
 } as const;
 
 // Forest detection configuration
