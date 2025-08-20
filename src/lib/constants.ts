@@ -119,6 +119,16 @@ export const TREE_LIFECYCLE_CONFIG = {
   checkInterval: 60000, // 60 seconds = 1 minute
 } as const;
 
+// Forest detection configuration
+export const FOREST_CONFIG = {
+  // Minimum distance between trees to be considered part of same forest
+  proximityThreshold: 2.5, // units distance
+  // Minimum number of trees to form a forest
+  minTreesForForest: 3,
+  // Only adult and living trees can form forests (not dead/broken/logs)
+  forestEligibleStages: ["adult"] as const,
+} as const;
+
 // Object types available for placement
 export const OBJECT_TYPES = {
   trees: [
