@@ -66,6 +66,15 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     const positions = geometry.attributes.position;
     if (!positions) return;
 
+    // Initialize or get vertex colors attribute
+    let colors = geometry.attributes.color;
+    if (!colors) {
+      // Create color attribute if it doesn't exist
+      const colorArray = new Float32Array(positions.count * 3);
+      colors = new THREE.BufferAttribute(colorArray, 3);
+      geometry.setAttribute('color', colors);
+    }
+
     // Apply height and water modifications to each vertex
     for (let i = 0; i < positions.count; i++) {
       const vertex = terrainVertices[i];
@@ -97,9 +106,40 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       const newZ = dirZ * newLength;
 
       positions.setXYZ(i, newX, newY, newZ);
+
+      // Color the terrain based on height deformation
+      // Green for natural terrain, brown for raised/disturbed earth
+      const naturalGreen = new THREE.Color(0x4a7c59); // Base green
+      const disturbedBrown = new THREE.Color(0x654321); // Darker, richer brown earth
+      const rockyGray = new THREE.Color(0x8A8A8A); // Gray for high elevations
+      
+      // Calculate color blend - much more dramatic changes
+      let finalColor = naturalGreen.clone();
+      
+      if (heightOffset > 0) {
+        // Raised terrain becomes brown (disturbed earth) much more quickly
+        const blendFactor = Math.min(heightOffset / 1.0, 1.0); // Full brown at just 1 unit of height
+        
+        if (heightOffset > 2.0) {
+          // Very high terrain becomes rocky gray
+          const rockBlendFactor = Math.min((heightOffset - 2.0) / 2.0, 1.0);
+          const brownToGray = disturbedBrown.clone().lerp(rockyGray, rockBlendFactor);
+          finalColor = naturalGreen.clone().lerp(brownToGray, 1.0);
+        } else {
+          finalColor = naturalGreen.clone().lerp(disturbedBrown, blendFactor);
+        }
+      } else if (heightOffset < 0) {
+        // Lowered terrain becomes much darker green/muddy
+        const darkenFactor = Math.min(Math.abs(heightOffset) / 2.0, 0.7); // Up to 70% darker
+        const muddyGreen = new THREE.Color(0x2d4a1a); // Much darker muddy green
+        finalColor = naturalGreen.clone().lerp(muddyGreen, darkenFactor);
+      }
+      
+      colors.setXYZ(i, finalColor.r, finalColor.g, finalColor.b);
     }
 
     positions.needsUpdate = true;
+    colors.needsUpdate = true;
     geometry.computeVertexNormals();
 
     // Notify parent component of terrain update
@@ -118,11 +158,10 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     }
   }, [onTerrainMeshReady]);
 
-  // Create material with water visualization
+  // Create material with vertex color support
   const material = useMemo(() => {
-    // Base terrain material
     return new THREE.MeshStandardMaterial({
-      color: 0x4a7c59, // Earthy green
+      vertexColors: true, // Enable vertex colors
       roughness: 0.8,
       metalness: 0.1,
       flatShading: false,

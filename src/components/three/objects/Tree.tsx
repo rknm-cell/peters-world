@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useCallback } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
@@ -73,11 +73,6 @@ export function Tree({
     }
   };
 
-  // Create a stable key for memoization to reduce unnecessary model reprocessing
-  const modelKey = useMemo(() => 
-    `${type}-${lifecycleStage || 'none'}-${preview ? 'preview' : 'placed'}-${canPlace}`, 
-    [type, lifecycleStage, preview, canPlace]
-  );
   
   // Clone the scene to avoid sharing between instances - memoized with stable key
   const treeModel = useMemo(() => {
@@ -186,7 +181,7 @@ export function Tree({
       console.error(`Tree ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfResult, isLoading, modelKey]); // Use stable key instead of individual props
+  }, [gltfResult, isLoading, type, lifecycleStage, preview, canPlace]); // Include all dependencies
 
   // Animation for selected state - throttled to reduce flickering
   useFrame((state) => {
