@@ -48,8 +48,8 @@ export function Scene() {
       
       {/* Sun - provides directional lighting for the entire scene */}
       <Sun 
-        size={3.0}
-        glowIntensity={1.2}
+        size={1.0}
+        glowIntensity={20}
       />
 
       {/* Camera Controls */}

@@ -32,7 +32,7 @@ export const COLOR_PALETTES = {
 export const LIGHTING_PRESETS = {
   day: {
     ambientColor: "#ffffff",
-    ambientIntensity: 0.6,
+    ambientIntensity: 1,
     directionalColor: "#ffffff",
     directionalIntensity: 1.0,
     directionalPosition: [10, 10, 5] as [number, number, number],
@@ -42,7 +42,7 @@ export const LIGHTING_PRESETS = {
   },
   sunset: {
     ambientColor: "#ff8c42",
-    ambientIntensity: 0.4,
+    ambientIntensity: 0.7,
     directionalColor: "#ff6b35",
     directionalIntensity: 0.8,
     directionalPosition: [5, 3, 5] as [number, number, number],
@@ -52,7 +52,7 @@ export const LIGHTING_PRESETS = {
   },
   night: {
     ambientColor: "#1e3a8a",
-    ambientIntensity: 0.3,
+    ambientIntensity: 0.6,
     directionalColor: "#60a5fa",
     directionalIntensity: 0.5,
     directionalPosition: [2, 8, 3] as [number, number, number],
