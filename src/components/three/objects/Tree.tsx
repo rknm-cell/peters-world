@@ -314,81 +314,19 @@ export function Tree({
         </mesh>
       )}
 
-      {/* Forest debug visualization - only show when debug mode is enabled and not in preview */}
+      {/* Simplified forest debug visualization - only show basic status indicator */}
       {showForestDebug && !preview && currentTree?.treeLifecycle && (
-        <>
-          {/* Forest status text above tree */}
-          <mesh position={[0, 2.5, 0]} rotation={[0, 0, 0]}>
-            <planeGeometry args={[2, 0.5]} />
-            <meshBasicMaterial 
-              color={currentTree.treeLifecycle.isPartOfForest ? "#00ff00" : "#ff6600"}
-              transparent 
-              opacity={0.8}
-            />
-          </mesh>
-          
-          {/* Forest connection lines - draw lines to nearby forest trees */}
-          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
-            objects
-              .filter(obj => 
-                obj.id !== objectId && // Not self
-                obj.treeLifecycle?.forestId === currentTree.treeLifecycle?.forestId && // Same forest
-                obj.treeLifecycle?.isPartOfForest // Is part of forest
-              )
-              .map((forestTree, index) => {
-                const dx = forestTree.position[0] - position[0];
-                const dy = forestTree.position[1] - position[1]; 
-                const dz = forestTree.position[2] - position[2];
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                
-                // Only show connections to nearby trees (within proximity threshold)
-                if (distance > 2.5) return null;
-                
-                const midX = dx / 2;
-                const midY = dy / 2;
-                const midZ = dz / 2;
-                
-                return (
-                  <mesh 
-                    key={`forest-line-${index}`}
-                    position={[midX, midY + 1, midZ]}
-                    rotation={[0, Math.atan2(dx, dz), Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))]}
-                  >
-                    <cylinderGeometry args={[0.02, 0.02, distance, 8]} />
-                    <meshBasicMaterial 
-                      color="#00ff00" 
-                      transparent 
-                      opacity={0.6} 
-                    />
-                  </mesh>
-                );
-              })
-          )}
-          
-          {/* Forest ID label */}
-          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
-            <mesh position={[0, 2.8, 0]}>
-              <planeGeometry args={[1.5, 0.3]} />
-              <meshBasicMaterial 
-                color="#0066ff" 
-                transparent 
-                opacity={0.7}
-              />
-            </mesh>
-          )}
-          
-          {/* Non-forest indicator */}
-          {!currentTree.treeLifecycle.isPartOfForest && (
-            <mesh position={[0, 2.8, 0]}>
-              <planeGeometry args={[1.2, 0.3]} />
-              <meshBasicMaterial 
-                color="#666666" 
-                transparent 
-                opacity={0.7}
-              />
-            </mesh>
-          )}
-        </>
+        <mesh 
+          position={[0, 2.5, 0]}
+          raycast={() => null}
+        >
+          <sphereGeometry args={[0.1, 8, 6]} />
+          <meshBasicMaterial 
+            color={currentTree.treeLifecycle.isPartOfForest ? "#00ff00" : "#ff6600"}
+            transparent 
+            opacity={0.9}
+          />
+        </mesh>
       )}
     </group>
   );

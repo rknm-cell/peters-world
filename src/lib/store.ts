@@ -133,7 +133,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       objects: [...state.objects, newObject],
       selectedObject: id,
       // Keep isPlacing as true so user can continue placing more objects
-      isPlacing: true,
+      isPlacing: state.isPlacing,
     }));
 
     // Run forest detection after adding a tree (with slight delay to avoid race conditions)

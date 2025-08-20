@@ -147,25 +147,26 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   // Unified pointer down handler
   const handlePointerDown = useCallback((event: PointerEvent) => {
     const mode = getInteractionMode();
-    const canvas = gl.domElement;
-    const rect = canvas.getBoundingClientRect();
     
-    // Update mouse position
-    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    previousMouseRef.current.copy(mouseRef.current);
-    
-    // Track shift key state
-    isShiftPressedRef.current = event.shiftKey;
-    
-    isDraggingRef.current = true;
-    
+    // Only handle events that this system should process
     switch (mode) {
       case 'placing':
-        // Let PlacementSystem handle this
+        // Let PlacementSystem handle this completely
         return;
         
       case 'terraforming':
+        const canvas = gl.domElement;
+        const rect = canvas.getBoundingClientRect();
+        
+        // Update mouse position only for terraforming
+        mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        previousMouseRef.current.copy(mouseRef.current);
+        
+        // Track shift key state
+        isShiftPressedRef.current = event.shiftKey;
+        isDraggingRef.current = true;
+        
         event.preventDefault();
         event.stopPropagation();
         canvas.style.cursor = "crosshair";
@@ -173,62 +174,46 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         break;
         
       case 'idle':
-        // No action needed
-        break;
+        // Do nothing - let OrbitControls handle all events
+        return;
     }
   }, [getInteractionMode, gl.domElement, handleTerraformAction]);
 
   // Unified pointer move handler
   const handlePointerMove = useCallback((event: PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    
     const mode = getInteractionMode();
-    const canvas = gl.domElement;
-    const rect = canvas.getBoundingClientRect();
     
-    // Update mouse position
-    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
-    // Update shift key state
-    isShiftPressedRef.current = event.shiftKey;
-    
-    switch (mode) {
-      case 'placing':
-        return;
-        
-      case 'terraforming':
-        event.preventDefault();
-        event.stopPropagation();
-        handleTerraformAction(event);
-        break;
-        
-      case 'idle':
-        // No action needed
-        break;
+    // Only handle terraforming move events when actively dragging
+    if (mode === 'terraforming' && isDraggingRef.current) {
+      const canvas = gl.domElement;
+      const rect = canvas.getBoundingClientRect();
+      
+      // Update mouse position
+      mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      // Update shift key state
+      isShiftPressedRef.current = event.shiftKey;
+      
+      event.preventDefault();
+      event.stopPropagation();
+      handleTerraformAction(event);
+      
+      previousMouseRef.current.copy(mouseRef.current);
     }
-    
-    previousMouseRef.current.copy(mouseRef.current);
+    // For 'placing' and 'idle' modes, do nothing - let other systems handle
   }, [getInteractionMode, gl.domElement, handleTerraformAction]);
 
   const handlePointerUp = useCallback(() => {
     const mode = getInteractionMode();
-    const canvas = gl.domElement;
     
-    isDraggingRef.current = false;
-    
-    switch (mode) {
-      case 'placing':
-        return;
-        
-      case 'terraforming':
-        canvas.style.cursor = "crosshair";
-        break;
-        
-      case 'idle':
-        canvas.style.cursor = "default";
-        break;
+    // Only handle pointer up for terraforming mode
+    if (mode === 'terraforming') {
+      const canvas = gl.domElement;
+      isDraggingRef.current = false;
+      canvas.style.cursor = "crosshair";
     }
+    // For other modes, do nothing - let other systems handle
   }, [getInteractionMode, gl.domElement]);
 
   // Set up unified event listeners
