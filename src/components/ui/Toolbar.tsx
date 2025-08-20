@@ -14,7 +14,9 @@ export function Toolbar() {
     showDebugNormals,
     setShowDebugNormals,
     showWireframe,
-    setShowWireframe
+    setShowWireframe,
+    showForestDebug,
+    setShowForestDebug
   } = useWorldStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -136,6 +138,26 @@ export function Toolbar() {
                 fill="currentColor"
               >
                 <path d="M3,3H21V5H3V3M3,7H21V9H3V7M3,11H21V13H3V11M3,15H21V17H3V15M3,19H21V21H3V19Z" />
+              </svg>
+            </button>
+
+            {/* Forest debug toggle */}
+            <button
+              onClick={() => setShowForestDebug(!showForestDebug)}
+              className={`rounded-lg p-3 transition-all duration-200 ${
+                showForestDebug
+                  ? "bg-green-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title="Toggle Forest Debug View"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M11,1L7,4V6L11,3L15,6V4L11,1M11,8L7,11V13L11,10L15,13V11L11,8M6,7V9L2,12V14L6,11V13L10,10V12L14,9V11L18,8V10L22,7V5L18,8L14,11V9L10,12V10L6,7M11,15L7,18V20L11,17L15,20V18L11,15M11,22L7,19V17L11,20L15,17V19L11,22Z" />
               </svg>
             </button>
 

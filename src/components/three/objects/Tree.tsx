@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
 import type { TreeLifecycleStage } from "~/lib/store";
+import { useWorldStore } from "~/lib/store";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
 type TreeType = 
@@ -43,6 +44,11 @@ export function Tree({
   lifecycleStage,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const showForestDebug = useWorldStore((state) => state.showForestDebug);
+  const objects = useWorldStore((state) => state.objects);
+  
+  // Get current tree object to check forest status
+  const currentTree = objects.find(obj => obj.id === objectId);
 
   // Load the GLB file - useGLTF handles its own error cases
   const gltfResult = useGLTF(`/${type}.glb`) as GLTF;
@@ -306,6 +312,83 @@ export function Tree({
             opacity={0.8}
           />
         </mesh>
+      )}
+
+      {/* Forest debug visualization - only show when debug mode is enabled and not in preview */}
+      {showForestDebug && !preview && currentTree?.treeLifecycle && (
+        <>
+          {/* Forest status text above tree */}
+          <mesh position={[0, 2.5, 0]} rotation={[0, 0, 0]}>
+            <planeGeometry args={[2, 0.5]} />
+            <meshBasicMaterial 
+              color={currentTree.treeLifecycle.isPartOfForest ? "#00ff00" : "#ff6600"}
+              transparent 
+              opacity={0.8}
+            />
+          </mesh>
+          
+          {/* Forest connection lines - draw lines to nearby forest trees */}
+          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
+            objects
+              .filter(obj => 
+                obj.id !== objectId && // Not self
+                obj.treeLifecycle?.forestId === currentTree.treeLifecycle?.forestId && // Same forest
+                obj.treeLifecycle?.isPartOfForest // Is part of forest
+              )
+              .map((forestTree, index) => {
+                const dx = forestTree.position[0] - position[0];
+                const dy = forestTree.position[1] - position[1]; 
+                const dz = forestTree.position[2] - position[2];
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                
+                // Only show connections to nearby trees (within proximity threshold)
+                if (distance > 2.5) return null;
+                
+                const midX = dx / 2;
+                const midY = dy / 2;
+                const midZ = dz / 2;
+                
+                return (
+                  <mesh 
+                    key={`forest-line-${index}`}
+                    position={[midX, midY + 1, midZ]}
+                    rotation={[0, Math.atan2(dx, dz), Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))]}
+                  >
+                    <cylinderGeometry args={[0.02, 0.02, distance, 8]} />
+                    <meshBasicMaterial 
+                      color="#00ff00" 
+                      transparent 
+                      opacity={0.6} 
+                    />
+                  </mesh>
+                );
+              })
+          )}
+          
+          {/* Forest ID label */}
+          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
+            <mesh position={[0, 2.8, 0]}>
+              <planeGeometry args={[1.5, 0.3]} />
+              <meshBasicMaterial 
+                color="#0066ff" 
+                transparent 
+                opacity={0.7}
+              />
+            </mesh>
+          )}
+          
+          {/* Non-forest indicator */}
+          {!currentTree.treeLifecycle.isPartOfForest && (
+            <mesh position={[0, 2.8, 0]}>
+              <planeGeometry args={[1.2, 0.3]} />
+              <meshBasicMaterial 
+                color="#666666" 
+                transparent 
+                opacity={0.7}
+              />
+            </mesh>
+          )}
+        </>
       )}
     </group>
   );

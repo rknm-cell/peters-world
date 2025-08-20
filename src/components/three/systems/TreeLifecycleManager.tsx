@@ -10,15 +10,17 @@ import { TREE_LIFECYCLE_CONFIG } from '~/lib/constants';
  */
 export function TreeLifecycleManager() {
   const tickTreeLifecycles = useWorldStore((state) => state.tickTreeLifecycles);
+  const detectForests = useWorldStore((state) => state.detectForests);
   
   useEffect(() => {
-    // Check tree lifecycles every minute
+    // Check tree lifecycles and detect forests every minute
     const interval = setInterval(() => {
       tickTreeLifecycles();
+      detectForests(); // Run forest detection after lifecycle updates
     }, TREE_LIFECYCLE_CONFIG.checkInterval);
 
     return () => clearInterval(interval);
-  }, [tickTreeLifecycles]);
+  }, [tickTreeLifecycles, detectForests]);
 
   // This component doesn't render anything visible
   return null;
