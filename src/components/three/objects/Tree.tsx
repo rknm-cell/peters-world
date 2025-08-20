@@ -100,7 +100,7 @@ export function Tree({
       let scaleFactor = targetHeight / currentHeight;
       
       // DIRECT FIX: Force specific scaling for broken trees
-      if (type === "dead_tree/tree-dead-broken") {
+      if (type.includes("tree-dead-broken")) {
         // Apply an extremely small fixed scale for broken trees
         scaleFactor = 0.05; // Very tiny scale to counteract huge model
         console.log(`BROKEN TREE - Forcing tiny scale:`, {
