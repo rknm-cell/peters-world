@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, forwardRef, useEffect, useCallback } from "react";
+import { useRef, useMemo, forwardRef, useCallback } from "react";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
 import { TerrainSystem } from "./TerrainSystem";

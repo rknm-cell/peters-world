@@ -120,9 +120,10 @@ export const TREE_LIFECYCLE_CONFIG = {
   // Tree spawning configuration
   spawning: {
     spawnProbability: 0.04, // 4% chance per check cycle
+    forestTreeSpawnProbability: 0.08, // 8% chance for trees in forests (doubled)
     spawnRadius: {
-      min: 1.5, // Minimum distance from parent tree
-      max: 3.0, // Maximum distance from parent tree
+      min: 0.5, // Minimum distance from parent tree
+      max: 1.5, // Maximum distance from parent tree (within forest proximity threshold)
     },
     maxTreesPerSpawnAttempt: 1, // Only spawn 1 tree per attempt
     eligibleSpawnerStages: ["adult"] as const, // Only adult trees can spawn new trees

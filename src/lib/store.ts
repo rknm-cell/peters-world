@@ -132,9 +132,14 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     // Initialize tree lifecycle if it's a tree
     if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type) || type === "tree") {
       const adultTreeType = type === "tree" ? TREE_LIFECYCLE.adult[Math.floor(Math.random() * TREE_LIFECYCLE.adult.length)] : type;
+      // Stagger initial start times - place trees at random points within their adult stage
+      const baseTime = Date.now();
+      const adultStageDurationMs = TREE_LIFECYCLE_CONFIG.stageDurations.adult * 1000;
+      const randomOffset = Math.random() * adultStageDurationMs; // Random progress within adult stage
+      
       newObject.treeLifecycle = {
         stage: "adult",
-        stageStartTime: Date.now(),
+        stageStartTime: baseTime - randomOffset, // Subtract to place at different points in stage
         adultTreeType,
         isPartOfForest: false, // Initially not part of a forest
       };
@@ -349,7 +354,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 treeLifecycle: {
                   ...obj.treeLifecycle!,
                   stage: newStage,
-                  stageStartTime: now,
+                  stageStartTime: now, // No offset - stages advance consistently
                   deathTreeType,
                 }
               }
@@ -379,10 +384,11 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   tickTreeLifecycles: () => {
     set((state) => {
       const now = Date.now();
-      let hasChanges = false;
+      const treesToAdvance: string[] = [];
       
-      const updatedObjects = state.objects.map(obj => {
-        if (!obj.treeLifecycle) return obj;
+      // First pass: identify trees that need advancement
+      state.objects.forEach(obj => {
+        if (!obj.treeLifecycle) return;
         
         const { stage, stageStartTime } = obj.treeLifecycle;
         const stageAge = (now - stageStartTime) / 1000; // Convert to seconds
@@ -419,15 +425,106 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
         
         if (shouldAdvance) {
-          hasChanges = true;
-          // Trigger advancement for this tree
-          setTimeout(() => _get().advanceTreeLifecycle(obj.id), 0);
+          treesToAdvance.push(obj.id);
         }
-        
-        return obj;
       });
       
-      return hasChanges ? { objects: updatedObjects } : state;
+      // Second pass: advance all trees in a single state update
+      if (treesToAdvance.length > 0) {
+        console.log(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
+        
+        // Use the existing advanceTreeLifecycle logic but apply it synchronously
+        const updatedObjects = state.objects.map(obj => {
+          if (!treesToAdvance.includes(obj.id) || !obj.treeLifecycle) return obj;
+          
+          const { stage, adultTreeType } = obj.treeLifecycle;
+          let newStage: TreeLifecycleStage = stage;
+          let newType = obj.type;
+          let deathTreeType = obj.treeLifecycle.deathTreeType;
+
+          // Determine next stage based on current stage (same logic as advanceTreeLifecycle)
+          switch (stage) {
+            case "youth-small":
+              if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.youthSmall) {
+                newStage = "dead-standing";
+                const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
+                deathTreeType = selectedDeathType;
+                newType = selectedDeathType;
+              } else {
+                newStage = "youth-medium";
+                newType = TREE_LIFECYCLE.youth.medium;
+              }
+              break;
+            case "youth-medium":
+              if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.youthMedium) {
+                newStage = "dead-standing";
+                const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
+                deathTreeType = selectedDeathType;
+                newType = selectedDeathType;
+              } else {
+                newStage = "youth-medium-high";
+                newType = TREE_LIFECYCLE.youth.mediumHigh;
+              }
+              break;
+            case "youth-medium-high":
+              if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.youthMediumHigh) {
+                newStage = "dead-standing";
+                const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
+                deathTreeType = selectedDeathType;
+                newType = selectedDeathType;
+              } else {
+                newStage = "youth-big";
+                newType = TREE_LIFECYCLE.youth.big;
+              }
+              break;
+            case "youth-big":
+              if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.youthBig) {
+                newStage = "dead-standing";
+                const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
+                deathTreeType = selectedDeathType;
+                newType = selectedDeathType;
+              } else {
+                newStage = "adult";
+                newType = adultTreeType ?? "tree";
+              }
+              break;
+            case "adult":
+              if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.adult) {
+                newStage = "dead-standing";
+                const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
+                deathTreeType = selectedDeathType;
+                newType = selectedDeathType;
+              }
+              break;
+            case "dead-standing":
+              newStage = "broken";
+              newType = TREE_LIFECYCLE.death.broken;
+              break;
+            case "broken":
+              newStage = "logs";
+              newType = TREE_LIFECYCLE.death.logs[Math.floor(Math.random() * TREE_LIFECYCLE.death.logs.length)]!;
+              break;
+            case "logs":
+              // Final stage - logs stay forever
+              return obj;
+          }
+          
+          return {
+            ...obj,
+            type: newType,
+            treeLifecycle: {
+              ...obj.treeLifecycle,
+              stage: newStage,
+              stageStartTime: now, // No offset - stages advance consistently once started
+              deathTreeType,
+            }
+          };
+        });
+        
+        return { objects: updatedObjects };
+      }
+      
+      return state; // No changes needed
     });
   },
 
@@ -578,29 +675,51 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         (TREE_LIFECYCLE_CONFIG.spawning.eligibleSpawnerStages as readonly string[]).includes(obj.treeLifecycle.stage)
       );
 
+      // Separate forest trees from isolated trees
+      const forestTrees = eligibleSpawners.filter(tree => tree.treeLifecycle?.isPartOfForest);
+      const isolatedTrees = eligibleSpawners.filter(tree => !tree.treeLifecycle?.isPartOfForest);
+
       console.log(`🌳 Found ${eligibleSpawners.length} eligible spawner trees (adult stage)`);
+      console.log(`🌲 Forest trees: ${forestTrees.length}, Isolated trees: ${isolatedTrees.length}`);
       
       if (eligibleSpawners.length === 0) {
         console.log("❌ No eligible spawner trees found");
         return state; // No eligible spawner trees
       }
 
-      console.log(`🎲 Spawn probability: ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability * 100}% per tree`);
+      console.log(`🎲 Spawn probabilities: Forest trees ${TREE_LIFECYCLE_CONFIG.spawning.forestTreeSpawnProbability * 100}%, Isolated trees ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability * 100}%`);
 
       const newTrees: PlacedObject[] = [];
       const raycaster = new THREE.Raycaster();
 
-      eligibleSpawners.forEach((spawnerTree, index) => {
-        const randomRoll = Math.random();
-        console.log(`🌳 Tree ${index + 1}: Random roll = ${randomRoll.toFixed(3)}, needed < ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability}`);
+      // Process forest trees first (higher spawn chance and priority)
+      const allSpawners = [...forestTrees, ...isolatedTrees];
+      
+      allSpawners.forEach((spawnerTree, index) => {
+        const isForestTree = spawnerTree.treeLifecycle?.isPartOfForest ?? false;
+        const spawnProbability = isForestTree 
+          ? TREE_LIFECYCLE_CONFIG.spawning.forestTreeSpawnProbability 
+          : TREE_LIFECYCLE_CONFIG.spawning.spawnProbability;
         
-        // 4% chance to spawn a new tree
-        if (randomRoll < TREE_LIFECYCLE_CONFIG.spawning.spawnProbability) {
-          console.log(`✅ Tree ${index + 1} wins spawn roll! Attempting to spawn...`);
+        const randomRoll = Math.random();
+        const treeType = isForestTree ? "🌲 Forest" : "🌳 Isolated";
+        console.log(`${treeType} tree ${index + 1}: Random roll = ${randomRoll.toFixed(3)}, needed < ${spawnProbability}`);
+        
+        // Use different probabilities for forest vs isolated trees
+        if (randomRoll < spawnProbability) {
+          console.log(`✅ ${treeType} tree ${index + 1} wins spawn roll! Attempting to spawn...`);
+          
+          // For forest trees, use tighter spawn radius to stay within forest proximity
+          const spawnRadiusMax = isForestTree 
+            ? Math.min(TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.max, FOREST_CONFIG.proximityThreshold * 0.8) // 80% of proximity threshold
+            : TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.max;
+          
           // Generate random position around the spawner tree
           const angle = Math.random() * 2 * Math.PI;
           const distance = TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min + 
-            Math.random() * (TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.max - TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min);
+            Math.random() * (spawnRadiusMax - TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min);
+          
+          console.log(`📏 Spawn distance: ${distance.toFixed(2)} (max: ${spawnRadiusMax.toFixed(2)} for ${isForestTree ? 'forest' : 'isolated'} tree)`);
           
           // Calculate horizontal position around parent
           const horizontalX = spawnerTree.position[0] + Math.cos(angle) * distance;
@@ -632,7 +751,29 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
             
             console.log(`🏗️ Placement validation result: ${placementInfo.canPlace ? "CAN PLACE" : "CANNOT PLACE"}`);
             
-            if (placementInfo.canPlace) {
+            // For forest trees, validate that spawned tree would be close enough to other forest trees
+            let forestValidation = true;
+            if (isForestTree && placementInfo.canPlace) {
+              const spawnPosition = placementInfo.position;
+              const sameForestTrees = state.objects.filter(obj => 
+                obj.treeLifecycle?.isPartOfForest && 
+                obj.treeLifecycle?.forestId === spawnerTree.treeLifecycle?.forestId &&
+                obj.id !== spawnerTree.id
+              );
+              
+              // Check if spawned position is within proximity threshold of at least one other forest tree
+              forestValidation = sameForestTrees.some(tree => {
+                const dx = spawnPosition.x - tree.position[0];
+                const dy = spawnPosition.y - tree.position[1];
+                const dz = spawnPosition.z - tree.position[2];
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                return distance <= FOREST_CONFIG.proximityThreshold;
+              });
+              
+              console.log(`🌲 Forest validation: ${forestValidation ? 'PASS' : 'FAIL'} (checked ${sameForestTrees.length} forest neighbors)`);
+            }
+            
+            if (placementInfo.canPlace && forestValidation) {
               // Create new tree starting at youth-small stage
               const newTreeId = Math.random().toString(36).substring(7);
               
@@ -652,7 +793,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 scale: [1, 1, 1],
                 treeLifecycle: {
                   stage: "youth-small",
-                  stageStartTime: Date.now(),
+                  stageStartTime: Date.now() - Math.random() * TREE_LIFECYCLE_CONFIG.stageDurations.youthSmall * 1000, // Random point within youth-small stage
                   adultTreeType: parentAdultType, // Will grow into same type as parent
                   isPartOfForest: false,
                 }
@@ -662,8 +803,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               
               console.log(`🌿 NEW TREE SPAWNED! ID: ${newTreeId}, Type: ${spawnTreeType}`);
               console.log(`📊 Parent: [${spawnerTree.position.join(', ')}], Spawn: [${newTree.position.join(', ')}]`);
-            } else {
+            } else if (!placementInfo.canPlace) {
               console.log(`❌ Cannot place tree - collision or boundary issue`);
+            } else if (!forestValidation) {
+              console.log(`❌ Cannot place forest tree - would be too far from other forest trees`);
             }
           } else {
             console.log(`❌ Raycast missed globe surface`);

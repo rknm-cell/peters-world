@@ -72,8 +72,9 @@ export function Tree({
       default: return 1.2;
     }
   };
+
   
-  // Clone the scene to avoid sharing between instances
+  // Clone the scene to avoid sharing between instances - memoized with stable key
   const treeModel = useMemo(() => {
     if (isLoading || !gltfResult.scene) {
       console.log(`Tree ${type}: GLB loading failed or no scene`, {
@@ -180,13 +181,14 @@ export function Tree({
       console.error(`Tree ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfResult, preview, canPlace, type, isLoading, lifecycleStage]);
+  }, [gltfResult, isLoading, type, lifecycleStage, preview, canPlace]); // Include all dependencies
 
-  // Animation for selected state
+  // Animation for selected state - throttled to reduce flickering
   useFrame((state) => {
     if (groupRef.current && selected) {
       groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    } else if (groupRef.current) {
+    } else if (groupRef.current && Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01) {
+      // Only update rotation if there's a significant difference to reduce flickering
       groupRef.current.rotation.y = rotation[1];
     }
   });
