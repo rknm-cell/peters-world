@@ -67,7 +67,13 @@ export function PlacementSystem({
   // Handle click/tap events for placement and selection
   const handlePointerDown = useCallback(
     (event: PointerEvent) => {
-      event.preventDefault();
+      // Only prevent default if we're in placement mode or interacting with objects
+      // This allows OrbitControls to work when not placing
+      const shouldPreventDefault = isPlacingRef.current || event.detail === 2; // placement mode or double-click
+      
+      if (shouldPreventDefault) {
+        event.preventDefault();
+      }
 
       // Calculate mouse position in normalized device coordinates
       const rect = gl.domElement.getBoundingClientRect();

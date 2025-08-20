@@ -72,6 +72,7 @@ interface WorldState {
   advanceTreeLifecycle: (id: string) => void;
   updateTreeStage: (id: string, stage: TreeLifecycleStage) => void;
   tickTreeLifecycles: () => void;
+  attemptTreeSpawning: () => void;
   
   // Forest detection actions
   detectForests: () => void;
@@ -133,7 +134,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       objects: [...state.objects, newObject],
       selectedObject: id,
       // Keep isPlacing as true so user can continue placing more objects
-      isPlacing: true,
+      isPlacing: state.isPlacing,
     }));
 
     // Run forest detection after adding a tree (with slight delay to avoid race conditions)
@@ -538,6 +539,82 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       });
 
       return { objects: updatedObjects };
+    });
+  },
+
+  // Tree spawning function
+  attemptTreeSpawning: () => {
+    set((state) => {
+      // Find all trees that can spawn (adult stage trees)
+      const eligibleSpawners = state.objects.filter(obj => 
+        obj.treeLifecycle && 
+        (TREE_LIFECYCLE_CONFIG.spawning.eligibleSpawnerStages as readonly string[]).includes(obj.treeLifecycle.stage)
+      );
+
+      if (eligibleSpawners.length === 0) {
+        return state; // No eligible spawner trees
+      }
+
+      const newTrees: PlacedObject[] = [];
+
+      eligibleSpawners.forEach(spawnerTree => {
+        // 4% chance to spawn a new tree
+        if (Math.random() < TREE_LIFECYCLE_CONFIG.spawning.spawnProbability) {
+          // Generate random position around the spawner tree
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min + 
+            Math.random() * (TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.max - TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min);
+          
+          const newPosition: [number, number, number] = [
+            spawnerTree.position[0] + Math.cos(angle) * distance,
+            spawnerTree.position[1], // Keep same Y level
+            spawnerTree.position[2] + Math.sin(angle) * distance
+          ];
+
+          // Check if position is too close to existing trees (minimum 1.0 unit spacing)
+          const tooClose = state.objects.some(existingTree => {
+            if (!existingTree.treeLifecycle) return false;
+            const dx = existingTree.position[0] - newPosition[0];
+            const dy = existingTree.position[1] - newPosition[1];
+            const dz = existingTree.position[2] - newPosition[2];
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            return distance < 1.0; // Minimum spacing
+          });
+
+          if (!tooClose) {
+            // Create new tree starting at youth-small stage
+            const newTreeId = Math.random().toString(36).substring(7);
+            const parentAdultType = spawnerTree.treeLifecycle?.adultTreeType ?? "tree";
+            
+            const newTree: PlacedObject = {
+              id: newTreeId,
+              type: TREE_LIFECYCLE.youth.small, // Start as small bush
+              position: newPosition,
+              rotation: [0, Math.random() * Math.PI * 2, 0], // Random rotation
+              scale: [1, 1, 1],
+              treeLifecycle: {
+                stage: "youth-small",
+                stageStartTime: Date.now(),
+                adultTreeType: parentAdultType, // Will grow into same type as parent
+                isPartOfForest: false,
+              }
+            };
+
+            newTrees.push(newTree);
+          }
+        }
+      });
+
+      if (newTrees.length > 0) {
+        const updatedObjects = [...state.objects, ...newTrees];
+        
+        // Run forest detection after spawning (with delay to avoid race conditions)
+        setTimeout(() => _get().detectForests(), 200);
+        
+        return { objects: updatedObjects };
+      }
+
+      return state; // No new trees spawned
     });
   },
 }));

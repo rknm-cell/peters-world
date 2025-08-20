@@ -11,16 +11,18 @@ import { TREE_LIFECYCLE_CONFIG } from '~/lib/constants';
 export function TreeLifecycleManager() {
   const tickTreeLifecycles = useWorldStore((state) => state.tickTreeLifecycles);
   const detectForests = useWorldStore((state) => state.detectForests);
+  const attemptTreeSpawning = useWorldStore((state) => state.attemptTreeSpawning);
   
   useEffect(() => {
-    // Check tree lifecycles and detect forests every minute
+    // Check tree lifecycles, attempt spawning, and detect forests every minute
     const interval = setInterval(() => {
-      tickTreeLifecycles();
-      detectForests(); // Run forest detection after lifecycle updates
+      tickTreeLifecycles(); // Age existing trees
+      attemptTreeSpawning(); // Try to spawn new trees from adult trees
+      detectForests(); // Run forest detection after lifecycle updates and spawning
     }, TREE_LIFECYCLE_CONFIG.checkInterval);
 
     return () => clearInterval(interval);
-  }, [tickTreeLifecycles, detectForests]);
+  }, [tickTreeLifecycles, attemptTreeSpawning, detectForests]);
 
   // This component doesn't render anything visible
   return null;

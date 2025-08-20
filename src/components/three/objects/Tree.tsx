@@ -65,8 +65,8 @@ export function Tree({
       case "youth-big": return 1.1;
       case "adult": return 1.2;
       case "dead-standing": return 1.0;
-      case "broken": return 0.6;
-      case "logs": return 0.3;
+      case "broken": return 0.2; // Much smaller - broken trees should be small stumps
+      case "logs": return 0.15; // Logs should be very small
       default: return 1.2;
     }
   };
@@ -97,13 +97,43 @@ export function Tree({
       
       const targetHeight = getTargetHeight(lifecycleStage);
       const currentHeight = Math.max(size.y, 0.001);
-      const scaleFactor = targetHeight / currentHeight;
+      let scaleFactor = targetHeight / currentHeight;
+      
+      // DIRECT FIX: Force specific scaling for broken trees
+      if (type.includes("tree-dead-broken")) {
+        // Apply an extremely small fixed scale for broken trees
+        scaleFactor = 0.05; // Very tiny scale to counteract huge model
+        console.log(`BROKEN TREE - Forcing tiny scale:`, {
+          type,
+          originalSize: size,
+          originalHeight: currentHeight,
+          originalWidth: size.x,
+          originalDepth: size.z,
+          forcedScaleFactor: scaleFactor,
+          finalHeight: currentHeight * scaleFactor
+        });
+      } else if (lifecycleStage === "logs") {
+        // Similar treatment for logs
+        scaleFactor = 0.2;
+      } else {
+        // Normal scaling logic for other trees
+        // Safety check: prevent extreme scaling
+        scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
+      }
       
       // Apply scaling
       clonedScene.scale.setScalar(scaleFactor);
       
       // Reset position to origin - let PlacementSystem handle positioning
       clonedScene.position.set(0, 0, 0);
+
+      // Enable shadows for all meshes in the tree model
+      clonedScene.traverse((child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
 
       // If this is a preview, modify the materials to be transparent
       if (preview) {
@@ -169,9 +199,9 @@ export function Tree({
         scale={scale}
         userData={{ isPlacedObject: !preview, objectId }}
       >
-        <mesh position={[0, 0, 0]}>
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <sphereGeometry args={[0.2, 8, 6]} />
-          <meshBasicMaterial 
+          <meshStandardMaterial 
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#ff0000"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
@@ -314,81 +344,19 @@ export function Tree({
         </mesh>
       )}
 
-      {/* Forest debug visualization - only show when debug mode is enabled and not in preview */}
+      {/* Simplified forest debug visualization - only show basic status indicator */}
       {showForestDebug && !preview && currentTree?.treeLifecycle && (
-        <>
-          {/* Forest status text above tree */}
-          <mesh position={[0, 2.5, 0]} rotation={[0, 0, 0]}>
-            <planeGeometry args={[2, 0.5]} />
-            <meshBasicMaterial 
-              color={currentTree.treeLifecycle.isPartOfForest ? "#00ff00" : "#ff6600"}
-              transparent 
-              opacity={0.8}
-            />
-          </mesh>
-          
-          {/* Forest connection lines - draw lines to nearby forest trees */}
-          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
-            objects
-              .filter(obj => 
-                obj.id !== objectId && // Not self
-                obj.treeLifecycle?.forestId === currentTree.treeLifecycle?.forestId && // Same forest
-                obj.treeLifecycle?.isPartOfForest // Is part of forest
-              )
-              .map((forestTree, index) => {
-                const dx = forestTree.position[0] - position[0];
-                const dy = forestTree.position[1] - position[1]; 
-                const dz = forestTree.position[2] - position[2];
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                
-                // Only show connections to nearby trees (within proximity threshold)
-                if (distance > 2.5) return null;
-                
-                const midX = dx / 2;
-                const midY = dy / 2;
-                const midZ = dz / 2;
-                
-                return (
-                  <mesh 
-                    key={`forest-line-${index}`}
-                    position={[midX, midY + 1, midZ]}
-                    rotation={[0, Math.atan2(dx, dz), Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))]}
-                  >
-                    <cylinderGeometry args={[0.02, 0.02, distance, 8]} />
-                    <meshBasicMaterial 
-                      color="#00ff00" 
-                      transparent 
-                      opacity={0.6} 
-                    />
-                  </mesh>
-                );
-              })
-          )}
-          
-          {/* Forest ID label */}
-          {currentTree.treeLifecycle.isPartOfForest && currentTree.treeLifecycle.forestId && (
-            <mesh position={[0, 2.8, 0]}>
-              <planeGeometry args={[1.5, 0.3]} />
-              <meshBasicMaterial 
-                color="#0066ff" 
-                transparent 
-                opacity={0.7}
-              />
-            </mesh>
-          )}
-          
-          {/* Non-forest indicator */}
-          {!currentTree.treeLifecycle.isPartOfForest && (
-            <mesh position={[0, 2.8, 0]}>
-              <planeGeometry args={[1.2, 0.3]} />
-              <meshBasicMaterial 
-                color="#666666" 
-                transparent 
-                opacity={0.7}
-              />
-            </mesh>
-          )}
-        </>
+        <mesh 
+          position={[0, 2.5, 0]}
+          raycast={() => null}
+        >
+          <sphereGeometry args={[0.1, 8, 6]} />
+          <meshBasicMaterial 
+            color={currentTree.treeLifecycle.isPartOfForest ? "#00ff00" : "#ff6600"}
+            transparent 
+            opacity={0.9}
+          />
+        </mesh>
       )}
     </group>
   );
