@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useMemo, useState, useEffect } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
 
 // Define the tree types based on available GLB files
@@ -44,25 +45,19 @@ export function Tree({
   canPlace = true,
 }: TreeProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const [glbError, setGlbError] = useState<string | null>(null);
 
-  // Load the GLB file with error handling
-  let gltfResult: any;
-  try {
-    gltfResult = useGLTF(`/${type}.glb`);
-    console.log(`Tree ${type}: GLB loaded successfully:`, gltfResult);
-  } catch (error) {
-    console.error(`Tree ${type}: GLB loading error:`, error);
-    setGlbError(error instanceof Error ? error.message : 'Unknown error');
-  }
+  // Load the GLB file - useGLTF handles its own error cases
+  const gltfResult = useGLTF(`/${type}.glb`) as GLTF;
+  
+  // Handle loading state
+  const isLoading = !gltfResult.scene;
   
   // Clone the scene to avoid sharing between instances
   const treeModel = useMemo(() => {
-    if (!gltfResult || !gltfResult.scene) {
+    if (isLoading || !gltfResult.scene) {
       console.log(`Tree ${type}: GLB loading failed or no scene`, {
-        gltfResult,
-        hasScene: !!gltfResult?.scene,
-        error: glbError
+        isLoading,
+        hasScene: !!gltfResult.scene
       });
       return null;
     }
@@ -94,10 +89,10 @@ export function Tree({
       // If this is a preview, modify the materials to be transparent
       if (preview) {
         console.log(`Tree ${type}: Applying preview materials, canPlace: ${canPlace}`);
-        clonedScene.traverse((child: any) => {
+        clonedScene.traverse((child: THREE.Object3D) => {
           if (child instanceof THREE.Mesh && child.material) {
             // Clone the material to avoid affecting other instances
-            const material = child.material.clone();
+            const material = (child.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
             
             // Make it transparent
             material.transparent = true;
@@ -134,7 +129,7 @@ export function Tree({
       console.error(`Tree ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfResult, preview, canPlace, type, glbError]);
+  }, [gltfResult, preview, canPlace, type, isLoading]);
 
   // Animation for selected state
   useFrame((state) => {
