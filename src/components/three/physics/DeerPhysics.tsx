@@ -6,6 +6,7 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
+import { useWorldStore } from '~/lib/store';
 
 interface DeerPhysicsProps {
   objectId: string;
