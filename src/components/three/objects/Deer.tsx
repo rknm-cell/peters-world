@@ -15,6 +15,8 @@ interface DeerProps {
   objectId?: string;
   preview?: boolean;
   canPlace?: boolean;
+  disablePositionSync?: boolean; // Disable store position sync when controlled by physics
+  isPhysicsControlled?: boolean; // Exclude from PlacementSystem raycasting when physics-controlled
 }
 
 export function Deer({
@@ -26,6 +28,8 @@ export function Deer({
   objectId,
   preview = false,
   canPlace = true,
+  disablePositionSync = false,
+  isPhysicsControlled = false,
 }: DeerProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -125,15 +129,21 @@ export function Deer({
   useFrame((state) => {
     if (!groupRef.current) return;
 
-    // Get fresh store state every frame for movement updates
+    // Skip position syncing if controlled by physics (DeerPhysics component)
+    if (disablePositionSync) {
+      // Only handle selection animation, physics handles position
+      if (selected) {
+        groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      }
+      return;
+    }
+
+    // Get fresh store state every frame for movement updates (non-physics deer)
     if (!preview && objectId) {
       const storeState = useWorldStore.getState();
       const currentObject = storeState.objects.find(obj => obj.id === objectId);
       
       if (currentObject) {
-        // Store the previous position to detect changes
-        const prevPos = groupRef.current.position.toArray();
-        
         // Update position from store state (for movement)
         groupRef.current.position.set(...currentObject.position);
         
@@ -141,22 +151,7 @@ export function Deer({
         if (currentObject.rotation) {
           groupRef.current.rotation.set(...currentObject.rotation);
         }
-        
-        // Debug logging to see if position is updating
-        if (state.clock.elapsedTime % 1 < 0.02) { // Log every 1 seconds
-          const newPos = groupRef.current.position.toArray();
-          const positionChanged = Math.abs(prevPos[0] - newPos[0]) > 0.001 || 
-                                 Math.abs(prevPos[1] - newPos[1]) > 0.001 || 
-                                 Math.abs(prevPos[2] - newPos[2]) > 0.001;
-          
-          console.warn(`🦌 DEER COMPONENT ${objectId}: useFrame update`);
-          console.warn(`   Store position: [${currentObject.position.join(', ')}]`);
-          console.warn(`   Three.js position: [${newPos.join(', ')}]`);
-          console.warn(`   Position changed this frame: ${positionChanged}`);
-          console.warn(`   Movement data:`, currentObject.deerMovement);
-        }
       } else {
-        console.warn(`🦌 DEER COMPONENT ${objectId}: Object not found in store, using props`);
         // Fallback to props if not found in store
         groupRef.current.position.set(...position);
         groupRef.current.rotation.set(...rotation);
@@ -181,9 +176,13 @@ export function Deer({
         position={position}
         rotation={rotation}
         scale={scale}
-        userData={{ isPlacedObject: !preview, objectId }}
+        userData={{ 
+          isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
+          objectId,
+          isPhysicsControlled 
+        }}
       >
-        <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.3, 0.8, 0.6]} />
           <meshStandardMaterial 
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#8B4513"}
@@ -209,7 +208,11 @@ export function Deer({
       position={position}
       rotation={rotation}  
       scale={scale}
-      userData={{ isPlacedObject: !preview, objectId }}
+      userData={{ 
+        isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
+        objectId,
+        isPhysicsControlled 
+      }}
     >
       <primitive object={deerModel} />
       
