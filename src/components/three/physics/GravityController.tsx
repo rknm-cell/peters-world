@@ -28,7 +28,7 @@ export function GravityController() {
         ).normalize();
         
         // Apply stronger gravity than Earth for better surface adhesion
-        const gravityStrength = 20.0; // 2x Earth gravity for reliable surface contact
+        const gravityStrength = 30.0; // 3x Earth gravity for reliable surface contact
         const mass = body.mass();
         
         const gravityForce = gravityDirection.multiplyScalar(mass * gravityStrength);
