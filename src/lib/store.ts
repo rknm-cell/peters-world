@@ -787,7 +787,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 ],
                 rotation: [
                   placementInfo.rotation.x,
-                  placementInfo.rotation.y + Math.random() * Math.PI * 2, // Add random Y rotation
+                  placementInfo.rotation.y + (Math.random() - 0.5) * 0.5, // Small random Y variation while keeping surface alignment
                   placementInfo.rotation.z
                 ],
                 scale: [1, 1, 1],
