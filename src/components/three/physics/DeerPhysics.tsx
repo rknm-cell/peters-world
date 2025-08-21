@@ -7,6 +7,8 @@ import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
 import { useWorldStore } from '~/lib/store';
+import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
+import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -31,6 +33,9 @@ interface CharacterController {
 export function DeerPhysics({ objectId, position, type, selected = false }: DeerPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   
+  // Render queue for batching updates and preventing multiple simultaneous re-renders
+  const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue();
+  
   // Ensure deer starts on globe surface (globe radius is 6.0)
   const initialPosition = new THREE.Vector3(...position);
   const surfacePosition = initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
@@ -45,7 +50,18 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const [eatingGrassId, setEatingGrassId] = useState<string | null>(null);
   const lastUpdateTime = useRef(0);
   
+  // Bounce animation state
+  const bouncePhase = useRef(0);
+  const lastMovementSpeed = useRef(0);
+  
   const { rapier, world } = useRapier();
+  
+  // Clean up queued updates when component unmounts
+  useEffect(() => {
+    return () => {
+      cancelDeerUpdates(objectId);
+    };
+  }, [objectId, cancelDeerUpdates]);
   const characterController = useRef<CharacterController | null>(null);
   
   // Initialize character controller and deer orientation
@@ -153,6 +169,25 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setIsIdle(false);
         setTarget(null); // Force new target generation
       }
+      
+      // Apply bounce decay when idle
+      const bounceDecayRate = 5.0; // How quickly bounce fades when idle
+      lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
+      
+      // Continue bounce animation with decaying speed
+      bouncePhase.current += lastMovementSpeed.current * 8.0 * delta;
+      
+      // Calculate fading bounce height
+      const maxBounceHeight = 0.08;
+      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
+      
+      // Deer should not bounce if idle
+      if (Math.abs(bounceHeight) > 0.01) {
+        const idealSurfaceDistance = 6.05 + bounceHeight;
+        const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
+        body.setTranslation(adjustedPosition, true);
+      }
+      
       // During idle, no movement
       return;
     }
@@ -182,6 +217,24 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setIsEating(false);
         setEatingGrassId(null);
         setTarget(null); // Force new target generation
+      }
+      
+      // Apply bounce decay when eating (slower decay than idle)
+      const bounceDecayRate = 3.0; // Slower decay while eating
+      lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
+      
+      // Continue gentle bounce animation while eating
+      bouncePhase.current += lastMovementSpeed.current * 4.0 * delta; // Slower frequency while eating
+      
+      // Calculate gentle bounce height while eating
+      const maxBounceHeight = 0.04; // Smaller bounce while eating
+      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
+      
+      // Apply subtle bounce to deer position while eating
+      if (Math.abs(bounceHeight) > 0.005) {
+        const idealSurfaceDistance = 6.05 + bounceHeight;
+        const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
+        body.setTranslation(adjustedPosition, true);
       }
       
       // During eating, no movement
@@ -261,16 +314,28 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate movement for this frame
       const movement = surfaceMovement.multiplyScalar(MOVEMENT_SPEED * delta);
       
+      // Update bounce animation based on movement speed
+      const currentMovementSpeed = movement.length() / delta;
+      lastMovementSpeed.current = currentMovementSpeed;
+      
+      // Advance bounce phase based on movement speed
+      const bounceFrequency = 8.0; // How fast the bounce cycles
+      bouncePhase.current += currentMovementSpeed * bounceFrequency * delta;
+      
+      // Calculate bounce height (small vertical offset)
+      const maxBounceHeight = 0.08; // Maximum bounce height
+      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(currentMovementSpeed / MOVEMENT_SPEED, 1.0);
+      
       // Calculate target position for this frame
       let targetPosition = currentPosition.clone().add(movement);
       
       // Ensure deer stays on surface (handle this here instead of GravityController to avoid conflicts)
-      const idealSurfaceDistance = 6.05;
+      const idealSurfaceDistance = 6.05 + bounceHeight; // Add bounce height to surface distance
       const currentDistance = targetPosition.length();
 
       
       // Only correct if significantly off surface to prevent micro-corrections
-      if (Math.abs(currentDistance - idealSurfaceDistance) > 0.1) {
+      if (Math.abs(currentDistance - (6.05 + bounceHeight)) > 0.1) {
         targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
       }
       
@@ -278,57 +343,46 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate actual movement that occurred (for rotation)
       const actualMovement = targetPosition.clone().sub(currentPosition);
       
-      // For kinematic bodies, directly set the new position (single source of truth)
-      body.setTranslation(targetPosition, true);
-      
-      // Rotate deer to face the direction they actually moved
-      if (actualMovement.length() > 0.01) {
-        // Get surface normal (pointing away from globe center)
-        const surfaceNormal = targetPosition.clone().normalize();
+      // Queue the transform update to prevent multiple simultaneous updates
+      queueDeerTransformUpdate(objectId, () => {
+        // For kinematic bodies, directly set the new position (single source of truth)
+        body.setTranslation(targetPosition, true);
         
-        // Project actual movement direction onto surface tangent plane
-        const tangentialMovement = actualMovement.clone()
-          .sub(surfaceNormal.clone().multiplyScalar(actualMovement.dot(surfaceNormal)))
-          .normalize();
-        
-        if (tangentialMovement.length() > 0.01) {
-          // Use a simpler approach with lookAt for more reliable rotation
-          const lookAtPosition = currentPosition.clone().add(tangentialMovement);
-
-          
-          // Create a temporary object to calculate the rotation
-          const tempObject = new THREE.Object3D();
-          tempObject.position.copy(currentPosition);
-          tempObject.up.copy(surfaceNormal); // Set the "up" direction relative to surface
-          tempObject.lookAt(lookAtPosition);
-
-          // Temporarily remove orientation offset to test direction
-          const targetQuaternion = tempObject.quaternion.clone();
-          // TODO: Add back correct orientation offset once we determine proper direction
-          
-          // Get current rotation
-          const currentRotation = body.rotation();
-          const currentQuaternion = new THREE.Quaternion(
-            currentRotation.x, 
-            currentRotation.y, 
-            currentRotation.z, 
-            currentRotation.w
+        // Rotate deer to face the direction they actually moved using centralized utility
+        if (actualMovement.length() > 0.01) {
+          const { positionVec, directionVec, surfaceNormal } = extractMovementVectors(
+            currentPosition,
+            actualMovement
           );
           
-          // Make rotation more immediate and responsive
-          const rotationDiff = currentQuaternion.angleTo(targetQuaternion);
-          let rotationSpeed = 8.0 * delta; // Increased base rotation speed
+          // Calculate target rotation using centralized utility
+          const targetQuaternion = calculateTargetRotation(
+            positionVec,
+            directionVec,
+            surfaceNormal
+          );
           
-          // If the rotation change is significant, rotate much faster
-          if (rotationDiff > Math.PI / 6) { // More than 30 degrees
-            rotationSpeed = Math.min(rotationSpeed * 3, 0.5); // Much faster rotation
+          if (targetQuaternion.length() > 0) {
+            // Get current rotation as quaternion
+            const currentRotation = body.rotation();
+            const currentQuaternion = new THREE.Quaternion(
+              currentRotation.x, 
+              currentRotation.y, 
+              currentRotation.z, 
+              currentRotation.w
+            );
+            
+            // Calculate smoothed rotation using centralized utility
+            const newQuaternion = calculateSmoothedRotation(
+              currentQuaternion,
+              targetQuaternion,
+              delta
+            );
+            
+            body.setRotation(newQuaternion, true);
           }
-          
-          const newQuaternion = currentQuaternion.slerp(targetQuaternion, rotationSpeed);
-          
-          body.setRotation(newQuaternion, true);
         }
-      }
+      }, 'normal');
     }
   });
   

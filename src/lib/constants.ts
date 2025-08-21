@@ -34,7 +34,7 @@ export const LIGHTING_PRESETS = {
     ambientColor: "#ffffff",
     ambientIntensity: 1,
     directionalColor: "#ffffff",
-    directionalIntensity: 1.0,
+    directionalIntensity: 5.0,
     directionalPosition: [10, 10, 5] as [number, number, number],
     fogColor: "#87CEEB",
     fogNear: 50, // Move fog further away so trees are visible
