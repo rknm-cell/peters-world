@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from 'react';
 import { useRapier } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -12,49 +13,51 @@ import type { PhysicsBodyUserData } from '~/lib/types';
  */
 export function GravityController() {
   const { world } = useRapier();
+  const lastCorrectionTime = useRef<Map<string, number>>(new Map());
   
   useFrame(() => {
-    // Apply radial gravity to all physics bodies marked as deer
+    const currentTime = Date.now();
+    
+    // Apply surface adherence correction to deer physics bodies
     world.forEachRigidBody((body) => {
       const userData = body.userData as PhysicsBodyUserData;
-      if (userData?.isDeer) {
+      if (userData?.isDeer && userData.objectId) {
         const position = body.translation();
+        const objectId = userData.objectId;
         
-        // Calculate gravity vector pointing toward globe center (0, 0, 0)
-        const gravityDirection = new THREE.Vector3(
-          -position.x, 
-          -position.y, 
-          -position.z
-        ).normalize();
+        // Limit correction frequency to prevent flickering
+        const lastCorrection = lastCorrectionTime.current.get(objectId) ?? 0;
+        const timeSinceLastCorrection = currentTime - lastCorrection;
         
-        // Apply stronger gravity than Earth for better surface adhesion
-        const gravityStrength = 30.0; // 3x Earth gravity for reliable surface contact
-        const mass = body.mass();
+        // Only correct every 100ms to prevent flickering
+        if (timeSinceLastCorrection < 100) {
+          return;
+        }
         
-        const gravityForce = gravityDirection.multiplyScalar(mass * gravityStrength);
-        
-        // Apply the radial gravity force
-        body.addForce({
-          x: gravityForce.x,
-          y: gravityForce.y, 
-          z: gravityForce.z
-        }, true);
-        
-        // Optional: Add slight surface normal force to prevent sinking
         const surfaceDistance = Math.sqrt(position.x ** 2 + position.y ** 2 + position.z ** 2);
-        const idealSurfaceDistance = 6.2; // Slightly above globe surface
+        const idealSurfaceDistance = 6.05; // Match the initial positioning  
+        const tolerance = 0.2; // Reasonable tolerance to reduce corrections
         
-        if (surfaceDistance < idealSurfaceDistance) {
-          // Push away from center if too close (prevent sinking into globe)
-          const repulsionForce = gravityDirection.clone()
-            .negate()
-            .multiplyScalar(mass * 5.0 * (idealSurfaceDistance - surfaceDistance));
-          
-          body.addForce({
-            x: repulsionForce.x,
-            y: repulsionForce.y,
-            z: repulsionForce.z
-          }, true);
+        let needsCorrection = false;
+        let correctedPosition: THREE.Vector3 | null = null;
+        
+        // If deer is significantly too far from surface
+        if (surfaceDistance > idealSurfaceDistance + tolerance) {
+          const correctionDirection = new THREE.Vector3(-position.x, -position.y, -position.z).normalize();
+          correctedPosition = correctionDirection.multiplyScalar(idealSurfaceDistance);
+          needsCorrection = true;
+        }
+        
+        // If deer is significantly too close to surface
+        if (surfaceDistance < idealSurfaceDistance - tolerance) {
+          const correctionDirection = new THREE.Vector3(position.x, position.y, position.z).normalize();
+          correctedPosition = correctionDirection.multiplyScalar(idealSurfaceDistance);
+          needsCorrection = true;
+        }
+        
+        if (needsCorrection && correctedPosition) {
+          body.setTranslation(correctedPosition, true);
+          lastCorrectionTime.current.set(objectId, currentTime);
         }
       }
     });

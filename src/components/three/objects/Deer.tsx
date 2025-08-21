@@ -16,6 +16,7 @@ interface DeerProps {
   preview?: boolean;
   canPlace?: boolean;
   disablePositionSync?: boolean; // Disable store position sync when controlled by physics
+  isPhysicsControlled?: boolean; // Exclude from PlacementSystem raycasting when physics-controlled
 }
 
 export function Deer({
@@ -28,6 +29,7 @@ export function Deer({
   preview = false,
   canPlace = true,
   disablePositionSync = false,
+  isPhysicsControlled = false,
 }: DeerProps) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -174,7 +176,11 @@ export function Deer({
         position={position}
         rotation={rotation}
         scale={scale}
-        userData={{ isPlacedObject: !preview, objectId }}
+        userData={{ 
+          isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
+          objectId,
+          isPhysicsControlled 
+        }}
       >
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.3, 0.8, 0.6]} />
@@ -202,7 +208,11 @@ export function Deer({
       position={position}
       rotation={rotation}  
       scale={scale}
-      userData={{ isPlacedObject: !preview, objectId }}
+      userData={{ 
+        isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
+        objectId,
+        isPhysicsControlled 
+      }}
     >
       <primitive object={deerModel} />
       

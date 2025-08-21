@@ -23,6 +23,7 @@ interface PhysicsBodyPosition {
 interface RapierRigidBody {
   translation(): PhysicsBodyPosition;
   userData: PhysicsBodyUserData;
+  linvel(): PhysicsBodyPosition; // Add velocity method
 }
 
 /**
@@ -104,7 +105,7 @@ export function PhysicsDebug() {
       
       {/* Deer placement zone visualization - more visible */}
       <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[6.2, 16, 16]} />
+        <sphereGeometry args={[6.05, 16, 16]} />
         <meshBasicMaterial wireframe color="cyan" transparent opacity={0.4} />
       </mesh>
       
@@ -120,12 +121,15 @@ export function PhysicsDebug() {
         const userData = body.userData;
         
         if (userData?.isDeer) {
-          // Show deer collision capsule
+          const velocity = body.linvel();
+          const velocityMagnitude = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
+          
+          // Show deer collision capsule and movement debug
           return (
             <group key={`deer-${index}`} position={[position.x, position.y, position.z]}>
-              {/* Deer collision capsule visualization - centered to match actual collider */}
-              <mesh position={[0, 0, 0]}>
-                <capsuleGeometry args={[0.3, 0.6]} />
+              {/* Deer collision capsule visualization - matches actual collider */}
+              <mesh position={[0, 0.2, 0]}>
+                <capsuleGeometry args={[0.2, 0.4]} />
                 <meshBasicMaterial wireframe color="red" transparent opacity={0.5} />
               </mesh>
               {/* Position marker at RigidBody center */}
@@ -133,6 +137,43 @@ export function PhysicsDebug() {
                 <sphereGeometry args={[0.1, 8, 8]} />
                 <meshBasicMaterial color="yellow" />
               </mesh>
+              
+              {/* Surface normal indicator (local "up" direction) */}
+              <mesh position={[0, 0.5, 0]}>
+                <coneGeometry args={[0.05, 0.3]} />
+                <meshBasicMaterial color="blue" />
+              </mesh>
+              
+              {/* Velocity vector visualization - shows actual movement direction */}
+              {velocityMagnitude > 0.1 && (
+                <>
+                  {/* Velocity arrow pointing in movement direction */}
+                  <mesh 
+                    position={[velocity.x * 0.5, velocity.y * 0.5 + 1, velocity.z * 0.5]}
+                    lookAt={[
+                      position.x + velocity.x, 
+                      position.y + velocity.y + 1, 
+                      position.z + velocity.z
+                    ]}
+                  >
+                    <coneGeometry args={[0.1, 0.4]} />
+                    <meshBasicMaterial color="lime" />
+                  </mesh>
+                  {/* Velocity magnitude indicator */}
+                  <mesh position={[0, 1.2, 0]}>
+                    <sphereGeometry args={[Math.min(velocityMagnitude * 0.1, 0.2), 8, 8]} />
+                    <meshBasicMaterial color={velocityMagnitude > 1 ? "green" : "yellow"} />
+                  </mesh>
+                </>
+              )}
+              
+              {/* Static deer when not moving */}
+              {velocityMagnitude <= 0.1 && (
+                <mesh position={[0, 1, 0]}>
+                  <sphereGeometry args={[0.08, 8, 8]} />
+                  <meshBasicMaterial color="red" />
+                </mesh>
+              )}
             </group>
           );
         }
