@@ -2,16 +2,22 @@
 
 // Window extensions for debugging and testing
 export interface WindowExtensions {
-  resetCameraControls: () => void;
-  togglePhysicsDebug: () => void;
-  logPhysicsStatus: () => void;
-  spawnPhysicsDeer: () => void;
-  testDeerSpawn: () => void;
+  resetCameraControls?: () => void;
+  togglePhysicsDebug?: () => void;
+  logPhysicsStatus?: () => void;
+  spawnPhysicsDeer?: () => void;
+  testDeerSpawn?: () => void;
 }
 
 // Extend the global Window interface
 declare global {
-  interface Window extends WindowExtensions {}
+  interface Window {
+    resetCameraControls?: () => void;
+    togglePhysicsDebug?: () => void;
+    logPhysicsStatus?: () => void;
+    spawnPhysicsDeer?: () => void;
+    testDeerSpawn?: () => void;
+  }
 }
 
 // Rapier physics body userData types

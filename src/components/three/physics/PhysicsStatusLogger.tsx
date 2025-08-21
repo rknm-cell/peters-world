@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRapier } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
-import type { PhysicsBodyUserData, PhysicsBody, RapierWorld } from '~/lib/types';
+import type { PhysicsBody, RapierWorld } from '~/lib/types';
 
 /**
  * PhysicsStatusLogger - Logs physics world status for debugging
@@ -28,7 +28,7 @@ export function PhysicsStatusLogger() {
       // Log each body's status
       let bodyIndex = 0;
       world.forEachRigidBody((body: PhysicsBody) => {
-        const userData = body.userData as PhysicsBodyUserData;
+        const userData = body.userData;
         const position = body.translation();
         const velocity = body.linvel();
         const mass = body.mass();
@@ -69,7 +69,7 @@ export function PhysicsStatusLogger() {
     // Log status every 5 seconds (300 frames at 60fps)
     if (logInterval % 300 === 0) {
       const deerCount = Array.from(world.bodies.getAll()).filter((body: PhysicsBody) => {
-        const userData = body.userData as PhysicsBodyUserData;
+        const userData = body.userData;
         return userData?.isDeer;
       }).length;
       
