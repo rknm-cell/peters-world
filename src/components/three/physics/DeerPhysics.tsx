@@ -6,6 +6,7 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
+import { useWorldStore } from '~/lib/store';
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -38,6 +39,10 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
+
+  const [isEating, setIsEating] = useState(false);
+  const [eatingStartTime, setEatingStartTime] = useState(0);
+  const [eatingGrassId, setEatingGrassId] = useState<string | null>(null);
   const lastUpdateTime = useRef(0);
   
   const { rapier, world } = useRapier();
@@ -98,6 +103,32 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const IDLE_PROBABILITY = 0.2; // Reduced idle probability to see more movement
   const IDLE_DURATION = { min: 1000, max: 3000 }; // Idle time
   
+  // Eating parameters
+  const GRASS_DETECTION_RADIUS = 0.6; // How close deer needs to be to detect grass
+  const EATING_DURATION = 3000; // 3 seconds of eating before grass disappears
+  const GRASS_APPROACH_DISTANCE = 0.3; // How close deer gets before eating
+  
+  // Function to find nearby grass
+  const findNearbyGrass = (deerPosition: THREE.Vector3) => {
+    const store = useWorldStore.getState();
+    const grassObjects = store.objects.filter(obj => obj.type.toLowerCase().includes('grass'));
+    
+    let closestGrass = null;
+    let closestDistance = GRASS_DETECTION_RADIUS;
+    
+    for (const grass of grassObjects) {
+      const grassPosition = new THREE.Vector3(...grass.position);
+      const distance = deerPosition.distanceTo(grassPosition);
+      
+      if (distance < closestDistance) {
+        closestGrass = grass;
+        closestDistance = distance;
+      }
+    }
+    
+    return closestGrass;
+  };
+
   useFrame((state, delta) => {
     if (!rigidBodyRef.current) return;
     
@@ -129,31 +160,88 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     // Get current position from physics body
     const currentPos = body.translation();
     const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+
+
     
-    // Check if we need a new target
-    const distanceToTarget = target ? currentPosition.distanceTo(target) : Infinity;
-    const timeSinceLastTarget = currentTime - lastTargetTime;
-    const maxTargetInterval = TARGET_UPDATE_INTERVAL.min + 
-      Math.random() * (TARGET_UPDATE_INTERVAL.max - TARGET_UPDATE_INTERVAL.min);
+    // === GRASS EATING LOGIC ===
     
-    const needsNewTarget = 
-      !target || 
-      distanceToTarget < 0.2 || // Close to target
-      timeSinceLastTarget > maxTargetInterval; // Time for new target
+    // Handle eating state
+    if (isEating) {
+      const eatingDuration = currentTime - eatingStartTime;
+      
+      // Check if eating is complete (3 seconds)
+      if (eatingDuration >= EATING_DURATION) {
+        // Remove the grass from the world
+        if (eatingGrassId) {
+          const store = useWorldStore.getState();
+          store.removeObject(eatingGrassId);
+          console.log(`🦌 Deer ${objectId}: Finished eating grass ${eatingGrassId}`);
+        }
+        
+        // Stop eating and return to normal behavior
+        setIsEating(false);
+        setEatingGrassId(null);
+        setTarget(null); // Force new target generation
+      }
+      
+      // During eating, no movement
+      return;
+    }
     
-    if (needsNewTarget) {
-      // Decide if deer should idle or move
-      if (Math.random() < IDLE_PROBABILITY) {
-        setIsIdle(true);
-        setIdleStartTime(currentTime);
+    // Look for nearby grass if not currently eating or approaching grass
+    const nearbyGrass = findNearbyGrass(currentPosition);
+    
+    if (nearbyGrass && !isEating) {
+      const grassPosition = new THREE.Vector3(...nearbyGrass.position);
+      const distanceToGrass = currentPosition.distanceTo(grassPosition);
+      
+      // If close enough to grass, start eating
+      if (distanceToGrass <= GRASS_APPROACH_DISTANCE) {
+        console.log(`🦌 Deer ${objectId}: Started eating grass ${nearbyGrass.id}`);
+        setIsEating(true);
+        setEatingStartTime(currentTime);
+        setEatingGrassId(nearbyGrass.id);
         setTarget(null);
+        setIsIdle(false);
         return;
-      } else {
-        // Generate new wandering target
-        const newTarget = generateWanderingTarget(currentPosition);
-        if (newTarget) {
-          setTarget(newTarget);
-          setLastTargetTime(currentTime);
+      }
+      
+      // If grass is nearby but not close enough, approach it
+      const timeSinceLastTarget = currentTime - lastTargetTime;
+      if (timeSinceLastTarget > 500) { // Update target every 500ms when approaching grass
+        setTarget(grassPosition);
+        setLastTargetTime(currentTime);
+        setIsIdle(false);
+        console.log(`🦌 Deer ${objectId}: Approaching grass ${nearbyGrass.id}`);
+      }
+    }
+    
+    // Check if we need a new target (only if not pursuing grass)
+    if (!nearbyGrass) {
+      const distanceToTarget = target ? currentPosition.distanceTo(target) : Infinity;
+      const timeSinceLastTarget = currentTime - lastTargetTime;
+      const maxTargetInterval = TARGET_UPDATE_INTERVAL.min + 
+        Math.random() * (TARGET_UPDATE_INTERVAL.max - TARGET_UPDATE_INTERVAL.min);
+      
+      const needsNewTarget = 
+        !target || 
+        distanceToTarget < 0.2 || // Close to target
+        timeSinceLastTarget > maxTargetInterval; // Time for new target
+      
+      if (needsNewTarget) {
+        // Decide if deer should idle or move
+        if (Math.random() < IDLE_PROBABILITY) {
+          setIsIdle(true);
+          setIdleStartTime(currentTime);
+          setTarget(null);
+          return;
+        } else {
+          // Generate new wandering target
+          const newTarget = generateWanderingTarget(currentPosition);
+          if (newTarget) {
+            setTarget(newTarget);
+            setLastTargetTime(currentTime);
+          }
         }
       }
     }
@@ -179,12 +267,14 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Ensure deer stays on surface (handle this here instead of GravityController to avoid conflicts)
       const idealSurfaceDistance = 6.05;
       const currentDistance = targetPosition.length();
+
       
       // Only correct if significantly off surface to prevent micro-corrections
       if (Math.abs(currentDistance - idealSurfaceDistance) > 0.1) {
         targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
       }
       
+
       // Calculate actual movement that occurred (for rotation)
       const actualMovement = targetPosition.clone().sub(currentPosition);
       
@@ -204,13 +294,14 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         if (tangentialMovement.length() > 0.01) {
           // Use a simpler approach with lookAt for more reliable rotation
           const lookAtPosition = currentPosition.clone().add(tangentialMovement);
+
           
           // Create a temporary object to calculate the rotation
           const tempObject = new THREE.Object3D();
           tempObject.position.copy(currentPosition);
           tempObject.up.copy(surfaceNormal); // Set the "up" direction relative to surface
           tempObject.lookAt(lookAtPosition);
-          
+
           // Temporarily remove orientation offset to test direction
           const targetQuaternion = tempObject.quaternion.clone();
           // TODO: Add back correct orientation offset once we determine proper direction
@@ -286,7 +377,9 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       position={[surfacePosition.x, surfacePosition.y, surfacePosition.z]}
       type="kinematicPosition" // Kinematic body controlled by character controller
       colliders={false}
-      userData={{ isDeer: true, objectId, isMoving: !isIdle && target !== null }}
+
+      userData={{ isDeer: true, objectId, isMoving: !isIdle && target !== null, isEating: isEating }}
+
     >
       {/* Capsule collider for character controller */}
       <CapsuleCollider 
@@ -297,18 +390,30 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       />
       
       {/* Visual deer model - inherits rotation from RigidBody */}
-      <Deer 
-        type={type}
-        position={[0, 0, 0]}
-        rotation={[0, 0, 0]}
-        scale={[1, 1, 1]}
-        selected={selected}
-        objectId={objectId}
-        preview={false}
-        canPlace={true}
-        disablePositionSync={true}
-        isPhysicsControlled={true}
-      />
+
+      <group>
+        <Deer 
+          type={type}
+          position={[0, 0, 0]}
+          rotation={[0, 0, 0]}
+          scale={[1, 1, 1]}
+          selected={selected}
+          objectId={objectId}
+          preview={false}
+          canPlace={true}
+          disablePositionSync={true}
+          isPhysicsControlled={true}
+        />
+        
+        {/* Eating indicator */}
+        {isEating && (
+          <mesh position={[0, 1.2, 0]}>
+            <sphereGeometry args={[0.08, 8, 8]} />
+            <meshBasicMaterial color="green" />
+          </mesh>
+        )}
+      </group>
+
     </RigidBody>
   );
 }
