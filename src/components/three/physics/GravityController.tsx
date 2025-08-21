@@ -20,8 +20,13 @@ export function GravityController() {
     
     // Apply surface adherence correction to deer physics bodies
     world.forEachRigidBody((body) => {
-      const userData = body.userData as PhysicsBodyUserData;
+      const userData = body.userData as PhysicsBodyUserData & { isMoving?: boolean };
       if (userData?.isDeer && userData.objectId) {
+        // Skip correction if deer is actively moving to prevent flickering
+        if (userData.isMoving) {
+          return;
+        }
+        
         const position = body.translation();
         const objectId = userData.objectId;
         
@@ -29,8 +34,8 @@ export function GravityController() {
         const lastCorrection = lastCorrectionTime.current.get(objectId) ?? 0;
         const timeSinceLastCorrection = currentTime - lastCorrection;
         
-        // Only correct every 100ms to prevent flickering
-        if (timeSinceLastCorrection < 100) {
+        // Only correct every 500ms to prevent flickering
+        if (timeSinceLastCorrection < 500) {
           return;
         }
         
