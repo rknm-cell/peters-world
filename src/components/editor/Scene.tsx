@@ -2,10 +2,10 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useThree } from "@react-three/fiber";
+import { Physics } from "@react-three/rapier";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
 import { LIGHTING_PRESETS } from "~/lib/constants";
-import { Globe } from "./Globe";
 import { CameraController } from "./CameraController";
 import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";
@@ -13,6 +13,12 @@ import { InputManager } from "./InputManager";
 import { Sun } from '~/components/three/objects/Sun';
 import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
 import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
+import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
+import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
+import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
+import { GravityController } from '~/components/three/physics/GravityController';
+import { PhysicsDebug } from '~/components/three/physics/PhysicsDebug';
+import { PhysicsStatusLogger } from '~/components/three/physics/PhysicsStatusLogger';
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -56,23 +62,40 @@ export function Scene() {
       {/* Camera Controls */}
       <CameraController />
 
-      {/* Rotation group that contains all rotatable content */}
-      <group ref={rotationGroupRef}>
-        {/* Placement System wraps all interactive objects */}
-        <PlacementSystem
-          globeRef={globeRef}
-          rotationGroupRef={rotationGroupRef}
-        >
-          {/* Main globe */}
-          <Globe 
-            ref={globeRef} 
-            onTerrainMeshReady={setTerrainMesh}
-          />
+      {/* Physics World - Contains all physics-enabled objects */}
+      <Physics 
+        gravity={[0, 0, 0]} // No global gravity - we use custom radial gravity
+        interpolate={true} // Smooth visual interpolation
+        updateLoop="independent" // Better performance
+        timeStep={1/60} // 60 FPS physics updates
+      >
+        {/* Custom radial gravity system */}
+        <GravityController />
+        
+        {/* Physics debug visualization */}
+        <PhysicsDebug />
+        
+        {/* Physics status logging for debugging */}
+        <PhysicsStatusLogger />
+        
+        {/* Rotation group that contains all rotatable content */}
+        <group ref={rotationGroupRef}>
+          {/* Placement System wraps all interactive objects */}
+          <PlacementSystem
+            globeRef={globeRef}
+            rotationGroupRef={rotationGroupRef}
+          >
+            {/* Physics-enabled globe with precise collision detection */}
+            <GlobePhysics 
+              ref={globeRef} 
+              onTerrainMeshReady={setTerrainMesh}
+            />
 
-          {/* All placed objects - these will rotate with the globe */}
-          <WorldObjects />
-        </PlacementSystem>
-      </group>
+            {/* All placed objects - includes physics-based deer */}
+            <WorldObjects />
+          </PlacementSystem>
+        </group>
+      </Physics>
       
       {/* Unified Input Manager handles all interactions */}
       <InputManager
@@ -86,6 +109,12 @@ export function Scene() {
       
       {/* Tree lifecycle manager - handles automatic tree aging */}
       <TreeLifecycleManager />
+      
+      {/* Grass spawning manager - handles automatic grass spawning on green terrain */}
+      <GrassSpawningManager />
+      
+      {/* Deer spawning manager - handles automatic deer spawning and despawning */}
+      <DeerSpawningManager />
     </>
   );
 }

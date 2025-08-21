@@ -83,6 +83,50 @@ export const OBJECT_METADATA = {
     bottomOffset: -0.15, // Embed slightly into surface
     baseRadius: 0.1,
   },
+
+  // Grass models
+  "grass/grass": {
+    bottomOffset: -0.01,
+    baseRadius: 0.03,
+  },
+  "grass/grass-basic": {
+    bottomOffset: -0.01,
+    baseRadius: 0.02,
+  },
+  "grass/grass-clumb": {
+    bottomOffset: -0.01,
+    baseRadius: 0.04,
+  },
+  "grass/grass-long": {
+    bottomOffset: -0.01,
+    baseRadius: 0.025,
+  },
+  "grass/grass-tall": {
+    bottomOffset: -0.01,
+    baseRadius: 0.035,
+  },
+
+  // Animal models
+  "animals/deer": {
+    bottomOffset: -0.1, // Deer should stand on the ground
+    baseRadius: 0.4, // Deer collision radius
+  },
+  "animals/wolf": {
+    bottomOffset: -0.08,
+    baseRadius: 0.3,
+  },
+  "animals/seagull": {
+    bottomOffset: -0.05,
+    baseRadius: 0.2,
+  },
+  "animals/crab": {
+    bottomOffset: -0.02,
+    baseRadius: 0.15,
+  },
+  "animals/butterfly": {
+    bottomOffset: 0.1, // Butterfly should float above ground
+    baseRadius: 0.08,
+  },
 } as const;
 
 export interface PlacementInfo {
@@ -118,40 +162,48 @@ export function calculatePlacement(
     surfaceNormal.clone().multiplyScalar(metadata.bottomOffset),
   );
 
-  // Calculate rotation - align with surface normal but limit excessive rotation
-  // This prevents objects from becoming parallel to the surface on steep slopes
-  const up = new THREE.Vector3(0, 1, 0);
+  // Calculate rotation based on object type
+  let rotation: THREE.Euler;
   
-  // Create a rotation that makes the object's up vector align with the surface normal
-  // but without flipping the object upside down
-  const quaternion = new THREE.Quaternion();
-  
-  // Handle the case where the surface normal is pointing directly up or down
-  if (Math.abs(surfaceNormal.y) > 0.99) {
-    // If surface normal is nearly vertical, just use identity rotation
-    quaternion.identity();
+  // Animals should stand mostly upright, not aligned with surface normal
+  if (objectType.startsWith("animals/")) {
+    // For animals, use minimal rotation - just keep them mostly upright
+    rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'); // Random Y rotation for variety
   } else {
-    // Calculate the rotation axis (cross product of up and surface normal)
-    const rotationAxis = new THREE.Vector3().crossVectors(up, surfaceNormal).normalize();
+    // For other objects (trees, structures, etc.), align with surface normal but limit excessive rotation
+    const up = new THREE.Vector3(0, 1, 0);
     
-    // Calculate the rotation angle
-    let rotationAngle = Math.acos(up.dot(surfaceNormal));
+    // Create a rotation that makes the object's up vector align with the surface normal
+    // but without flipping the object upside down
+    const quaternion = new THREE.Quaternion();
     
-    // Apply a gradual reduction to rotation as it gets steeper
-    // This prevents objects from becoming parallel while maintaining natural appearance
-    if (rotationAngle > Math.PI / 2.2) { // If rotation is more than 82 degrees
-      // Gradually reduce the rotation using a smooth curve
-      const excessRotation = rotationAngle - Math.PI / 2.2;
-      const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2.2)));
-      rotationAngle = Math.PI / 2.2 + (excessRotation * reductionFactor);
+    // Handle the case where the surface normal is pointing directly up or down
+    if (Math.abs(surfaceNormal.y) > 0.99) {
+      // If surface normal is nearly vertical, just use identity rotation
+      quaternion.identity();
+    } else {
+      // Calculate the rotation axis (cross product of up and surface normal)
+      const rotationAxis = new THREE.Vector3().crossVectors(up, surfaceNormal).normalize();
+      
+      // Calculate the rotation angle
+      let rotationAngle = Math.acos(up.dot(surfaceNormal));
+      
+      // Apply a gradual reduction to rotation as it gets steeper
+      // This prevents objects from becoming parallel while maintaining natural appearance
+      if (rotationAngle > Math.PI / 2.2) { // If rotation is more than 82 degrees
+        // Gradually reduce the rotation using a smooth curve
+        const excessRotation = rotationAngle - Math.PI / 2.2;
+        const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2.2)));
+        rotationAngle = Math.PI / 2.2 + (excessRotation * reductionFactor);
+      }
+      
+      // Create quaternion from axis and angle
+      quaternion.setFromAxisAngle(rotationAxis, rotationAngle);
     }
     
-    // Create quaternion from axis and angle
-    quaternion.setFromAxisAngle(rotationAxis, rotationAngle);
+    // Convert to euler with consistent order
+    rotation = new THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
   }
-  
-  // Convert to euler with consistent order
-  const rotation = new THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
 
   // Check for collisions with existing objects using bounding box
   const canPlace = checkPlacementValidity(

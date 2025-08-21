@@ -4,7 +4,9 @@ import { useWorldStore } from "~/lib/store";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
-import { OBJECT_TYPES, TREE_LIFECYCLE } from "~/lib/constants";
+import { Grass } from "~/components/three/objects/Grass";
+import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
+import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 
 // Define proper types for object categories - now includes all lifecycle stages
@@ -20,6 +22,8 @@ type TreeType =
   | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
 type StructureType = "house" | "tower" | "bridge";
 type DecorationType = "rock" | "flower";
+type GrassType = typeof GRASS_MODELS[number];
+type AnimalType = typeof ANIMAL_MODELS[number];
 
 // Type guard functions to check object types
 function isTreeType(type: string): type is TreeType {
@@ -44,6 +48,14 @@ function isStructureType(type: string): type is StructureType {
 
 function isDecorationType(type: string): type is DecorationType {
   return OBJECT_TYPES.decorations.includes(type as DecorationType);
+}
+
+function isGrassType(type: string): type is GrassType {
+  return (GRASS_MODELS as readonly string[]).includes(type);
+}
+
+function isAnimalType(type: string): type is AnimalType {
+  return (ANIMAL_MODELS as readonly string[]).includes(type);
 }
 
 export function WorldObjects() {
@@ -77,6 +89,23 @@ export function WorldObjects() {
 
     if (isDecorationType(obj.type)) {
       return <Decoration key={obj.id} type={obj.type} {...props} />;
+    }
+
+    if (isGrassType(obj.type)) {
+      return <Grass key={obj.id} type={obj.type} {...props} />;
+    }
+
+    if (isAnimalType(obj.type)) {
+      // Use physics-based deer for realistic movement and surface adhesion
+      return (
+        <DeerPhysics 
+          key={obj.id}
+          objectId={obj.id}
+          type={obj.type}
+          position={obj.position}
+          selected={isSelected}
+        />
+      );
     }
 
     // Default fallback for unknown types

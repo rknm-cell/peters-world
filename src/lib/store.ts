@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Vector3 } from "three";
 import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
-import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG } from "./constants";
+import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
 
 export type TreeLifecycleStage = 
@@ -26,6 +26,14 @@ export interface PlacedObject {
   rotation: [number, number, number];
   scale: [number, number, number];
   treeLifecycle?: TreeLifecycleData; // Only for tree objects
+  // Deer movement data
+  deerMovement?: {
+    targetPosition: [number, number, number];
+    moveSpeed: number;
+    lastMoveTime: number;
+    isMoving: boolean;
+    moveDirection: [number, number, number];
+  };
 }
 
 export interface TerrainVertex {
@@ -61,6 +69,9 @@ interface WorldState {
   brushStrength: number;
   isTerraforming: boolean;
 
+  // Debounced grass spawning to prevent rapid successive calls
+  _grassSpawningTimeout: NodeJS.Timeout | null;
+
   // Actions
   addObject: (type: string, position: Vector3) => void;
   removeObject: (id: string) => void;
@@ -82,6 +93,17 @@ interface WorldState {
   attemptTreeSpawning: () => void;
   setGlobeRef: (globe: THREE.Mesh | null) => void;
   
+  // Grass spawning actions
+  attemptGrassSpawning: () => void;
+  attemptGrassSpawningDebounced: () => void;
+  
+  // Deer spawning actions
+  attemptDeerSpawning: () => void;
+  attemptDeerDespawning: () => void;
+  
+  // Deer movement actions
+  testDeerMovement: () => void;
+  
   // Forest detection actions
   detectForests: () => void;
   updateTreeForestStatus: (id: string, isPartOfForest: boolean, forestId?: string) => void;
@@ -95,6 +117,9 @@ interface WorldState {
   setTerrainVertices: (vertices: TerrainVertex[]) => void;
   updateTerrainOctree: () => void;
   resetTerrain: () => void;
+
+  // Deer movement functions
+  updateDeerMovement: () => void;
 }
 
 export const useWorldStore = create<WorldState>((set, _get) => ({
@@ -118,6 +143,26 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   brushSize: 0.5,
   brushStrength: 0.1,
   isTerraforming: false,
+
+  // Debounced grass spawning to prevent rapid successive calls
+  _grassSpawningTimeout: null as NodeJS.Timeout | null,
+
+  // Debounced grass spawning function
+  attemptGrassSpawningDebounced: () => {
+    const state = _get();
+    
+    // Clear any existing timeout
+    if (state._grassSpawningTimeout) {
+      clearTimeout(state._grassSpawningTimeout);
+    }
+    
+    // Set a new timeout to spawn grass after a short delay
+    const timeoutId = setTimeout(() => {
+      _get().attemptGrassSpawning();
+    }, 100); // 100ms debounce delay
+    
+    set({ _grassSpawningTimeout: timeoutId });
+  },
 
   addObject: (type: string, position: Vector3) => {
     const id = Math.random().toString(36).substring(7);
@@ -845,5 +890,651 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Set globe reference for surface placement
   setGlobeRef: (globe: THREE.Mesh | null) => {
     set({ globeRef: globe });
+  },
+
+  // Grass spawning function - spawns grass on green terrain areas
+  attemptGrassSpawning: () => {
+    set((state) => {
+      // Check if we have globe reference for surface placement
+      if (!state.globeRef) {
+        return state;
+      }
+
+      // Check if we have terrain data for color/height analysis
+      if (!state.terrainVertices || state.terrainVertices.length === 0) {
+        return state;
+      }
+
+      const newGrass: PlacedObject[] = [];
+      const raycaster = new THREE.Raycaster();
+      const maxAttempts = GRASS_CONFIG.maxGrassPerSpawn * 3; // Try more locations to find suitable spots
+      let attempts = 0;
+      let spawned = 0;
+
+      while (spawned < GRASS_CONFIG.maxGrassPerSpawn && attempts < maxAttempts) {
+        attempts++;
+        
+        // Generate random position on sphere surface
+        const phi = Math.random() * Math.PI * 2; // Azimuthal angle (0 to 2π)
+        const theta = Math.acos(1 - 2 * Math.random()); // Polar angle (0 to π) with uniform distribution
+        
+        // Convert spherical coordinates to Cartesian (radius = ~6 for globe surface)
+        const radius = 6.5; // Slightly above surface to ensure ray hits
+        const x = radius * Math.sin(theta) * Math.cos(phi);
+        const y = radius * Math.cos(theta);
+        const z = radius * Math.sin(theta) * Math.sin(phi);
+        
+        // Cast ray from above down to globe surface
+        const rayOrigin = new THREE.Vector3(x, y + 1, z); // Start slightly above
+        const rayDirection = new THREE.Vector3(-x, -y, -z).normalize(); // Point toward center
+        
+        raycaster.set(rayOrigin, rayDirection);
+        
+        // Get intersection with globe surface
+        const detailedIntersection = getDetailedIntersection(raycaster, state.globeRef);
+        
+        if (detailedIntersection) {
+          // Find the closest terrain vertex to check height and water level
+          const hitPoint = detailedIntersection.point;
+          let closestVertex = null;
+          let closestDistance = Infinity;
+          
+          // Optimize vertex search by limiting search radius
+          const searchRadius = 2.0; // Only search within reasonable distance
+          for (const vertex of state.terrainVertices) {
+            const distance = Math.sqrt(
+              (hitPoint.x - vertex.x) ** 2 + 
+              (hitPoint.y - vertex.y) ** 2 + 
+              (hitPoint.z - vertex.z) ** 2
+            );
+            if (distance < searchRadius && distance < closestDistance) {
+              closestDistance = distance;
+              closestVertex = vertex;
+            }
+          }
+          
+          if (closestVertex) {
+            // Check if terrain conditions are suitable for grass
+            const isValidTerrain = 
+              closestVertex.height >= GRASS_CONFIG.heightRange.min &&
+              closestVertex.height <= GRASS_CONFIG.heightRange.max &&
+              closestVertex.waterLevel <= GRASS_CONFIG.waterLevelMax;
+            
+            if (isValidTerrain && Math.random() < GRASS_CONFIG.spawnProbability) {
+              // Choose random grass model
+              const grassType = GRASS_MODELS[Math.floor(Math.random() * GRASS_MODELS.length)]!;
+              
+              // Use placement system for proper positioning
+              const placementInfo = calculatePlacement(
+                grassType,
+                detailedIntersection.point,
+                detailedIntersection.normal,
+                state.objects
+              );
+              
+              if (placementInfo.canPlace) {
+                const grassId = Math.random().toString(36).substring(7);
+                const newGrassObj: PlacedObject = {
+                  id: grassId,
+                  type: grassType,
+                  position: [
+                    placementInfo.position.x,
+                    placementInfo.position.y,
+                    placementInfo.position.z
+                  ],
+                  rotation: [
+                    placementInfo.rotation.x,
+                    placementInfo.rotation.y + Math.random() * Math.PI * 2, // Random Y rotation for natural look
+                    placementInfo.rotation.z
+                  ],
+                  scale: [1, 1, 1], // Same scale as other models
+                };
+                
+                newGrass.push(newGrassObj);
+                spawned++;
+              }
+            }
+          }
+        }
+      }
+
+      // Only log if grass was actually spawned
+      if (newGrass.length > 0) {
+        console.log(`🌿 Grass spawned: ${newGrass.length} patches`);
+      }
+      
+      if (newGrass.length > 0) {
+        return { 
+          objects: [...state.objects, ...newGrass],
+          isPlacing: state.isPlacing,
+          terraformMode: state.terraformMode
+        };
+      }
+      
+      return state;
+    });
+  },
+
+  // Deer spawning function - spawns deer on suitable terrain areas
+  attemptDeerSpawning: () => {
+    set((state) => {
+      console.log("🦌 Deer spawning attempt started...");
+      console.log("🦌 Current state:", {
+        hasGlobeRef: !!state.globeRef,
+        terrainVerticesCount: state.terrainVertices?.length || 0,
+        currentDeerCount: state.objects.filter(obj => obj.type === "animals/deer").length,
+        maxDeerInWorld: DEER_CONFIG.maxDeerInWorld
+      });
+      
+      // Check if we have globe reference for surface placement
+      if (!state.globeRef) {
+        console.error("❌ Deer spawning: No globe reference available");
+        console.error("   This usually means the Globe component hasn't set the globeRef yet");
+        console.error("   Check if Globe component is rendered and calls setGlobeRef");
+        return state;
+      }
+
+      // Check if we have terrain data for color/height analysis
+      if (!state.terrainVertices || state.terrainVertices.length === 0) {
+        console.error("❌ Deer spawning: No terrain data available");
+        console.error("   This usually means terrain deformation hasn't been initialized");
+        console.error("   terrainVertices count:", state.terrainVertices?.length || 0);
+        return state;
+      }
+
+      // Check if we're already at max deer capacity
+      const currentDeerCount = state.objects.filter(obj => obj.type === "animals/deer").length;
+      if (currentDeerCount >= DEER_CONFIG.maxDeerInWorld) {
+        console.log("❌ Deer spawning: Already at max capacity");
+        return state;
+      }
+
+      console.log("🦌 Deer spawning: Starting spawn attempts...");
+
+      const newDeer: PlacedObject[] = [];
+      const raycaster = new THREE.Raycaster();
+      const maxAttempts = DEER_CONFIG.maxDeerPerSpawn * 5; // Try more locations to find suitable spots
+      let attempts = 0;
+      let spawned = 0;
+
+      while (spawned < DEER_CONFIG.maxDeerPerSpawn && attempts < maxAttempts) {
+        attempts++;
+        
+        // Generate random position on sphere surface
+        const phi = Math.random() * Math.PI * 2; // Azimuthal angle (0 to 2π)
+        const theta = Math.acos(1 - 2 * Math.random()); // Polar angle (0 to π) with uniform distribution
+        
+        // Convert spherical coordinates to Cartesian (radius = ~6 for globe surface)
+        // Use the same radius as the movement system for consistency
+        const spawnRadius = 6.0; // Same as movement radius - spawn on actual globe surface
+        const x = spawnRadius * Math.sin(theta) * Math.cos(phi);
+        const y = spawnRadius * Math.cos(theta);
+        const z = spawnRadius * Math.sin(theta) * Math.sin(phi);
+        
+        // Cast ray from above down to globe surface
+        const rayOrigin = new THREE.Vector3(x, y + 0.5, z); // Start slightly above spawn point
+        const rayDirection = new THREE.Vector3(0, -1, 0); // Ray straight down to find surface
+        
+        raycaster.set(rayOrigin, rayDirection);
+        
+        // Get intersection with globe surface
+        const detailedIntersection = getDetailedIntersection(raycaster, state.globeRef);
+        
+        if (detailedIntersection) {
+          // Find the closest terrain vertex to check height and water level
+          const hitPoint = detailedIntersection.point;
+          let closestVertex = null;
+          let closestDistance = Infinity;
+          
+          // Optimize vertex search by limiting search radius
+          const searchRadius = 2.0; // Only search within reasonable distance
+          for (const vertex of state.terrainVertices) {
+            const distance = Math.sqrt(
+              (hitPoint.x - vertex.x) ** 2 + 
+              (hitPoint.y - vertex.y) ** 2 + 
+              (hitPoint.z - vertex.z) ** 2
+            );
+            if (distance < searchRadius && distance < closestDistance) {
+              closestDistance = distance;
+              closestVertex = vertex;
+            }
+          }
+          
+          if (closestVertex) {
+            // Check if terrain conditions are suitable for deer
+            const isValidTerrain = 
+              closestVertex.height >= DEER_CONFIG.heightRange.min &&
+              closestVertex.height <= DEER_CONFIG.heightRange.max &&
+              closestVertex.waterLevel <= DEER_CONFIG.waterLevelMax;
+            
+            if (attempts <= 3) { // Log first few attempts for debugging
+              console.log(`🦌 Deer spawn attempt ${attempts}:`, {
+                hitPoint: hitPoint.toArray(),
+                closestVertex: {
+                  height: closestVertex.height,
+                  waterLevel: closestVertex.waterLevel
+                },
+                isValidTerrain,
+                heightRange: DEER_CONFIG.heightRange,
+                waterLevelMax: DEER_CONFIG.waterLevelMax,
+                spawnRoll: Math.random(),
+                spawnProbability: DEER_CONFIG.spawnProbability
+              });
+            }
+            
+            if (isValidTerrain && Math.random() < DEER_CONFIG.spawnProbability) {
+              console.log(`🦌 Deer spawn attempt ${attempts}: Terrain valid, attempting placement...`);
+              
+              // Use placement system for proper positioning
+              const placementInfo = calculatePlacement(
+                "animals/deer",
+                detailedIntersection.point,
+                detailedIntersection.normal,
+                state.objects
+              );
+              
+              console.log(`🦌 Deer placement result:`, placementInfo);
+              
+              if (placementInfo.canPlace) {
+                const deerId = Math.random().toString(36).substring(7);
+                const newDeerObj: PlacedObject = {
+                  id: deerId,
+                  type: "animals/deer",
+                  position: [
+                    placementInfo.position.x,
+                    placementInfo.position.y,
+                    placementInfo.position.z
+                  ],
+                  rotation: [
+                    placementInfo.rotation.x,
+                    placementInfo.rotation.y, // No random rotation - keep deer straight like trees
+                    placementInfo.rotation.z
+                  ],
+                  scale: [1, 1, 1], // Same scale as other models
+                };
+                
+                newDeer.push(newDeerObj);
+                spawned++;
+              }
+            }
+          }
+        }
+      }
+
+      // Only log if deer was actually spawned
+      if (newDeer.length > 0) {
+        console.log(`🦌 Deer spawned: ${newDeer.length} deer`);
+      }
+      
+      if (newDeer.length > 0) {
+        return { 
+          objects: [...state.objects, ...newDeer],
+          isPlacing: state.isPlacing,
+          terraformMode: state.terraformMode
+        };
+      }
+      
+      return state;
+    });
+  },
+
+  // Deer despawn function - removes deer randomly to maintain population control
+  attemptDeerDespawning: () => {
+    set((state) => {
+      const deerObjects = state.objects.filter(obj => obj.type === "animals/deer");
+      
+      if (deerObjects.length === 0) {
+        return state;
+      }
+
+      const deerToRemove: string[] = [];
+      
+      // Check each deer for despawn chance
+      deerObjects.forEach(deer => {
+        if (Math.random() < DEER_CONFIG.despawnProbability) {
+          deerToRemove.push(deer.id);
+        }
+      });
+
+      if (deerToRemove.length > 0) {
+        console.log(`🦌 Deer despawned: ${deerToRemove.length} deer`);
+        return {
+          ...state,
+          objects: state.objects.filter(obj => !deerToRemove.includes(obj.id))
+        };
+      }
+      
+      return state;
+    });
+  },
+
+  // Test deer movement - manually test if movement system is working
+  testDeerMovement: () => {
+    console.log("🧪 Testing deer movement system...");
+    
+    set((state) => {
+      const deerObjects = state.objects.filter(obj => obj.type === "animals/deer");
+      
+      if (deerObjects.length === 0) {
+        console.log("🧪 No deer found to test");
+        return state;
+      }
+      
+      console.log(`🧪 Found ${deerObjects.length} deer to test`);
+      
+      // Test the first deer
+      const testDeer = deerObjects[0];
+      
+      if (!testDeer) {
+        console.log("🧪 No deer found to test");
+        return state;
+      }
+      
+      console.log("🧪 Testing deer:", {
+        id: testDeer.id,
+        position: testDeer.position,
+        rotation: testDeer.rotation,
+        hasMovementData: !!testDeer.deerMovement
+      });
+      
+      // Create a test deer with movement data
+      const updatedObjects = state.objects.map(obj => {
+        if (obj.id === testDeer.id) {
+          const updatedObj = { ...obj };
+          
+          // Initialize movement data for testing
+          updatedObj.deerMovement = {
+            targetPosition: [obj.position[0] + 1, obj.position[1], obj.position[2] + 1] as [number, number, number],
+            moveSpeed: 2.0,
+            lastMoveTime: Date.now(),
+            isMoving: true,
+            moveDirection: [1, 0, 1] as [number, number, number],
+          };
+          
+          console.log("🧪 Created test movement data:", updatedObj.deerMovement);
+          return updatedObj;
+        }
+        return obj;
+      });
+      
+      return {
+        ...state,
+        objects: updatedObjects
+      };
+    });
+  },
+
+  // Update deer movement - called periodically to move deer around
+  updateDeerMovement: () => {
+    console.warn("🦌 ===== updateDeerMovement function called! =====");
+    
+    // Test basic store operations
+    try {
+      const testState = _get();
+      console.warn("🦌 Store test - objects count:", testState.objects.length);
+      console.warn("🦌 Store test - deer count:", testState.objects.filter(obj => obj.type === "animals/deer").length);
+      const deerObjects = testState.objects.filter(obj => obj.type === "animals/deer");
+      console.warn("🦌 Deer IDs:", deerObjects.map(d => d.id));
+      console.warn("🦌 Movement config test:", {
+        updateInterval: DEER_CONFIG.movement.updateInterval,
+        moveSpeed: DEER_CONFIG.movement.moveSpeed,
+        targetDistance: DEER_CONFIG.movement.targetDistance,
+        idleTime: DEER_CONFIG.movement.idleTime
+      });
+    } catch (error) {
+      console.error("🦌 Error in store test:", error);
+      return; // Exit if store is broken
+    }
+    
+    set((state) => {
+      console.log("🦌 Inside set function, updating state...");
+      const deerObjects = state.objects.filter(obj => obj.type === "animals/deer");
+      
+      if (deerObjects.length === 0) {
+        console.log("🦌 No deer found in objects");
+        return state;
+      }
+
+      console.log(`🦌 Deer movement update: ${deerObjects.length} deer found`);
+
+      const updatedObjects = state.objects.map(obj => {
+        if (obj.type !== "animals/deer") {
+          return obj;
+        }
+
+        console.log(`🦌 Processing deer ${obj.id} at position [${obj.position.join(', ')}]`);
+
+        const currentTime = Date.now();
+        const updatedObj = { ...obj };
+
+        // Initialize movement data if it doesn't exist
+        updatedObj.deerMovement ??= {
+          targetPosition: [...obj.position] as [number, number, number],
+          moveSpeed: DEER_CONFIG.movement.moveSpeed.min + Math.random() * (DEER_CONFIG.movement.moveSpeed.max - DEER_CONFIG.movement.moveSpeed.min),
+          lastMoveTime: currentTime,
+          isMoving: false,
+          moveDirection: [0, 0, 0] as [number, number, number],
+        };
+
+        const movement = updatedObj.deerMovement;
+        console.log(`🦌 Deer ${obj.id} movement data:`, {
+          isMoving: movement.isMoving,
+          targetPosition: movement.targetPosition,
+          moveSpeed: movement.moveSpeed,
+          lastMoveTime: movement.lastMoveTime
+        });
+        
+        // SIMPLE FORCE MOVEMENT FOR TESTING - make deer move immediately
+        if (!movement.isMoving) {
+          console.warn(`🦌 Deer ${obj.id}: FORCING SIMPLE MOVEMENT FOR TESTING`);
+          movement.isMoving = true;
+          movement.lastMoveTime = currentTime;
+          
+          // Generate a VERY SIMPLE target for testing - just move slightly in X direction
+          const simpleOffset = 0.5; // Small offset for testing
+          movement.targetPosition = [
+            obj.position[0] + simpleOffset,
+            obj.position[1],
+            obj.position[2]
+          ];
+          
+          // Calculate movement direction
+          const dx = movement.targetPosition[0] - obj.position[0];
+          const dy = movement.targetPosition[1] - obj.position[1];
+          const dz = movement.targetPosition[2] - obj.position[2];
+          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          
+          if (distance > 0.001) {
+            movement.moveDirection = [dx / distance, dy / distance, dz / distance];
+          }
+          
+          console.warn(`🦌 Deer ${obj.id}: SIMPLE forced target [${movement.targetPosition.join(', ')}] - distance: ${distance.toFixed(3)}`);
+        }
+          
+        // Check if we need a new target or if we've reached the current target
+        const distanceToTarget = Math.sqrt(
+          Math.pow(obj.position[0] - movement.targetPosition[0], 2) +
+          Math.pow(obj.position[1] - movement.targetPosition[1], 2) +
+          Math.pow(obj.position[2] - movement.targetPosition[2], 2)
+        );
+        
+        // Also force new target if deer hasn't moved yet (initial spawn)
+        const shouldGetNewTarget = distanceToTarget < DEER_CONFIG.movement.targetDistance.min || 
+          (currentTime - movement.lastMoveTime > DEER_CONFIG.movement.idleTime.max && !movement.isMoving) ||
+          (!movement.isMoving && distanceToTarget < 0.1); // Force movement if deer is idle at spawn point
+        
+        console.log(`🦌 Deer ${obj.id} target check:`, {
+          distanceToTarget,
+          shouldGetNewTarget,
+          distanceMin: DEER_CONFIG.movement.targetDistance.min,
+          idleTimeMax: DEER_CONFIG.movement.idleTime.max,
+          timeSinceLastMove: currentTime - movement.lastMoveTime,
+          isMoving: movement.isMoving
+        });
+          
+        if (shouldGetNewTarget) {
+          console.log(`🦌 Deer ${obj.id}: Generating new target using localized random walk`);
+          
+          // Use LOCAL random walk instead of global random sphere points
+          // This creates more natural, wandering behavior like real animals
+          let targetFound = false;
+          let attempts = 0;
+          const maxTargetAttempts = 10;
+          
+          while (!targetFound && attempts < maxTargetAttempts) {
+            attempts++;
+            
+            // Generate random direction within LOCAL area (realistic animal movement)
+            const currentPos = new THREE.Vector3(...obj.position);
+            
+            // Random direction in LOCAL tangent space (much more realistic)
+            const randomAngle = Math.random() * Math.PI * 2; // 0-360 degrees
+            const randomDistance = DEER_CONFIG.movement.targetDistance.min + 
+              Math.random() * (DEER_CONFIG.movement.targetDistance.max - DEER_CONFIG.movement.targetDistance.min);
+            
+            // Create local coordinate system on the surface
+            const surfaceNormal = currentPos.clone().normalize(); // Normal at current position
+            const tangent1 = new THREE.Vector3();
+            const tangent2 = new THREE.Vector3();
+            
+            // Create two perpendicular tangent vectors for local movement
+            if (Math.abs(surfaceNormal.y) < 0.9) {
+              tangent1.set(0, 1, 0).cross(surfaceNormal).normalize();
+            } else {
+              tangent1.set(1, 0, 0).cross(surfaceNormal).normalize();
+            }
+            tangent2.crossVectors(surfaceNormal, tangent1).normalize();
+            
+            // Generate target in local tangent plane
+            const localX = Math.cos(randomAngle) * randomDistance;
+            const localZ = Math.sin(randomAngle) * randomDistance;
+            
+            // Convert to world coordinates
+            const localTarget = currentPos.clone()
+              .add(tangent1.clone().multiplyScalar(localX))
+              .add(tangent2.clone().multiplyScalar(localZ));
+            
+            // Project target back to surface via raycasting
+            if (state.globeRef) {
+              const raycaster = new THREE.Raycaster();
+              const rayOrigin = localTarget.clone().add(surfaceNormal.clone().multiplyScalar(2)); // Start above
+              const rayDirection = surfaceNormal.clone().negate(); // Ray toward surface
+              
+              raycaster.set(rayOrigin, rayDirection);
+              const detailedIntersection = getDetailedIntersection(raycaster, state.globeRef);
+              
+              if (detailedIntersection) {
+                movement.targetPosition = [
+                  detailedIntersection.point.x,
+                  detailedIntersection.point.y,
+                  detailedIntersection.point.z
+                ];
+                targetFound = true;
+                console.log(`🦌 Deer ${obj.id}: Found local terrain target at distance ${randomDistance.toFixed(2)}, angle ${(randomAngle * 180 / Math.PI).toFixed(0)}°`);
+              }
+            } else {
+              // Fallback: project target to sphere surface
+              const targetRadius = currentPos.length();
+              const normalizedTarget = localTarget.normalize().multiplyScalar(targetRadius);
+              movement.targetPosition = [normalizedTarget.x, normalizedTarget.y, normalizedTarget.z];
+              targetFound = true;
+              console.log(`🦌 Deer ${obj.id}: Using local sphere target (no globe ref)`);
+            }
+          }
+          
+          if (targetFound) {
+            movement.isMoving = true;
+            movement.lastMoveTime = currentTime;
+            
+            // Calculate movement direction
+            const dx = movement.targetPosition[0] - obj.position[0];
+            const dy = movement.targetPosition[1] - obj.position[1];
+            const dz = movement.targetPosition[2] - obj.position[2];
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            if (distance > 0.001) {
+              movement.moveDirection = [dx / distance, dy / distance, dz / distance];
+              console.log(`🦌 Deer ${obj.id}: Moving to local target, distance: ${distance.toFixed(2)}`);
+            }
+          } else {
+            console.log(`🦌 Deer ${obj.id}: Could not find valid local target after ${attempts} attempts`);
+          }
+        }
+
+        // Move deer towards target if moving - with surface attachment
+        if (movement.isMoving && distanceToTarget > 0.02) {
+          console.log(`🦌 Deer ${obj.id}: MOVING - distance to target: ${distanceToTarget.toFixed(3)}`);
+          
+          // Smoother movement with surface following
+          const moveDistance = 0.02; // Smaller step for smoother movement
+          let newX = obj.position[0] + movement.moveDirection[0] * moveDistance;
+          let newY = obj.position[1] + movement.moveDirection[1] * moveDistance;
+          let newZ = obj.position[2] + movement.moveDirection[2] * moveDistance;
+          
+          // Project new position back to surface for perfect surface attachment
+          if (state.globeRef) {
+            const newPos = new THREE.Vector3(newX, newY, newZ);
+            const surfaceNormal = newPos.clone().normalize();
+            const raycaster = new THREE.Raycaster();
+            const rayOrigin = newPos.clone().add(surfaceNormal.clone().multiplyScalar(1)); // Start above
+            const rayDirection = surfaceNormal.clone().negate(); // Ray toward surface
+            
+            raycaster.set(rayOrigin, rayDirection);
+            const surfaceIntersection = getDetailedIntersection(raycaster, state.globeRef);
+            
+            if (surfaceIntersection) {
+              // Use precise surface position
+              newX = surfaceIntersection.point.x;
+              newY = surfaceIntersection.point.y;
+              newZ = surfaceIntersection.point.z;
+            }
+          }
+          
+          console.log(`🦌 Deer ${obj.id}: Position update: [${obj.position[0].toFixed(3)}, ${obj.position[1].toFixed(3)}, ${obj.position[2].toFixed(3)}] -> [${newX.toFixed(3)}, ${newY.toFixed(3)}, ${newZ.toFixed(3)}]`);
+          
+          updatedObj.position = [newX, newY, newZ];
+          
+          // Update rotation to face movement direction
+          const targetRotationY = Math.atan2(movement.moveDirection[0], movement.moveDirection[2]);
+          updatedObj.rotation = [obj.rotation[0], targetRotationY, obj.rotation[2]];
+          
+          // Stop moving if we're close to target - smaller threshold for local movement
+          if (distanceToTarget < 0.1) {
+            movement.isMoving = false;
+            console.log(`🦌 Deer ${obj.id}: Reached target, stopping`);
+          }
+        } else {
+          console.log(`🦌 Deer ${obj.id}: Not moving - distance: ${distanceToTarget.toFixed(3)}, isMoving: ${movement.isMoving}, reason: ${distanceToTarget <= 0.02 ? 'too close to target' : 'not marked as moving'}`);
+        }
+
+        return updatedObj;
+      });
+
+      // Debug: Check if positions actually changed
+      const deerBefore = state.objects.filter(obj => obj.type === "animals/deer");
+      const deerAfter = updatedObjects.filter(obj => obj.type === "animals/deer");
+      
+      deerBefore.forEach((before, index) => {
+        const after = deerAfter[index];
+        if (after) {
+          const posChanged = before.position[0] !== after.position[0] || 
+                           before.position[1] !== after.position[1] || 
+                           before.position[2] !== after.position[2];
+          console.warn(`🦌 STORE UPDATE - Deer ${after.id}: Position changed: ${posChanged}`);
+          if (posChanged) {
+            console.warn(`   Before: [${before.position.join(', ')}]`);
+            console.warn(`   After:  [${after.position.join(', ')}]`);
+          }
+        }
+      });
+
+      const newState = {
+        ...state,
+        objects: updatedObjects
+      };
+      
+      console.warn(`🦌 STORE UPDATE COMPLETE - Returning new state with ${newState.objects.length} objects`);
+      return newState;
+    });
   },
 }));
