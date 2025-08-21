@@ -144,9 +144,14 @@ export function Grass({
         position={position}
         rotation={rotation}
         scale={scale}
-        userData={{ isPlacedObject: !preview, objectId }}
+        userData={{ isPlacedObject: false, objectId, isGrass: true }} // Grass shouldn't be interactive for camera controls
       >
-        <mesh position={[0, 0.02, 0]} castShadow receiveShadow>
+        <mesh 
+          position={[0, 0.02, 0]} 
+          castShadow 
+          receiveShadow
+          raycast={() => null} // Make grass transparent to raycasting for camera controls
+        >
           <coneGeometry args={[0.01, 0.06, 4]} />
           <meshStandardMaterial 
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#228B22"}
@@ -172,9 +177,12 @@ export function Grass({
       position={position}
       rotation={rotation}
       scale={scale}
-      userData={{ isPlacedObject: !preview, objectId }}
+      userData={{ isPlacedObject: false, objectId, isGrass: true }} // Grass shouldn't be interactive for camera controls
     >
-      <primitive object={grassModel} />
+      <primitive 
+        object={grassModel} 
+        raycast={() => null} // Make grass transparent to raycasting for camera controls
+      />
       
       {/* Selection indicator */}
       {selected && !preview && (
