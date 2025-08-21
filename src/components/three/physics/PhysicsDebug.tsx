@@ -144,6 +144,12 @@ export function PhysicsDebug() {
                 <meshBasicMaterial color="blue" />
               </mesh>
               
+              {/* Deer facing direction indicator */}
+              <mesh position={[0, 0.3, 0.4]}>
+                <coneGeometry args={[0.06, 0.25]} />
+                <meshBasicMaterial color="orange" />
+              </mesh>
+              
               {/* Velocity vector visualization - shows actual movement direction */}
               {velocityMagnitude > 0.1 && (
                 <>

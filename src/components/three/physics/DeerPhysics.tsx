@@ -6,7 +6,6 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
-import { useWorldStore } from '~/lib/store';
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -35,11 +34,11 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const initialPosition = new THREE.Vector3(...position);
   const surfacePosition = initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
   
-  const [currentPosition, setCurrentPosition] = useState(surfacePosition);
   const [target, setTarget] = useState<THREE.Vector3 | null>(null);
   const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
+  const lastUpdateTime = useRef(0);
   
   const { rapier, world } = useRapier();
   const characterController = useRef<CharacterController | null>(null);
@@ -93,7 +92,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   }, [rapier, world, objectId, surfacePosition]);
   
   // Movement parameters for stable wandering
-  const MOVEMENT_SPEED = 2.0; // Increased speed to make movement more visible
+  const MOVEMENT_SPEED = 1.5; // Reduced slightly to reduce potential frame conflicts
   const TARGET_DISTANCE = { min: 0.8, max: 1.5 }; // Distance to wander
   const TARGET_UPDATE_INTERVAL = { min: 2000, max: 4000 }; // Time between targets
   const IDLE_PROBABILITY = 0.2; // Reduced idle probability to see more movement
@@ -104,6 +103,13 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     
     const body = rigidBodyRef.current;
     const currentTime = Date.now();
+    
+    // Throttle updates to prevent flickering (max 60 FPS)
+    const minUpdateInterval = 16.67; // ~60 FPS
+    if (currentTime - lastUpdateTime.current < minUpdateInterval) {
+      return;
+    }
+    lastUpdateTime.current = currentTime;
     
     // === CHARACTER CONTROLLER LOGIC ===
     
@@ -119,6 +125,10 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // During idle, no movement
       return;
     }
+    
+    // Get current position from physics body
+    const currentPos = body.translation();
+    const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
     
     // Check if we need a new target
     const distanceToTarget = target ? currentPosition.distanceTo(target) : Infinity;
@@ -163,48 +173,47 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate movement for this frame
       const movement = surfaceMovement.multiplyScalar(MOVEMENT_SPEED * delta);
       
-      // Get current position from physics body
-      const currentPos = body.translation();
-      const currentPosVec = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+      // Calculate target position for this frame
+      let targetPosition = currentPosition.clone().add(movement);
       
-      // Calculate target position for this frame (don't modify currentPosVec)
-      const targetPosition = currentPosVec.clone().add(movement);
+      // Ensure deer stays on surface (handle this here instead of GravityController to avoid conflicts)
+      const idealSurfaceDistance = 6.05;
+      const currentDistance = targetPosition.length();
       
-      // For kinematic bodies, directly set the new position
+      // Only correct if significantly off surface to prevent micro-corrections
+      if (Math.abs(currentDistance - idealSurfaceDistance) > 0.1) {
+        targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
+      }
+      
+      // Calculate actual movement that occurred (for rotation)
+      const actualMovement = targetPosition.clone().sub(currentPosition);
+      
+      // For kinematic bodies, directly set the new position (single source of truth)
       body.setTranslation(targetPosition, true);
-      setCurrentPosition(targetPosition);
       
-      // Rotate deer to face movement direction relative to surface normal
-      if (Math.abs(movement.x) > 0.001 || Math.abs(movement.z) > 0.001) {
-        const movementVector = movement.clone();
-        
+      // Rotate deer to face the direction they actually moved
+      if (actualMovement.length() > 0.01) {
         // Get surface normal (pointing away from globe center)
         const surfaceNormal = targetPosition.clone().normalize();
         
-        // Calculate local "up" direction relative to surface
-        const localUp = surfaceNormal;
-        
-        // Project movement onto surface tangent plane
-        const tangentialMovement = movementVector.clone()
-          .sub(localUp.clone().multiplyScalar(movementVector.dot(localUp)))
+        // Project actual movement direction onto surface tangent plane
+        const tangentialMovement = actualMovement.clone()
+          .sub(surfaceNormal.clone().multiplyScalar(actualMovement.dot(surfaceNormal)))
           .normalize();
         
-        if (tangentialMovement.length() > 0.1) {
-          // Calculate local "forward" direction (where deer should face)
-          const localForward = tangentialMovement;
+        if (tangentialMovement.length() > 0.01) {
+          // Use a simpler approach with lookAt for more reliable rotation
+          const lookAtPosition = currentPosition.clone().add(tangentialMovement);
           
-          // Calculate local "right" direction using cross product
-          const localRight = localForward.clone().cross(localUp).normalize();
+          // Create a temporary object to calculate the rotation
+          const tempObject = new THREE.Object3D();
+          tempObject.position.copy(currentPosition);
+          tempObject.up.copy(surfaceNormal); // Set the "up" direction relative to surface
+          tempObject.lookAt(lookAtPosition);
           
-          // Recalculate forward to ensure orthogonality
-          localForward.crossVectors(localUp, localRight).normalize();
-          
-          // Create rotation matrix from local coordinate system
-          const rotationMatrix = new THREE.Matrix4();
-          rotationMatrix.makeBasis(localRight, localUp, localForward.negate());
-          
-          // Extract quaternion from rotation matrix
-          const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
+          // Temporarily remove orientation offset to test direction
+          const targetQuaternion = tempObject.quaternion.clone();
+          // TODO: Add back correct orientation offset once we determine proper direction
           
           // Get current rotation
           const currentRotation = body.rotation();
@@ -215,31 +224,19 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
             currentRotation.w
           );
           
-          // Smoothly interpolate to target rotation
-          const rotationSpeed = 3.0 * delta;
+          // Make rotation more immediate and responsive
+          const rotationDiff = currentQuaternion.angleTo(targetQuaternion);
+          let rotationSpeed = 8.0 * delta; // Increased base rotation speed
+          
+          // If the rotation change is significant, rotate much faster
+          if (rotationDiff > Math.PI / 6) { // More than 30 degrees
+            rotationSpeed = Math.min(rotationSpeed * 3, 0.5); // Much faster rotation
+          }
+          
           const newQuaternion = currentQuaternion.slerp(targetQuaternion, rotationSpeed);
           
           body.setRotation(newQuaternion, true);
         }
-      }
-    }
-    
-    // === POSITION SYNC ===
-    // Update store with physics position
-    const store = useWorldStore.getState();
-    const currentObject = store.objects.find(obj => obj.id === objectId);
-    
-    if (currentObject) {
-      const threshold = 0.01;
-      const currentPos = currentObject.position;
-      
-      if (Math.abs(currentPos[0] - currentPosition.x) > threshold ||
-          Math.abs(currentPos[1] - currentPosition.y) > threshold ||
-          Math.abs(currentPos[2] - currentPosition.z) > threshold) {
-        
-        store.updateObject(objectId, {
-          position: [currentPosition.x, currentPosition.y, currentPosition.z]
-        });
       }
     }
   });
@@ -289,7 +286,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       position={[surfacePosition.x, surfacePosition.y, surfacePosition.z]}
       type="kinematicPosition" // Kinematic body controlled by character controller
       colliders={false}
-      userData={{ isDeer: true, objectId }}
+      userData={{ isDeer: true, objectId, isMoving: !isIdle && target !== null }}
     >
       {/* Capsule collider for character controller */}
       <CapsuleCollider 
@@ -299,21 +296,19 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         restitution={0.0} // No bounce
       />
       
-      {/* Visual deer model - aligned with collider center */}
-      <group position={[0, 0, 0]}>
-        <Deer 
-          type={type}
-          position={[0, 0, 0]}
-          rotation={[0, 0, 0]}
-          scale={[1, 1, 1]}
-          selected={selected}
-          objectId={objectId}
-          preview={false}
-          canPlace={true}
-          disablePositionSync={true}
-          isPhysicsControlled={true}
-        />
-      </group>
+      {/* Visual deer model - inherits rotation from RigidBody */}
+      <Deer 
+        type={type}
+        position={[0, 0, 0]}
+        rotation={[0, 0, 0]}
+        scale={[1, 1, 1]}
+        selected={selected}
+        objectId={objectId}
+        preview={false}
+        canPlace={true}
+        disablePositionSync={true}
+        isPhysicsControlled={true}
+      />
     </RigidBody>
   );
 }
