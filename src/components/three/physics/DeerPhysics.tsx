@@ -6,7 +6,6 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
-import { useWorldStore } from '~/lib/store';
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -39,6 +38,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
+
   const [isEating, setIsEating] = useState(false);
   const [eatingStartTime, setEatingStartTime] = useState(0);
   const [eatingGrassId, setEatingGrassId] = useState<string | null>(null);
@@ -159,6 +159,8 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     // Get current position from physics body
     const currentPos = body.translation();
     const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+
+
     
     // === GRASS EATING LOGIC ===
     
@@ -264,12 +266,14 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Ensure deer stays on surface (handle this here instead of GravityController to avoid conflicts)
       const idealSurfaceDistance = 6.05;
       const currentDistance = targetPosition.length();
+
       
       // Only correct if significantly off surface to prevent micro-corrections
       if (Math.abs(currentDistance - idealSurfaceDistance) > 0.1) {
         targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
       }
       
+
       // Calculate actual movement that occurred (for rotation)
       const actualMovement = targetPosition.clone().sub(currentPosition);
       
@@ -289,13 +293,14 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         if (tangentialMovement.length() > 0.01) {
           // Use a simpler approach with lookAt for more reliable rotation
           const lookAtPosition = currentPosition.clone().add(tangentialMovement);
+
           
           // Create a temporary object to calculate the rotation
           const tempObject = new THREE.Object3D();
           tempObject.position.copy(currentPosition);
           tempObject.up.copy(surfaceNormal); // Set the "up" direction relative to surface
           tempObject.lookAt(lookAtPosition);
-          
+
           // Temporarily remove orientation offset to test direction
           const targetQuaternion = tempObject.quaternion.clone();
           // TODO: Add back correct orientation offset once we determine proper direction
@@ -371,7 +376,9 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       position={[surfacePosition.x, surfacePosition.y, surfacePosition.z]}
       type="kinematicPosition" // Kinematic body controlled by character controller
       colliders={false}
+
       userData={{ isDeer: true, objectId, isMoving: !isIdle && target !== null, isEating: isEating }}
+
     >
       {/* Capsule collider for character controller */}
       <CapsuleCollider 
@@ -382,6 +389,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       />
       
       {/* Visual deer model - inherits rotation from RigidBody */}
+
       <group>
         <Deer 
           type={type}
@@ -404,6 +412,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
           </mesh>
         )}
       </group>
+
     </RigidBody>
   );
 }
