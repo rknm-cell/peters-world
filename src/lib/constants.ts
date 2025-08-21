@@ -140,6 +140,77 @@ export const FOREST_CONFIG = {
   forestEligibleStages: ["adult"] as const,
 } as const;
 
+// Grass models for random spawning
+export const GRASS_MODELS = [
+  "grass/grass",
+  "grass/grass-basic",
+  "grass/grass-clumb", 
+  "grass/grass-long",
+  "grass/grass-tall"
+] as const;
+
+// Animal models for random spawning
+export const ANIMAL_MODELS = [
+  "animals/deer",
+  "animals/wolf",
+  "animals/seagull",
+  "animals/crab",
+  "animals/butterfly"
+] as const;
+
+// Deer spawning configuration
+export const DEER_CONFIG = {
+  spawnProbability: 0.25, // 25% chance per check cycle (increased from 8%)
+  checkInterval: 60000, // 60 seconds between checks
+  maxDeerPerSpawn: 2, // Maximum deer to spawn per cycle
+  spawnRadius: {
+    min: 1.0, // Minimum distance from spawn point
+    max: 3.0, // Maximum distance from spawn point
+  },
+  // Terrain conditions for deer spawning - made more lenient
+  heightRange: {
+    min: -0.5, // Can spawn in slight depressions (same as grass)
+    max: 1.2,  // Can spawn on moderate hills
+  },
+  waterLevelMax: 0.02, // Allow spawning in slightly damp areas (more lenient than before)
+  // Deer behavior settings
+  maxDeerInWorld: 12, // Maximum total deer in the world
+  despawnProbability: 0.02, // 2% chance per check cycle for deer to despawn
+  // Movement settings
+  movement: {
+    updateInterval: 100, // Update movement every 100ms for smooth movement
+    moveSpeed: {
+      min: 2.0, // Minimum movement speed (increased for testing)
+      max: 5.0, // Maximum movement speed (increased for testing)
+    },
+    targetDistance: {
+      min: 1.0, // Minimum distance to generate new target
+      max: 3.0, // Maximum distance to generate new target (increased for more movement)
+    },
+    idleTime: {
+      min: 2000, // Minimum time to stay idle (2 seconds, reduced for testing)
+      max: 5000, // Maximum time to stay idle (5 seconds, reduced for testing)
+    },
+  },
+} as const;
+
+// Grass spawning configuration
+export const GRASS_CONFIG = {
+  spawnProbability: 0.15, // 15% chance per check cycle
+  checkInterval: 45000, // 45 seconds between checks
+  maxGrassPerSpawn: 8, // Maximum grass patches to spawn per cycle
+  spawnRadius: {
+    min: 0.3,
+    max: 0.8,
+  },
+  // Terrain conditions for grass spawning
+  heightRange: {
+    min: -0.5, // Can spawn in slight depressions
+    max: 1.0,  // But not on high mountains (brown/gray terrain)
+  },
+  waterLevelMax: 0.01, // Don't spawn in water
+} as const;
+
 // Object types available for placement
 export const OBJECT_TYPES = {
   trees: [
@@ -160,4 +231,6 @@ export const OBJECT_TYPES = {
   ],
   structures: ["house", "tower", "bridge"],
   decorations: ["rock", "flower"],
+  grass: GRASS_MODELS,
+  animals: ANIMAL_MODELS,
 } as const;

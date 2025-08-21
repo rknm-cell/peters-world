@@ -10,14 +10,24 @@ export function CameraController() {
   // This allows users to freely rotate the camera to view the globe from different angles
   const shouldDisableRotation = isPlacing || terraformMode !== "none";
   
-  // Debug logging for control state
-  console.log("🎮 CameraController state:", { 
+  // Debug logging for control state - more prominent logging
+  console.warn("🎮 CAMERA CONTROLLER STATE:", { 
     isPlacing, 
     terraformMode, 
     isTerraforming,
     shouldDisableRotation,
-    controlsEnabled: !shouldDisableRotation
+    controlsEnabled: !shouldDisableRotation,
+    enableRotate: !shouldDisableRotation
   });
+
+  // Add global function to force reset camera controls (for debugging)
+  if (typeof window !== 'undefined') {
+    (window as any).resetCameraControls = () => {
+      console.log("🔧 Force resetting camera controls...");
+      useWorldStore.getState().exitPlacementMode();
+      useWorldStore.getState().setTerraformMode("none");
+    };
+  }
   
   // Configure controls for globe viewing
   const controlsProps = {

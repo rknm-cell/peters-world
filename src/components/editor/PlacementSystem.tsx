@@ -7,6 +7,7 @@ import { OBJECT_TYPES } from "~/lib/constants";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
+import { Deer } from "~/components/three/objects/Deer";
 import type * as THREE from "three";
 import { Raycaster, Vector2, Mesh } from "three";
 import {
@@ -285,6 +286,17 @@ export function PlacementSystem({
             />
           ) : (selectedObjectType === "house" || selectedObjectType === "tower" || selectedObjectType === "bridge") ? (
             <Structure
+              type={selectedObjectType}
+              position={[0, 0, 0]}
+              rotation={[0, 0, 0]}
+              scale={[1, 1, 1]}
+              selected={false}
+              objectId="preview"
+              preview={true}
+              canPlace={placementPreview.canPlace}
+            />
+          ) : (selectedObjectType?.startsWith("animals/")) ? (
+            <Deer
               type={selectedObjectType}
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
