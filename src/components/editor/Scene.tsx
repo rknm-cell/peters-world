@@ -6,7 +6,6 @@ import { Physics } from "@react-three/rapier";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
 import { LIGHTING_PRESETS } from "~/lib/constants";
-import { Globe } from "./Globe";
 import { CameraController } from "./CameraController";
 import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";

@@ -3,6 +3,7 @@
 import { useRapier } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import type { PhysicsBodyUserData } from '~/lib/types';
 
 /**
  * GravityController - Applies custom radial gravity toward globe center
@@ -15,7 +16,7 @@ export function GravityController() {
   useFrame(() => {
     // Apply radial gravity to all physics bodies marked as deer
     world.forEachRigidBody((body) => {
-      const userData = body.userData as any;
+      const userData = body.userData as PhysicsBodyUserData;
       if (userData?.isDeer) {
         const position = body.translation();
         

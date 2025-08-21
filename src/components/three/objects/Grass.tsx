@@ -4,12 +4,8 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
 
-// Define the grass types based on available GLB files
-type GrassType = 
-  | "grass/grass" | "grass/grass-basic" | "grass/grass-clumb" 
-  | "grass/grass-long" | "grass/grass-tall";
+// Grass types are defined in constants.ts and used dynamically
 
 interface GrassProps {
   type: string;

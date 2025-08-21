@@ -22,7 +22,7 @@ export function CameraController() {
 
   // Add global function to force reset camera controls (for debugging)
   if (typeof window !== 'undefined') {
-    (window as any).resetCameraControls = () => {
+    window.resetCameraControls = () => {
       console.log("🔧 Force resetting camera controls...");
       useWorldStore.getState().exitPlacementMode();
       useWorldStore.getState().setTerraformMode("none");

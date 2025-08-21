@@ -11,13 +11,13 @@ export function PhysicsDebug() {
   
   useEffect(() => {
     // Global debug toggle for testing
-    (window as any).togglePhysicsDebug = () => {
+    window.togglePhysicsDebug = () => {
       setShowDebug(prev => !prev);
       console.log(`🔧 Physics debug: ${!showDebug ? 'enabled' : 'disabled'}`);
     };
     
     return () => {
-      delete (window as any).togglePhysicsDebug;
+      delete window.togglePhysicsDebug;
     };
   }, [showDebug]);
   

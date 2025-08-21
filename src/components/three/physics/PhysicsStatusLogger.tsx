@@ -3,17 +3,18 @@
 import { useEffect } from 'react';
 import { useRapier } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
+import type { PhysicsBodyUserData, PhysicsBody, RapierWorld } from '~/lib/types';
 
 /**
  * PhysicsStatusLogger - Logs physics world status for debugging
  * Provides console commands to inspect the physics world state
  */
 export function PhysicsStatusLogger() {
-  const { world } = useRapier();
+  const { world } = useRapier() as { world: RapierWorld };
   
   useEffect(() => {
     // Global functions for physics debugging
-    (window as any).logPhysicsStatus = () => {
+    window.logPhysicsStatus = () => {
       const bodyCount = world.bodies.len();
       const colliderCount = world.colliders.len();
       
@@ -26,8 +27,8 @@ export function PhysicsStatusLogger() {
       
       // Log each body's status
       let bodyIndex = 0;
-      world.forEachRigidBody((body) => {
-        const userData = body.userData as any;
+      world.forEachRigidBody((body: PhysicsBody) => {
+        const userData = body.userData as PhysicsBodyUserData;
         const position = body.translation();
         const velocity = body.linvel();
         const mass = body.mass();
@@ -44,10 +45,10 @@ export function PhysicsStatusLogger() {
       });
     };
     
-    (window as any).spawnPhysicsDeer = () => {
+    window.spawnPhysicsDeer = () => {
       console.warn("🔧 Attempting to spawn physics deer...");
       // This will trigger the existing spawn system
-      const testSpawn = (window as any).testDeerSpawn;
+      const testSpawn = window.testDeerSpawn;
       if (testSpawn) {
         testSpawn();
       } else {
@@ -56,8 +57,8 @@ export function PhysicsStatusLogger() {
     };
     
     return () => {
-      delete (window as any).logPhysicsStatus;
-      delete (window as any).spawnPhysicsDeer;
+      delete window.logPhysicsStatus;
+      delete window.spawnPhysicsDeer;
     };
   }, [world]);
   
@@ -67,8 +68,8 @@ export function PhysicsStatusLogger() {
     logInterval++;
     // Log status every 5 seconds (300 frames at 60fps)
     if (logInterval % 300 === 0) {
-      const deerCount = Array.from(world.bodies.getAll()).filter((body) => {
-        const userData = body.userData as any;
+      const deerCount = Array.from(world.bodies.getAll()).filter((body: PhysicsBody) => {
+        const userData = body.userData as PhysicsBodyUserData;
         return userData?.isDeer;
       }).length;
       

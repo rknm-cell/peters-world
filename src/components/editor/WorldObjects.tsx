@@ -5,7 +5,6 @@ import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Grass } from "~/components/three/objects/Grass";
-import { Deer } from "~/components/three/objects/Deer";
 import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
 import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";

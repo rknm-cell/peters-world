@@ -67,16 +67,27 @@ export function DeerSpawningManager() {
 
   // Expose debugging functions globally after all callbacks are defined
   useEffect(() => {
-    (window as any).toggleDeerMovement = toggleMovement;
-    (window as any).forceDeerMovement = () => {
+    // Define debug interface with proper typing
+    interface DebugWindow {
+      toggleDeerMovement?: () => void;
+      forceDeerMovement?: () => void;
+      testDeerSpawn?: () => void;
+      checkDeerState?: () => void;
+      checkSpawnRequirements?: () => void;
+    }
+    
+    const debugWindow = window as Window & DebugWindow;
+    
+    debugWindow.toggleDeerMovement = toggleMovement;
+    debugWindow.forceDeerMovement = () => {
       console.warn("🔧 Manually triggering deer movement...");
       moveDeer();
     };
-    (window as any).testDeerSpawn = () => {
+    debugWindow.testDeerSpawn = () => {
       console.warn("🔧 Manually triggering deer spawn...");
       spawnDeer();
     };
-    (window as any).checkDeerState = () => {
+    debugWindow.checkDeerState = () => {
       const state = useWorldStore.getState();
       const deer = state.objects.filter(obj => obj.type === "animals/deer");
       console.warn("🔍 Current deer state:", deer);
@@ -84,7 +95,7 @@ export function DeerSpawningManager() {
         console.warn(`   Deer ${d.id}: pos [${d.position.join(', ')}], movement:`, d.deerMovement);
       });
     };
-    (window as any).checkSpawnRequirements = () => {
+    debugWindow.checkSpawnRequirements = () => {
       const state = useWorldStore.getState();
       console.warn("🔍 Spawn requirements check:", {
         hasGlobeRef: !!state.globeRef,
@@ -97,15 +108,18 @@ export function DeerSpawningManager() {
       });
     };
     return () => {
-      delete (window as any).toggleDeerMovement;
-      delete (window as any).forceDeerMovement;
-      delete (window as any).testDeerSpawn;
-      delete (window as any).checkDeerState;
-      delete (window as any).checkSpawnRequirements;
+      delete debugWindow.toggleDeerMovement;
+      delete debugWindow.forceDeerMovement;
+      delete debugWindow.testDeerSpawn;
+      delete debugWindow.checkDeerState;
+      delete debugWindow.checkSpawnRequirements;
     };
   }, [toggleMovement, moveDeer, spawnDeer]);
   
   useEffect(() => {
+    // Copy ref to variable to avoid stale closure warning in cleanup
+    const movementIntervalRefCurrent = movementIntervalRef.current;
+    
     // Spawn a deer 1 second after scene loads for debugging
     const immediateSpawnDelay = setTimeout(() => {
       if (isActiveRef.current) {
@@ -151,7 +165,7 @@ export function DeerSpawningManager() {
                 objectsCount: storeState.objects.length,
                 hasDeer: storeState.objects.some(obj => obj.type === "animals/deer"),
                 deerCount: storeState.objects.filter(obj => obj.type === "animals/deer").length,
-                availableFunctions: Object.keys(storeState).filter(key => typeof (storeState as any)[key] === 'function')
+                availableFunctions: Object.keys(storeState).filter(key => typeof storeState[key as keyof typeof storeState] === 'function')
               });
               
               // Test the movement system
@@ -224,11 +238,12 @@ export function DeerSpawningManager() {
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
       }
-      if (movementIntervalRef.current) {
-        clearInterval(movementIntervalRef.current);
+      // Use the copied ref value to avoid stale closure warning
+      if (movementIntervalRefCurrent) {
+        clearInterval(movementIntervalRefCurrent);
       }
     };
-  }, [spawnDeer, despawnDeer, moveDeer, testMovement]);
+  }, [spawnDeer, despawnDeer, moveDeer, testMovement, updateDeerMovement]);
 
   // This component doesn't render anything visible
   return null;

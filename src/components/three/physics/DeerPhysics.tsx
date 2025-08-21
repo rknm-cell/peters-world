@@ -22,7 +22,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const [target, setTarget] = useState<THREE.Vector3 | null>(null);
   const [lastTargetTime, setLastTargetTime] = useState(Date.now());
-  const { world } = useRapier();
+  // const { world } = useRapier(); // Unused - removed to fix linting warning
   
   // Movement parameters
   const MOVEMENT_FORCE = 300; // Force applied for movement
@@ -125,7 +125,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     const distance = TARGET_DISTANCE_MIN + Math.random() * (TARGET_DISTANCE_MAX - TARGET_DISTANCE_MIN);
     
     // Calculate current surface normal (direction from center to current position)
-    const currentRadius = Math.sqrt(currentPos.x ** 2 + currentPos.y ** 2 + currentPos.z ** 2);
+    // const currentRadius = Math.sqrt(currentPos.x ** 2 + currentPos.y ** 2 + currentPos.z ** 2); // Unused - removed to fix linting warning
     const normal = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z).normalize();
     
     // Create tangent vectors for local coordinate system
