@@ -93,14 +93,14 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   }, [rapier, world, objectId, surfacePosition]);
   
   // Movement parameters for stable wandering
-  const MOVEMENT_SPEED = 0.8; // Units per second
-  const TARGET_DISTANCE = { min: 0.5, max: 1.2 }; // Distance to wander
+  const MOVEMENT_SPEED = 2.0; // Increased speed to make movement more visible
+  const TARGET_DISTANCE = { min: 0.8, max: 1.5 }; // Distance to wander
   const TARGET_UPDATE_INTERVAL = { min: 2000, max: 4000 }; // Time between targets
-  const IDLE_PROBABILITY = 0.3; // Chance to idle
+  const IDLE_PROBABILITY = 0.2; // Reduced idle probability to see more movement
   const IDLE_DURATION = { min: 1000, max: 3000 }; // Idle time
   
   useFrame((state, delta) => {
-    if (!rigidBodyRef.current || !characterController.current) return;
+    if (!rigidBodyRef.current) return;
     
     const body = rigidBodyRef.current;
     const currentTime = Date.now();
@@ -148,8 +148,8 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       }
     }
     
-    // Move toward target using character controller
-    if (target && !isIdle && characterController.current) {
+    // Move toward target using simple kinematic movement
+    if (target && !isIdle) {
       const direction = target.clone().sub(currentPosition).normalize();
       
       // Get surface normal for surface-parallel movement
@@ -163,75 +163,63 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate movement for this frame
       const movement = surfaceMovement.multiplyScalar(MOVEMENT_SPEED * delta);
       
-      // Use character controller to compute safe movement
-      const collider = body.collider(0);
-      if (collider) {
-        characterController.current.computeColliderMovement(
-          collider,
-          { x: movement.x, y: movement.y, z: movement.z }
-        );
+      // Get current position from physics body
+      const currentPos = body.translation();
+      const currentPosVec = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+      
+      // Calculate target position for this frame (don't modify currentPosVec)
+      const targetPosition = currentPosVec.clone().add(movement);
+      
+      // For kinematic bodies, directly set the new position
+      body.setTranslation(targetPosition, true);
+      setCurrentPosition(targetPosition);
+      
+      // Rotate deer to face movement direction relative to surface normal
+      if (Math.abs(movement.x) > 0.001 || Math.abs(movement.z) > 0.001) {
+        const movementVector = movement.clone();
         
-        const correctedMovement = characterController.current.computedMovement();
+        // Get surface normal (pointing away from globe center)
+        const surfaceNormal = targetPosition.clone().normalize();
         
-        // Apply the corrected movement
-        const currentPos = body.translation();
-        const newPosition = new THREE.Vector3(
-          currentPos.x + correctedMovement.x,
-          currentPos.y + correctedMovement.y,
-          currentPos.z + correctedMovement.z
-        );
+        // Calculate local "up" direction relative to surface
+        const localUp = surfaceNormal;
         
-        // Update physics body position
-        body.setTranslation(newPosition, true);
-        setCurrentPosition(newPosition);
+        // Project movement onto surface tangent plane
+        const tangentialMovement = movementVector.clone()
+          .sub(localUp.clone().multiplyScalar(movementVector.dot(localUp)))
+          .normalize();
         
-        // Rotate deer to face movement direction relative to surface normal
-        if (Math.abs(correctedMovement.x) > 0.001 || Math.abs(correctedMovement.z) > 0.001) {
-          const movementVector = new THREE.Vector3(correctedMovement.x, correctedMovement.y, correctedMovement.z);
+        if (tangentialMovement.length() > 0.1) {
+          // Calculate local "forward" direction (where deer should face)
+          const localForward = tangentialMovement;
           
-          // Get surface normal (pointing away from globe center)
-          const surfaceNormal = newPosition.clone().normalize();
+          // Calculate local "right" direction using cross product
+          const localRight = localForward.clone().cross(localUp).normalize();
           
-          // Calculate local "up" direction relative to surface
-          const localUp = surfaceNormal;
+          // Recalculate forward to ensure orthogonality
+          localForward.crossVectors(localUp, localRight).normalize();
           
-          // Project movement onto surface tangent plane
-          const tangentialMovement = movementVector.clone()
-            .sub(localUp.clone().multiplyScalar(movementVector.dot(localUp)))
-            .normalize();
+          // Create rotation matrix from local coordinate system
+          const rotationMatrix = new THREE.Matrix4();
+          rotationMatrix.makeBasis(localRight, localUp, localForward.negate());
           
-          if (tangentialMovement.length() > 0.1) {
-            // Calculate local "forward" direction (where deer should face)
-            const localForward = tangentialMovement;
-            
-            // Calculate local "right" direction using cross product
-            const localRight = localForward.clone().cross(localUp).normalize();
-            
-            // Recalculate forward to ensure orthogonality
-            localForward.crossVectors(localUp, localRight).normalize();
-            
-            // Create rotation matrix from local coordinate system
-            const rotationMatrix = new THREE.Matrix4();
-            rotationMatrix.makeBasis(localRight, localUp, localForward.negate());
-            
-            // Extract quaternion from rotation matrix
-            const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
-            
-            // Get current rotation
-            const currentRotation = body.rotation();
-            const currentQuaternion = new THREE.Quaternion(
-              currentRotation.x, 
-              currentRotation.y, 
-              currentRotation.z, 
-              currentRotation.w
-            );
-            
-            // Smoothly interpolate to target rotation
-            const rotationSpeed = 3.0 * delta;
-            const newQuaternion = currentQuaternion.slerp(targetQuaternion, rotationSpeed);
-            
-            body.setRotation(newQuaternion, true);
-          }
+          // Extract quaternion from rotation matrix
+          const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(rotationMatrix);
+          
+          // Get current rotation
+          const currentRotation = body.rotation();
+          const currentQuaternion = new THREE.Quaternion(
+            currentRotation.x, 
+            currentRotation.y, 
+            currentRotation.z, 
+            currentRotation.w
+          );
+          
+          // Smoothly interpolate to target rotation
+          const rotationSpeed = 3.0 * delta;
+          const newQuaternion = currentQuaternion.slerp(targetQuaternion, rotationSpeed);
+          
+          body.setRotation(newQuaternion, true);
         }
       }
     }
