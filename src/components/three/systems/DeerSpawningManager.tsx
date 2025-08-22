@@ -129,81 +129,17 @@ export function DeerSpawningManager() {
             console.log("🦌 DeerSpawningManager: Attempting immediate deer spawn for debugging...");
             spawnDeer();
             
-            // Start movement immediately after spawning
-            setTimeout(() => {
-              console.log("🦌 DeerSpawningManager: Starting movement after spawn...");
-              
-              // Test movement function immediately
-              console.log("🦌 DeerSpawningManager: Testing movement function...");
-              
-              // Test if the function exists
-              if (typeof updateDeerMovement === 'function') {
-                console.log("🦌 DeerSpawningManager: updateDeerMovement is a function, calling it...");
-                try {
-                  updateDeerMovement();
-                  console.log("🦌 DeerSpawningManager: updateDeerMovement called successfully");
-                } catch (error) {
-                  console.error("🦌 DeerSpawningManager: Error calling updateDeerMovement:", error);
-                }
-              } else {
-                console.error("🦌 DeerSpawningManager: updateDeerMovement is not a function:", typeof updateDeerMovement);
-                console.log("🦌 DeerSpawningManager: Available store functions:", Object.keys(useWorldStore.getState()));
-              }
-              
-              // Additional debugging - check store state directly
-              const currentState = useWorldStore.getState();
-              console.warn("🦌 Current store state debug:", {
-                totalObjects: currentState.objects.length,
-                deerObjects: currentState.objects.filter(obj => obj.type === "animals/deer").length,
-                objectTypes: currentState.objects.map(obj => obj.type),
-                firstDeer: currentState.objects.find(obj => obj.type === "animals/deer")
-              });
-              
-              // Test store state
-              const storeState = useWorldStore.getState();
-              console.log("🦌 DeerSpawningManager: Store state test:", {
-                objectsCount: storeState.objects.length,
-                hasDeer: storeState.objects.some(obj => obj.type === "animals/deer"),
-                deerCount: storeState.objects.filter(obj => obj.type === "animals/deer").length,
-                availableFunctions: Object.keys(storeState).filter(key => typeof storeState[key as keyof typeof storeState] === 'function')
-              });
-              
-              // Test the movement system
-              setTimeout(() => {
-                console.log("🧪 DeerSpawningManager: Running movement system test...");
-                testMovement();
-              }, 2000); // Test movement 2 seconds after spawn
-              
-              // Then start the regular movement interval
-              startMovementInterval();
-            }, 500); // Start movement 500ms after spawn
+            // DISABLED: Store-based movement system - now using physics-based movement
+            // Physics-based deer (DeerPhysics component) handles all movement automatically
+            console.log("🦌 DeerSpawningManager: Spawned deer - physics-based movement will take over");
           }
         }, 1000); // 1 second delay after scene is ready
       }
     }, 1000); // 1 second to let scene settle
     
-    // Start deer movement updates (every 100ms for smooth movement)
-    const startMovementInterval = () => {
-      if (isActiveRef.current) {
-        console.log("🦌 DeerSpawningManager: Starting movement interval...");
-        
-        // Use recursive setTimeout instead of setInterval for better control
-        const runMovement = () => {
-          if (isActiveRef.current) {
-            console.warn("🦌 DeerSpawningManager: Movement tick - calling updateDeerMovement...");
-            moveDeer();
-            // Schedule next movement update
-            setTimeout(runMovement, DEER_CONFIG.movement.updateInterval);
-          }
-        };
-        
-        // Start the first movement update
-        runMovement();
-      }
-    };
-    
-    // Start movement after a short delay (removed this since we start after spawn now)
-    // setTimeout(startMovementInterval, 3000);
+    // DISABLED: Store-based movement interval system
+    // Physics-based movement is now handled by DeerPhysics components
+    // const startMovementInterval = () => { ... };
     
     // Add a delay before starting to avoid spawning during initial scene setup
     const startDelay = setTimeout(() => {
