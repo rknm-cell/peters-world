@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 
 /**
@@ -6,7 +6,7 @@ import { useFrame } from '@react-three/fiber';
  * Batches updates and processes them at optimal frame intervals
  */
 
-export interface QueuedUpdate<T = any> {
+export interface QueuedUpdate<T = void> {
   id: string;
   updateFn: () => T;
   priority: 'low' | 'normal' | 'high';
@@ -28,19 +28,19 @@ const DEFAULT_CONFIG: RenderQueueConfig = {
   maxQueueTime: 100, // 100ms max queue time
 };
 
+// Priority order for processing updates (constant)
+const PRIORITY_ORDER: Array<'high' | 'normal' | 'low'> = ['high', 'normal', 'low'];
+
 /**
  * Custom hook for managing a render queue
  * Prevents multiple simultaneous updates and batches them efficiently
  */
 export function useRenderQueue(config: Partial<RenderQueueConfig> = {}) {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
   
   const queueRef = useRef<Map<string, QueuedUpdate>>(new Map());
   const lastBatchTimeRef = useRef(0);
   const processingRef = useRef(false);
-  
-  // Priority order for processing updates
-  const priorityOrder: Array<'high' | 'normal' | 'low'> = ['high', 'normal', 'low'];
   
   /**
    * Add an update to the queue
@@ -107,8 +107,8 @@ export function useRenderQueue(config: Partial<RenderQueueConfig> = {}) {
       // Sort updates by priority and age
       const sortedUpdates = Array.from(queue.values()).sort((a, b) => {
         // First by priority
-        const aPriorityIndex = priorityOrder.indexOf(a.priority);
-        const bPriorityIndex = priorityOrder.indexOf(b.priority);
+        const aPriorityIndex = PRIORITY_ORDER.indexOf(a.priority);
+        const bPriorityIndex = PRIORITY_ORDER.indexOf(b.priority);
         if (aPriorityIndex !== bPriorityIndex) {
           return aPriorityIndex - bPriorityIndex;
         }
