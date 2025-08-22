@@ -4,6 +4,8 @@ import { useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
 import { WaterSurface } from '../three/effects/WaterSurface';
+import { WaterPhysics } from '../three/effects/WaterPhysics';
+import { usePerformanceDetector } from '~/lib/utils/performance-detector';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
@@ -17,6 +19,9 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     setTerrainVertices,
     updateTerrainOctree,
   } = useWorldStore();
+  
+  // Performance detection for adaptive water quality
+  const { profile, shouldReduceQuality } = usePerformanceDetector();
 
   // Create high-resolution sphere geometry for terrain deformation
   const baseGeometry = useMemo(() => {
@@ -184,8 +189,8 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
   // The water effect is achieved by the waterOffset in applyTerrainDeformation
 
   // Debug: Check if we have water
-  const hasWater = terrainVertices.some(v => v.waterLevel > 0.01); // Match WaterSurface threshold
-  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.01).length;
+  const hasWater = terrainVertices.some(v => v.waterLevel > 0.001); // Match WaterSurface threshold
+  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.001).length;
   
   if (hasWater) {
     console.log(`TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map(v => v.waterLevel))}`);
@@ -206,7 +211,16 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
       {/* Animated water surface using shaders */}
       {hasWater && (
-        <WaterSurface terrainVertices={terrainVertices} radius={6} />
+        <>
+          <WaterSurface terrainVertices={terrainVertices} radius={6} />
+          <WaterPhysics 
+            terrainVertices={terrainVertices} 
+            radius={6} 
+            resolution={profile.suggestedWaterResolution}
+            lowPerformanceMode={profile.useLowPerformanceMode || shouldReduceQuality}
+            updateFrequency={profile.suggestedUpdateFrequency}
+          />
+        </>
       )}
     </>
   );

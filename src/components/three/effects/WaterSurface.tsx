@@ -18,7 +18,7 @@ interface WaterSurfaceProps {
 export function WaterSurface({ terrainVertices, radius = 6 }: WaterSurfaceProps) {
   // Create water geometry that follows terrain deformation
   const waterGeometry = useMemo(() => {
-    const waterVertices = terrainVertices.filter(v => v.waterLevel > 0.01);
+    const waterVertices = terrainVertices.filter(v => v.waterLevel > 0.001);
     if (waterVertices.length === 0) return null;
 
     // Create sphere geometry matching the terrain resolution
@@ -76,7 +76,7 @@ export function WaterSurface({ terrainVertices, radius = 6 }: WaterSurfaceProps)
   if (!waterGeometry) return null;
 
   // Debug info
-  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.01).length;
+  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.001).length;
   const maxWaterLevel = Math.max(...terrainVertices.map(v => v.waterLevel));
   console.log(`WaterSurface: Rendering with ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
 
