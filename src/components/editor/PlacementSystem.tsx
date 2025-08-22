@@ -22,6 +22,11 @@ function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | 
   return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall");
 }
 
+// Type guard function to check if an object type is a decoration
+function isDecorationType(objectType: string): boolean {
+  return (OBJECT_TYPES.decorations as readonly string[]).includes(objectType) || objectType === "rock" || objectType === "flower";
+}
+
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
   rotationGroupRef?: React.RefObject<THREE.Group | null>;
@@ -263,7 +268,7 @@ export function PlacementSystem({
           ]}
         >
           {/* Preview indicator - actual object geometry with transparency */}
-          {selectedObjectType === "rock" || selectedObjectType === "flower" ? (
+          {isDecorationType(selectedObjectType) ? (
             <Decoration
               type={selectedObjectType}
               position={[0, 0, 0]}

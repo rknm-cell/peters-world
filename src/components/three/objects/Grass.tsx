@@ -4,6 +4,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
 
 // Grass types are defined in constants.ts and used dynamically
 
@@ -34,24 +35,7 @@ export function Grass({
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
   const isLoading = !gltfResult || !gltfScene;
 
-  // Get target height for grass - similar to trees but smaller
-  const getTargetHeight = (grassType: string): number => {
-    // Base target height for grass
-    let baseHeight = 0.15; // Default grass height
-    
-    // Adjust based on grass type
-    if (grassType.includes("tall")) {
-      baseHeight = 0.25; // Tall grass
-    } else if (grassType.includes("long")) {
-      baseHeight = 0.2; // Long grass
-    } else if (grassType.includes("clumb")) {
-      baseHeight = 0.18; // Clumped grass
-    } else if (grassType.includes("basic")) {
-      baseHeight = 0.12; // Basic grass
-    }
-    
-    return baseHeight;
-  };
+  // Removed getTargetHeight - now using centralized scaling utility
 
   // Clone the scene to avoid sharing between instances
   const grassModel = useMemo(() => {
@@ -66,28 +50,12 @@ export function Grass({
     try {
       const clonedScene = gltfScene.clone(true);
       
-      // Reset transformations - same as other models
-      clonedScene.position.set(0, 0, 0);
-      clonedScene.rotation.set(0, 0, 0);
-      clonedScene.scale.set(1, 1, 1);
-
-      // Scale to target height - same logic as trees
-      const box = new THREE.Box3().setFromObject(clonedScene);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      
-      const targetHeight = getTargetHeight(type);
-      const currentHeight = Math.max(size.y, 0.001);
-      let scaleFactor = targetHeight / currentHeight;
-      
-      // Safety check: prevent extreme scaling (same as trees)
-      scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
-      
-      // Apply scaling
-      clonedScene.scale.setScalar(scaleFactor);
-      
-      // Reset position to origin - let PlacementSystem handle positioning
-      clonedScene.position.set(0, 0, 0);
+      // Apply standardized scaling using the new utility
+      const scaleFactor = applyStandardizedScaling(clonedScene, {
+        objectType: 'grass',
+        modelType: type,
+        preview
+      });
 
       // Enable shadows and apply preview styling
       clonedScene.traverse((child: THREE.Object3D) => {
@@ -113,9 +81,7 @@ export function Grass({
 
       console.log(`Grass ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
-        targetHeight,
         scaleFactor,
-        originalSize: size,
         'grass positioned by PlacementSystem': true
       });
 

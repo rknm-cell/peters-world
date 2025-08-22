@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
+import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
 
 interface DeerProps {
   type: string;
@@ -37,20 +38,7 @@ export function Deer({
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
   const isLoading = !gltfResult || !gltfScene;
 
-  // Get target height for deer - similar to trees but appropriate for animals
-  const getTargetHeight = (deerType: string): number => {
-    // Base target height for deer
-    let baseHeight = 0.8; // Default deer height
-    
-    // Adjust based on deer type (if we add more deer variants later)
-    if (deerType.includes("fawn")) {
-      baseHeight = 0.5; // Fawn deer
-    } else if (deerType.includes("large")) {
-      baseHeight = 1.0; // Large deer
-    }
-    
-    return baseHeight;
-  };
+  // Removed getTargetHeight - now using centralized scaling utility
 
   // Clone the scene to avoid sharing between instances
   const deerModel = useMemo(() => {
@@ -65,28 +53,12 @@ export function Deer({
     try {
       const clonedScene = gltfScene.clone(true);
       
-      // Reset transformations - same as other models
-      clonedScene.position.set(0, 0, 0);
-      clonedScene.rotation.set(0, 0, 0);
-      clonedScene.scale.set(1, 1, 1);
-
-      // Scale to target height - same logic as trees and grass
-      const box = new THREE.Box3().setFromObject(clonedScene);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      
-      const targetHeight = getTargetHeight(type);
-      const currentHeight = Math.max(size.y, 0.001);
-      let scaleFactor = targetHeight / currentHeight;
-      
-      // Safety check: prevent extreme scaling (same as trees)
-      scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
-      
-      // Apply scaling
-      clonedScene.scale.setScalar(scaleFactor);
-      
-      // Reset position to origin - let PlacementSystem handle positioning
-      clonedScene.position.set(0, 0, 0);
+      // Apply standardized scaling using the new utility
+      const scaleFactor = applyStandardizedScaling(clonedScene, {
+        objectType: 'animal',
+        modelType: type,
+        preview
+      });
 
       // Enable shadows and apply preview styling
       clonedScene.traverse((child: THREE.Object3D) => {
@@ -112,9 +84,7 @@ export function Deer({
 
       console.log(`Deer ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
-        targetHeight,
         scaleFactor,
-        originalSize: size,
         'deer positioned by PlacementSystem': true
       });
 
