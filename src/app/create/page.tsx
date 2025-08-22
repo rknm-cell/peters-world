@@ -5,6 +5,7 @@ import { Toolbar } from "~/components/ui/Toolbar";
 import { TerraformToolbar } from "~/components/ui/TerraformToolbar";
 import { Instructions } from "~/components/ui/Instructions";
 import { PerformanceDebug } from "~/components/ui/PerformanceDebug";
+import { MeshDebugPanel } from "~/components/ui/MeshDebugPanel";
 
 export default function CreatePage() {
   return (
@@ -14,6 +15,7 @@ export default function CreatePage() {
       <TerraformToolbar />
       <Instructions />
       <PerformanceDebug />
+      <MeshDebugPanel />
     </div>
   );
 }
