@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
 import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
+import { calculateYRotationFromDirection } from "./utils/deer-rotation";
+import { queueDeerMovementUpdate } from "./utils/debounced-updates";
 
 export type TreeLifecycleStage = 
   | "youth-small" | "youth-medium" | "youth-medium-high" | "youth-big"
@@ -1268,6 +1270,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   updateDeerMovement: () => {
     console.warn("🦌 ===== updateDeerMovement function called! =====");
     
+    // Queue the deer movement update to prevent excessive re-renders
+    queueDeerMovementUpdate('all-deer', () => {
+    
     // Test basic store operations
     try {
       const testState = _get();
@@ -1494,8 +1499,11 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           
           updatedObj.position = [newX, newY, newZ];
           
-          // Update rotation to face movement direction
-          const targetRotationY = Math.atan2(movement.moveDirection[0], movement.moveDirection[2]);
+          // Update rotation to face movement direction using centralized utility
+          const targetRotationY = calculateYRotationFromDirection(
+            new THREE.Vector3(...movement.moveDirection),
+            obj.rotation[1] // current Y rotation
+          );
           updatedObj.rotation = [obj.rotation[0], targetRotationY, obj.rotation[2]];
           
           // Stop moving if we're close to target - smaller threshold for local movement
@@ -1536,5 +1544,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       console.warn(`🦌 STORE UPDATE COMPLETE - Returning new state with ${newState.objects.length} objects`);
       return newState;
     });
+    }); // Close queueDeerMovementUpdate
   },
 }));
