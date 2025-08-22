@@ -24,13 +24,15 @@ function DecorationModel({
   materials, 
   position = [0, 0, 0],
   preview = false,
-  modelType
+  modelType,
+  canPlace = true
 }: { 
   modelPath: string; 
   materials: Record<string, THREE.Material>;
   position?: [number, number, number];
   preview?: boolean;
   modelType: string;
+  canPlace?: boolean;
 }) {
   const { scene } = useGLTF(`/${modelPath}.glb`);
   
@@ -64,7 +66,7 @@ function DecorationModel({
             previewMaterial.opacity = 0.6;
           }
           if ('color' in previewMaterial && !canPlace) {
-            (previewMaterial as any).color.setHex(0xff0000);
+            (previewMaterial as THREE.MeshStandardMaterial).color.setHex(0xff0000);
           }
           child.material = previewMaterial;
         }
@@ -75,7 +77,7 @@ function DecorationModel({
     });
     
     return cloned;
-  }, [scene, materials, modelPath, preview, modelType]);
+  }, [scene, materials, modelPath, preview, modelType, canPlace]);
 
   return <primitive object={clonedScene} position={position} />;
 }
@@ -141,6 +143,8 @@ export function Decoration({
             materials={materials}
             position={[0, 0, 0]}
             modelType={type}
+            preview={preview}
+            canPlace={canPlace}
           />
         </Suspense>
       );
