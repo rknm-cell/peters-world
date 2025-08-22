@@ -71,7 +71,7 @@ const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }
         
         void main() {
           // Discard fragments where there's no water
-          if (vWaterLevel < 0.01) {
+          if (vWaterLevel < 0.001) {
             discard;
           }
           
@@ -116,7 +116,7 @@ const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }
           finalColor += vec3(wave * 0.1);
           
           // Water opacity
-          float alpha = uOpacity * smoothstep(0.01, 0.1, vWaterLevel);
+          float alpha = uOpacity * smoothstep(0.001, 0.1, vWaterLevel);
           
           gl_FragColor = vec4(finalColor, alpha);
         }
@@ -134,13 +134,13 @@ const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }
 
 export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
   // Check if there's any water to render
-  const hasWater = waterVertices.some(v => v.waterLevel > 0.01);
+  const hasWater = waterVertices.some(v => v.waterLevel > 0.001);
   
   if (!hasWater) {
     return null;
   }
   
-  const waterCount = waterVertices.filter(v => v.waterLevel > 0.01).length;
+  const waterCount = waterVertices.filter(v => v.waterLevel > 0.001).length;
   const maxWaterLevel = Math.max(...waterVertices.map(v => v.waterLevel));
   console.log(`WaterMaterial: Rendering water with toon material, ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
   
