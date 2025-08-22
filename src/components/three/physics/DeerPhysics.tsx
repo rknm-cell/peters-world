@@ -9,6 +9,7 @@ import { Deer } from '~/components/three/objects/Deer';
 import { useWorldStore } from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
+import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -55,6 +56,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const lastMovementSpeed = useRef(0);
   
   const { rapier, world } = useRapier();
+  const terrainCollisionDetector = getTerrainCollisionDetector();
   
   // Clean up queued updates when component unmounts
   useEffect(() => {
@@ -314,8 +316,42 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate movement for this frame
       const movement = surfaceMovement.multiplyScalar(MOVEMENT_SPEED * delta);
       
+      // Calculate target position for this frame (before collision checking)
+      let targetPosition = currentPosition.clone().add(movement);
+      
+      // ** TERRAIN COLLISION DETECTION **
+      const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
+      
+      // If movement is blocked by terrain, handle collision
+      if (!terrainCollision.canMove) {
+        console.log(`🦌 Deer ${objectId}: Movement blocked by terrain`, {
+          isWater: terrainCollision.isWater,
+          slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
+          groundHeight: terrainCollision.groundHeight.toFixed(2)
+        });
+        
+        // Use alternative position if available, otherwise generate new target
+        if (terrainCollision.adjustedPosition) {
+          targetPosition = terrainCollision.adjustedPosition;
+          console.log(`🦌 Deer ${objectId}: Using adjusted position`);
+        } else {
+          // Generate new target in a different direction
+          setTarget(null);
+          console.log(`🦌 Deer ${objectId}: Generating new target due to terrain collision`);
+          return; // Skip movement this frame
+        }
+      } else {
+        // Use terrain-sampled ground height for accurate positioning
+        const terrainGroundHeight = terrainCollision.groundHeight;
+        const surfaceNormal = targetPosition.clone().normalize();
+        targetPosition = surfaceNormal.multiplyScalar(terrainGroundHeight + 0.05); // Small offset above ground
+      }
+      
+      // Calculate actual movement that occurred (for rotation and bounce animation)
+      const actualMovement = targetPosition.clone().sub(currentPosition);
+      
       // Update bounce animation based on movement speed
-      const currentMovementSpeed = movement.length() / delta;
+      const currentMovementSpeed = actualMovement.length() / delta;
       lastMovementSpeed.current = currentMovementSpeed;
       
       // Advance bounce phase based on movement speed
@@ -326,22 +362,9 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       const maxBounceHeight = 0.08; // Maximum bounce height
       const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(currentMovementSpeed / MOVEMENT_SPEED, 1.0);
       
-      // Calculate target position for this frame
-      let targetPosition = currentPosition.clone().add(movement);
-      
-      // Ensure deer stays on surface (handle this here instead of GravityController to avoid conflicts)
-      const idealSurfaceDistance = 6.05 + bounceHeight; // Add bounce height to surface distance
-      const currentDistance = targetPosition.length();
-
-      
-      // Only correct if significantly off surface to prevent micro-corrections
-      if (Math.abs(currentDistance - (6.05 + bounceHeight)) > 0.1) {
-        targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
-      }
-      
-
-      // Calculate actual movement that occurred (for rotation)
-      const actualMovement = targetPosition.clone().sub(currentPosition);
+      // Apply bounce to final position
+      const bounceOffset = targetPosition.clone().normalize().multiplyScalar(bounceHeight);
+      targetPosition.add(bounceOffset);
       
       // Queue the transform update to prevent multiple simultaneous updates
       queueDeerTransformUpdate(objectId, () => {
@@ -388,40 +411,58 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   
   /**
    * Generate a random wandering target on the globe surface
+   * Now includes terrain collision checking to avoid impassable areas
    */
   function generateWanderingTarget(currentPos: THREE.Vector3): THREE.Vector3 | null {
-    // Generate random direction and distance for wandering
-    const angle = Math.random() * Math.PI * 2;
-    const distance = TARGET_DISTANCE.min + Math.random() * (TARGET_DISTANCE.max - TARGET_DISTANCE.min);
+    const maxAttempts = 16; // Try multiple directions to find valid target
     
-    // Get current surface normal
-    const normal = currentPos.clone().normalize();
+    const baseDistance = TARGET_DISTANCE.min + Math.random() * (TARGET_DISTANCE.max - TARGET_DISTANCE.min);
     
-    // Create tangent vectors for local movement
-    const tangent1 = new THREE.Vector3();
-    const tangent2 = new THREE.Vector3();
-    
-    // Generate perpendicular vectors
-    if (Math.abs(normal.y) < 0.9) {
-      tangent1.set(0, 1, 0).cross(normal).normalize();
-    } else {
-      tangent1.set(1, 0, 0).cross(normal).normalize();
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Generate random direction and distance for wandering
+      const angle = Math.random() * Math.PI * 2;
+      const distance = baseDistance * (attempt > maxAttempts / 2 ? 0.7 : 1.0); // Reduce distance for later attempts
+      
+      // Get current surface normal
+      const normal = currentPos.clone().normalize();
+      
+      // Create tangent vectors for local movement
+      const tangent1 = new THREE.Vector3();
+      const tangent2 = new THREE.Vector3();
+      
+      // Generate perpendicular vectors
+      if (Math.abs(normal.y) < 0.9) {
+        tangent1.set(0, 1, 0).cross(normal).normalize();
+      } else {
+        tangent1.set(1, 0, 0).cross(normal).normalize();
+      }
+      tangent2.crossVectors(normal, tangent1).normalize();
+      
+      // Generate target in local tangent space
+      const localX = Math.cos(angle) * distance;
+      const localZ = Math.sin(angle) * distance;
+      
+      // Convert to world coordinates
+      const targetDirection = normal.clone()
+        .add(tangent1.clone().multiplyScalar(localX))
+        .add(tangent2.clone().multiplyScalar(localZ))
+        .normalize();
+      
+      // Use consistent surface radius to keep deer on surface
+      const targetRadius = 6.05; // Match initial positioning and gravity controller
+      const candidateTarget = targetDirection.multiplyScalar(targetRadius);
+      
+      // Check if this target is reachable (not blocked by terrain)
+      const terrainCollision = terrainCollisionDetector.checkMovement(currentPos, candidateTarget);
+      
+      if (terrainCollision.canMove) {
+        console.log(`🦌 Deer ${objectId}: Found valid target after ${attempt + 1} attempts`);
+        return candidateTarget;
+      }
     }
-    tangent2.crossVectors(normal, tangent1).normalize();
     
-    // Generate target in local tangent space
-    const localX = Math.cos(angle) * distance;
-    const localZ = Math.sin(angle) * distance;
-    
-    // Convert to world coordinates
-    const targetDirection = normal.clone()
-      .add(tangent1.clone().multiplyScalar(localX))
-      .add(tangent2.clone().multiplyScalar(localZ))
-      .normalize();
-    
-    // Use consistent surface radius to keep deer on surface
-    const targetRadius = 6.05; // Match initial positioning and gravity controller
-    return targetDirection.multiplyScalar(targetRadius);
+    console.log(`🦌 Deer ${objectId}: Could not find valid wandering target after ${maxAttempts} attempts`);
+    return null; // No valid target found, deer will idle
   }
   
   

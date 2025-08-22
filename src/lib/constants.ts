@@ -211,6 +211,44 @@ export const GRASS_CONFIG = {
   waterLevelMax: 0.01, // Don't spawn in water
 } as const;
 
+// Decoration models - simplified names for UI
+export const DECORATION_MODELS = [
+  // Flowers
+  "carnations",
+  "flower-red", 
+  "roses",
+  // Mushrooms
+  "mushroom-boletus",
+  "mushroom-toadstool",
+  "mushroom-toadstool-green",
+  // Brown stones
+  "stone-diamond-brown",
+  "stone-flat-brown",
+  "stone-oval-brown", 
+  "stone-pointy-brown",
+  "stone-round-brown",
+  "stone-small-brown"
+] as const;
+
+// Map simplified names to actual file paths
+export const DECORATION_MODEL_PATHS = {
+  // Flowers
+  "carnations": "decorations/carnations",
+  "flower-red": "decorations/flower-red",
+  "roses": "decorations/roses",
+  // Mushrooms  
+  "mushroom-boletus": "decorations/mushroom-boletus",
+  "mushroom-toadstool": "decorations/mushroom-toadstool",
+  "mushroom-toadstool-green": "decorations/mushroom-toadstool-green",
+  // Brown stones
+  "stone-diamond-brown": "brown_stone/stone-diamond_brown",
+  "stone-flat-brown": "brown_stone/stone-flat_brown", 
+  "stone-oval-brown": "brown_stone/stone-oval_brown",
+  "stone-pointy-brown": "brown_stone/stone-pointy_brown",
+  "stone-round-brown": "brown_stone/stone-round_brown",
+  "stone-small-brown": "brown_stone/stone-small_brown"
+} as const;
+
 // Object types available for placement
 export const OBJECT_TYPES = {
   trees: [
@@ -230,7 +268,73 @@ export const OBJECT_TYPES = {
     "tree-tall"
   ],
   structures: ["house", "tower", "bridge"],
-  decorations: ["rock", "flower"],
+  decorations: DECORATION_MODELS,
   grass: GRASS_MODELS,
   animals: ANIMAL_MODELS,
+} as const;
+
+// Global model scaling configuration
+export const MODEL_SCALING = {
+  // Standard target heights for different object types (in world units)
+  targetHeights: {
+    // Trees
+    trees: {
+      adult: 1.2,
+      "youth-small": 0.3,
+      "youth-medium": 0.6, 
+      "youth-medium-high": 0.9,
+      "youth-big": 1.1,
+      "dead-standing": 1.0,
+      broken: 0.2,
+      logs: 0.15,
+    },
+    // Animals  
+    animals: {
+      deer: 0.8,
+      wolf: 0.7,
+      seagull: 0.3,
+      crab: 0.2,
+      butterfly: 0.1,
+    },
+    // Grass
+    grass: {
+      default: 0.15,
+      tall: 0.25,
+      long: 0.2,
+      clumb: 0.18,
+      basic: 0.12,
+    },
+    // Decorations
+    decorations: {
+      // Flowers
+      carnations: 0.3,
+      "flower-red": 0.25,
+      roses: 0.35,
+      // Mushrooms
+      "mushroom-boletus": 0.2,
+      "mushroom-toadstool": 0.15,
+      "mushroom-toadstool-green": 0.15,
+      // Stones
+      "stone-diamond-brown": 0.3,
+      "stone-flat-brown": 0.15,
+      "stone-oval-brown": 0.25,
+      "stone-pointy-brown": 0.4,
+      "stone-round-brown": 0.2,
+      "stone-small-brown": 0.1,
+      // Legacy
+      rock: 0.3,
+      flower: 0.25,
+    },
+    // Structures
+    structures: {
+      house: 1.5,
+      tower: 2.0,
+      bridge: 0.8,
+    }
+  },
+  // Global scale factor applied to all models (for easy adjustment)
+  globalScaleFactor: 1.0,
+  // Safety bounds for scale factors
+  minScaleFactor: 0.05,
+  maxScaleFactor: 10.0,
 } as const;
