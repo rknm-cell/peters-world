@@ -49,7 +49,7 @@ export function WaterPhysics({
   const { updateTerrainVertex } = useWorldStore();
   
   // Initialize water data arrays
-  const initializeWaterData = useMemo(() => {
+  useEffect(() => {
     const size = resolution * resolution;
     waterDataRef.current = new Float32Array(size);
     velocityDataRef.current = new Float32Array(size * 2); // x, z velocity components
@@ -63,8 +63,6 @@ export function WaterPhysics({
         previousWaterDataRef.current[i] = vertex.waterLevel;
       }
     }
-    
-    return true; // Just return something to satisfy useMemo
   }, [terrainVertices, resolution]);
   
   // Create water geometry based on sphere mapping
@@ -316,14 +314,13 @@ export function WaterPhysics({
   };
   
   // Optimized frame update with adaptive frequency
-  useFrame((state, delta) => {
+  useFrame((state, _delta) => {
     const currentTime = state.clock.elapsedTime * 1000; // Convert to ms
     frameCountRef.current++;
     
     // Adaptive update frequency based on performance mode
     const physicsInterval = 1000 / updateFrequency; // Target FPS converted to interval
     const geometryInterval = lowPerformanceMode ? 200 : 100; // 5fps or 10fps for geometry
-    const terrainInterval = 500; // 2fps for terrain updates
     
     // Physics simulation
     if (currentTime - lastPhysicsUpdateRef.current >= physicsInterval) {
@@ -345,7 +342,10 @@ export function WaterPhysics({
   
   // Only render if there's significant water
   const hasSignificantWater = useMemo(() => {
-    return terrainVertices.some(v => v.waterLevel > 0.02);
+    const waterVertices = terrainVertices.filter(v => v.waterLevel > 0.001);
+    const maxWaterLevel = Math.max(0, ...terrainVertices.map(v => v.waterLevel));
+    console.log(`WaterPhysics: ${waterVertices.length} vertices with water, max level: ${maxWaterLevel.toFixed(4)}`);
+    return waterVertices.length > 0;
   }, [terrainVertices]);
   
   if (!hasSignificantWater || !waterGeometry) {

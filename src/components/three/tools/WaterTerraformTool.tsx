@@ -27,7 +27,7 @@ export function WaterTerraformTool({
   const isMouseDownRef = useRef(false);
   const lastApplicationTimeRef = useRef(0);
   
-  const { terrainVertices, terrainOctree, updateTerrainVertex } = useWorldStore();
+  const { terrainVertices, updateTerrainVertex } = useWorldStore();
   
   // Application throttle (60fps max)
   const APPLICATION_INTERVAL = 16; // ms
@@ -180,10 +180,11 @@ export function WaterTerraformTool({
     // Handle continuous application while mouse/touch is held down
     if (isMouseDownRef.current) {
       // Re-apply effect at current mouse position
-      handlePointerInteraction(new MouseEvent('mousemove', {
+      const syntheticEvent = new MouseEvent('mousemove', {
         clientX: mousePositionRef.current.x,
         clientY: mousePositionRef.current.y
-      }) as any);
+      });
+      handlePointerInteraction(syntheticEvent);
     }
   });
   
@@ -191,7 +192,7 @@ export function WaterTerraformTool({
   const handlePointerDown = useCallback((event: PointerEvent) => {
     if (!isActive) return;
     isMouseDownRef.current = true;
-    handlePointerInteraction(event as any);
+    handlePointerInteraction(event);
   }, [isActive, handlePointerInteraction]);
   
   const handlePointerUp = useCallback(() => {
@@ -200,7 +201,7 @@ export function WaterTerraformTool({
   
   const handlePointerMove = useCallback((event: PointerEvent) => {
     if (!isActive || !isMouseDownRef.current) return;
-    handlePointerInteraction(event as any);
+    handlePointerInteraction(event);
   }, [isActive, handlePointerInteraction]);
   
   // Attach/detach event listeners based on tool state

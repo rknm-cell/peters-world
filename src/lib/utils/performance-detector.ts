@@ -2,6 +2,19 @@
  * Performance detection utility for automatic optimization
  */
 
+// Extended interfaces for non-standard browser APIs
+interface ExtendedNavigator extends Navigator {
+  deviceMemory?: number;
+}
+
+interface ExtendedPerformance extends Performance {
+  memory?: {
+    usedJSHeapSize?: number;
+    totalJSHeapSize?: number;
+    jsHeapSizeLimit?: number;
+  };
+}
+
 export interface PerformanceProfile {
   isLowEnd: boolean;
   isMobile: boolean;
@@ -124,7 +137,7 @@ export class PerformanceDetector {
 
   private detectGPUTier(): 'high' | 'medium' | 'low' {
     const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || 
+    const gl = canvas.getContext('webgl') ?? 
                canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
     
     if (!gl) return 'low';
@@ -148,14 +161,15 @@ export class PerformanceDetector {
   }
 
   private getMemoryInfo(): { totalMemory: number; usedMemory: number } {
-    // @ts-ignore - deviceMemory is not in standard types yet
-    const deviceMemory = navigator.deviceMemory || 4; // Default to 4GB
+    const extendedNavigator = navigator as ExtendedNavigator;
+    const deviceMemory: number = extendedNavigator.deviceMemory ?? 4; // Default to 4GB
     
     // Estimate used memory (very rough)
     let usedMemory = 0;
     if ('memory' in performance) {
-      // @ts-ignore - memory is not in standard types yet
-      usedMemory = performance.memory.usedJSHeapSize / (1024 * 1024 * 1024); // Convert to GB
+      const extendedPerformance = performance as ExtendedPerformance;
+      const memoryInfo = extendedPerformance.memory;
+      usedMemory = memoryInfo?.usedJSHeapSize ? memoryInfo.usedJSHeapSize / (1024 * 1024 * 1024) : 0; // Convert to GB
     }
     
     return {
