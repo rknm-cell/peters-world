@@ -4,6 +4,8 @@ import { useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
 import { WaterSurface } from '../three/effects/WaterSurface';
+import { WaterPhysics } from '../three/effects/WaterPhysics';
+import { usePerformanceDetector } from '~/lib/utils/performance-detector';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
@@ -17,6 +19,9 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     setTerrainVertices,
     updateTerrainOctree,
   } = useWorldStore();
+  
+  // Performance detection for adaptive water quality
+  const { profile, shouldReduceQuality } = usePerformanceDetector();
 
   // Create high-resolution sphere geometry for terrain deformation
   const baseGeometry = useMemo(() => {
@@ -206,7 +211,16 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
       {/* Animated water surface using shaders */}
       {hasWater && (
-        <WaterSurface terrainVertices={terrainVertices} radius={6} />
+        <>
+          <WaterSurface terrainVertices={terrainVertices} radius={6} />
+          <WaterPhysics 
+            terrainVertices={terrainVertices} 
+            radius={6} 
+            resolution={profile.suggestedWaterResolution}
+            lowPerformanceMode={profile.useLowPerformanceMode || shouldReduceQuality}
+            updateFrequency={profile.suggestedUpdateFrequency}
+          />
+        </>
       )}
     </>
   );
