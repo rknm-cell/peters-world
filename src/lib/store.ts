@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Vector3 } from "three";
 import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
-import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG } from "./constants";
+import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG, WOLF_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
 import { calculateYRotationFromDirection } from "./utils/deer-rotation";
 import { queueDeerMovementUpdate } from "./utils/debounced-updates";
@@ -102,6 +102,10 @@ interface WorldState {
   // Deer spawning actions
   attemptDeerSpawning: () => void;
   attemptDeerDespawning: () => void;
+  
+  // Wolf spawning actions
+  attemptWolfSpawning: () => void;
+  attemptWolfDespawning: () => void;
   
   // Deer movement actions
   testDeerMovement: () => void;
@@ -1203,6 +1207,194 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         return {
           ...state,
           objects: state.objects.filter(obj => !deerToRemove.includes(obj.id))
+        };
+      }
+      
+      return state;
+    });
+  },
+
+  // Wolf spawning function - spawns wolves on suitable terrain areas
+  attemptWolfSpawning: () => {
+    set((state) => {
+      console.log("🐺 Wolf spawning attempt started...");
+      console.log("🐺 Current state:", {
+        hasGlobeRef: !!state.globeRef,
+        terrainVerticesCount: state.terrainVertices?.length || 0,
+        currentWolfCount: state.objects.filter(obj => obj.type === "animals/wolf").length,
+        maxWolvesInWorld: WOLF_CONFIG.maxWolvesInWorld
+      });
+      
+      // Check if we have globe reference for surface placement
+      if (!state.globeRef) {
+        console.error("❌ Wolf spawning: No globe reference available");
+        return state;
+      }
+
+      // Check if we have terrain data for color/height analysis
+      if (!state.terrainVertices || state.terrainVertices.length === 0) {
+        console.error("❌ Wolf spawning: No terrain data available");
+        return state;
+      }
+
+      // Check if we're already at max wolf capacity
+      const currentWolfCount = state.objects.filter(obj => obj.type === "animals/wolf").length;
+      if (currentWolfCount >= WOLF_CONFIG.maxWolvesInWorld) {
+        console.log("❌ Wolf spawning: Already at max capacity");
+        return state;
+      }
+
+      console.log("🐺 Wolf spawning: Starting spawn attempts...");
+
+      const newWolves: PlacedObject[] = [];
+      const raycaster = new THREE.Raycaster();
+      const maxAttempts = WOLF_CONFIG.maxWolvesPerSpawn * 5; // Try more locations to find suitable spots
+      let attempts = 0;
+      let spawned = 0;
+
+      while (spawned < WOLF_CONFIG.maxWolvesPerSpawn && attempts < maxAttempts) {
+        attempts++;
+        
+        // Generate random position on sphere surface
+        const phi = Math.random() * Math.PI * 2; // Azimuthal angle (0 to 2π)
+        const theta = Math.acos(1 - 2 * Math.random()); // Polar angle (0 to π) with uniform distribution
+        
+        // Convert spherical coordinates to Cartesian (radius = ~6 for globe surface)
+        const spawnRadius = 6.0; // Same as movement radius - spawn on actual globe surface
+        const x = spawnRadius * Math.sin(theta) * Math.cos(phi);
+        const y = spawnRadius * Math.cos(theta);
+        const z = spawnRadius * Math.sin(theta) * Math.sin(phi);
+        
+        // Cast ray from above down to globe surface
+        const rayOrigin = new THREE.Vector3(x, y + 0.5, z); // Start slightly above spawn point
+        const rayDirection = new THREE.Vector3(0, -1, 0); // Ray straight down to find surface
+        
+        raycaster.set(rayOrigin, rayDirection);
+        
+        // Get intersection with globe surface
+        const detailedIntersection = getDetailedIntersection(raycaster, state.globeRef);
+        
+        if (detailedIntersection) {
+          // Find the closest terrain vertex to check height and water level
+          const hitPoint = detailedIntersection.point;
+          let closestVertex = null;
+          let closestDistance = Infinity;
+          
+          // Optimize vertex search by limiting search radius
+          const searchRadius = 2.0; // Only search within reasonable distance
+          for (const vertex of state.terrainVertices) {
+            const distance = Math.sqrt(
+              (hitPoint.x - vertex.x) ** 2 + 
+              (hitPoint.y - vertex.y) ** 2 + 
+              (hitPoint.z - vertex.z) ** 2
+            );
+            if (distance < searchRadius && distance < closestDistance) {
+              closestDistance = distance;
+              closestVertex = vertex;
+            }
+          }
+          
+          if (closestVertex) {
+            // Check if terrain conditions are suitable for wolves
+            const isValidTerrain = 
+              closestVertex.height >= WOLF_CONFIG.heightRange.min &&
+              closestVertex.height <= WOLF_CONFIG.heightRange.max &&
+              closestVertex.waterLevel <= WOLF_CONFIG.waterLevelMax;
+            
+            if (attempts <= 3) { // Log first few attempts for debugging
+              console.log(`🐺 Wolf spawn attempt ${attempts}:`, {
+                hitPoint: hitPoint.toArray(),
+                closestVertex: {
+                  height: closestVertex.height,
+                  waterLevel: closestVertex.waterLevel
+                },
+                isValidTerrain,
+                heightRange: WOLF_CONFIG.heightRange,
+                waterLevelMax: WOLF_CONFIG.waterLevelMax,
+                spawnRoll: Math.random(),
+                spawnProbability: WOLF_CONFIG.spawnProbability
+              });
+            }
+            
+            if (isValidTerrain && Math.random() < WOLF_CONFIG.spawnProbability) {
+              console.log(`🐺 Wolf spawn attempt ${attempts}: Terrain valid, attempting placement...`);
+              
+              // Use placement system for proper positioning
+              const placementInfo = calculatePlacement(
+                "animals/wolf",
+                detailedIntersection.point,
+                detailedIntersection.normal,
+                state.objects
+              );
+              
+              console.log(`🐺 Wolf placement result:`, placementInfo);
+              
+              if (placementInfo.canPlace) {
+                const wolfId = Math.random().toString(36).substring(7);
+                                 const newWolfObj: PlacedObject = {
+                   id: wolfId,
+                   type: "animals/wolf",
+                   position: [
+                     placementInfo.position.x,
+                     placementInfo.position.y,
+                     placementInfo.position.z
+                   ],
+                   rotation: [
+                     placementInfo.rotation.x,
+                     placementInfo.rotation.y, // No random rotation - keep wolf straight like deer
+                     placementInfo.rotation.z
+                   ],
+                   scale: [0.5, 0.5, 0.5], // Same scale as deer
+                 };
+                
+                newWolves.push(newWolfObj);
+                spawned++;
+              }
+            }
+          }
+        }
+      }
+
+      // Only log if wolves were actually spawned
+      if (newWolves.length > 0) {
+        console.log(`🐺 Wolves spawned: ${newWolves.length} wolves`);
+      }
+      
+      if (newWolves.length > 0) {
+        return { 
+          objects: [...state.objects, ...newWolves],
+          isPlacing: state.isPlacing,
+          terraformMode: state.terraformMode
+        };
+      }
+      
+      return state;
+    });
+  },
+
+  // Wolf despawn function - removes wolves randomly to maintain population control
+  attemptWolfDespawning: () => {
+    set((state) => {
+      const wolfObjects = state.objects.filter(obj => obj.type === "animals/wolf");
+      
+      if (wolfObjects.length === 0) {
+        return state;
+      }
+
+      const wolvesToRemove: string[] = [];
+      
+      // Check each wolf for despawn chance
+      wolfObjects.forEach(wolf => {
+        if (Math.random() < WOLF_CONFIG.despawnProbability) {
+          wolvesToRemove.push(wolf.id);
+        }
+      });
+
+      if (wolvesToRemove.length > 0) {
+        console.log(`🐺 Wolves despawned: ${wolvesToRemove.length} wolves`);
+        return {
+          ...state,
+          objects: state.objects.filter(obj => !wolvesToRemove.includes(obj.id))
         };
       }
       

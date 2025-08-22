@@ -8,6 +8,7 @@ import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Deer } from "~/components/three/objects/Deer";
+import { Wolf } from "~/components/three/objects/Wolf";
 import { Grass } from "~/components/three/objects/Grass";
 import type * as THREE from "three";
 import { Raycaster, Vector2, Mesh } from "three";
@@ -297,16 +298,40 @@ export function PlacementSystem({
               canPlace={placementPreview.canPlace}
             />
           ) : (selectedObjectType?.startsWith("animals/")) ? (
-            <Deer
-              type={selectedObjectType}
-              position={[0, 0, 0]}
-              rotation={[0, 0, 0]}
-              scale={[1, 1, 1]}
-              selected={false}
-              objectId="preview"
-              preview={true}
-              canPlace={placementPreview.canPlace}
-            />
+            selectedObjectType === "animals/deer" ? (
+              <Deer
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[0, 0, 0]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/wolf" ? (
+              <Wolf
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[0, 0, 0]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : (
+              <Deer
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[0, 0, 0]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            )
           ) : (selectedObjectType?.startsWith("grass/")) ? (
             <Grass
               type={selectedObjectType}

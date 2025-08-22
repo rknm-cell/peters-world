@@ -15,6 +15,7 @@ import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebu
 import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
 import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
 import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
+import { WolfSpawningManager } from '~/components/three/systems/WolfSpawningManager';
 import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
 import { GravityController } from '~/components/three/physics/GravityController';
 import { PhysicsDebug } from '~/components/three/physics/PhysicsDebug';
@@ -115,6 +116,9 @@ export function Scene() {
       
       {/* Deer spawning manager - handles automatic deer spawning and despawning */}
       <DeerSpawningManager />
+      
+      {/* Wolf spawning manager - handles automatic wolf spawning and despawning */}
+      <WolfSpawningManager />
     </>
   );
 }

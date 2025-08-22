@@ -59,17 +59,25 @@ export function calculateSmoothedRotation(
   currentQuaternion: THREE.Quaternion,
   targetQuaternion: THREE.Quaternion,
   delta: number,
+  customSpeed?: number,
   config: DeerRotationConfig = DEFAULT_ROTATION_CONFIG
 ): THREE.Quaternion {
   // Calculate angular difference
   const rotationDiff = currentQuaternion.angleTo(targetQuaternion);
   
-  // Adaptive rotation speed based on angle difference
-  let rotationSpeed = config.baseSpeed * delta;
+  // Use custom speed if provided, otherwise use config-based calculation
+  let rotationSpeed: number;
   
-  // Faster rotation for significant direction changes (>30 degrees)
-  if (rotationDiff > Math.PI / 6) {
-    rotationSpeed = Math.min(rotationSpeed * config.fastTurnMultiplier, config.maxSpeed);
+  if (customSpeed !== undefined) {
+    rotationSpeed = customSpeed * delta;
+  } else {
+    // Adaptive rotation speed based on angle difference
+    rotationSpeed = config.baseSpeed * delta;
+    
+    // Faster rotation for significant direction changes (>30 degrees)
+    if (rotationDiff > Math.PI / 6) {
+      rotationSpeed = Math.min(rotationSpeed * config.fastTurnMultiplier, config.maxSpeed);
+    }
   }
   
   // Use Three.js standard slerp for shortest path interpolation

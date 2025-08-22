@@ -6,6 +6,7 @@ import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Grass } from "~/components/three/objects/Grass";
 import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
+import { WolfPhysics } from "~/components/three/physics/WolfPhysics";
 import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 
@@ -96,7 +97,32 @@ export function WorldObjects() {
     }
 
     if (isAnimalType(obj.type)) {
-      // Use physics-based deer for realistic movement and surface adhesion
+      // Use different physics components based on animal type
+      if (obj.type === "animals/deer") {
+        // Use physics-based deer for realistic movement and surface adhesion
+        return (
+          <DeerPhysics 
+            key={obj.id}
+            objectId={obj.id}
+            type={obj.type}
+            position={obj.position}
+            selected={isSelected}
+          />
+        );
+      } else if (obj.type === "animals/wolf") {
+        // Use physics-based wolf with deer-chasing behavior
+        return (
+          <WolfPhysics 
+            key={obj.id}
+            objectId={obj.id}
+            type={obj.type}
+            position={obj.position}
+            selected={isSelected}
+          />
+        );
+      }
+      
+      // For other animals, fall back to deer physics for now
       return (
         <DeerPhysics 
           key={obj.id}
