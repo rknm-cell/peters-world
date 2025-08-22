@@ -20,6 +20,8 @@ export function TerraformToolbar() {
     resetTerrain,
     setPlacing,
     setSelectedObjectType,
+    showMeshDebug,
+    setShowMeshDebug,
   } = useWorldStore();
 
   const handleToolSelect = (mode: TerraformMode) => {
@@ -221,27 +223,42 @@ export function TerraformToolbar() {
 
               {/* Actions */}
               <div className="border-t border-white/20 p-3">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      handleResetTerrain();
-                      setShowMenu(false);
-                    }}
-                    className="flex-1 rounded-lg bg-red-500/20 p-2 text-xs text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
-                    title="Reset all terrain changes"
-                  >
-                    Reset Terrain
-                  </button>
-                  
-                  {isTerraforming && (
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
                     <button
-                      onClick={() => setShowInstructions(!showInstructions)}
-                      className="flex-1 rounded-lg bg-blue-500/20 p-2 text-xs text-blue-400 transition-all duration-200 hover:bg-blue-500/30 hover:text-blue-300"
-                      title="Toggle instructions"
+                      onClick={() => {
+                        handleResetTerrain();
+                        setShowMenu(false);
+                      }}
+                      className="flex-1 rounded-lg bg-red-500/20 p-2 text-xs text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
+                      title="Reset all terrain changes"
                     >
-                      {showInstructions ? "Hide Tips" : "Show Tips"}
+                      Reset Terrain
                     </button>
-                  )}
+                    
+                    {isTerraforming && (
+                      <button
+                        onClick={() => setShowInstructions(!showInstructions)}
+                        className="flex-1 rounded-lg bg-blue-500/20 p-2 text-xs text-blue-400 transition-all duration-200 hover:bg-blue-500/30 hover:text-blue-300"
+                        title="Toggle instructions"
+                      >
+                        {showInstructions ? "Hide Tips" : "Show Tips"}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Debug toggle */}
+                  <button
+                    onClick={() => setShowMeshDebug(!showMeshDebug)}
+                    className={`w-full rounded-lg p-2 text-xs transition-all duration-200 ${
+                      showMeshDebug 
+                        ? "bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/40" 
+                        : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 hover:text-gray-300"
+                    }`}
+                    title="Toggle mesh debug visualizer"
+                  >
+                    🔍 {showMeshDebug ? "Hide Debug" : "Show Debug"}
+                  </button>
                 </div>
               </div>
 

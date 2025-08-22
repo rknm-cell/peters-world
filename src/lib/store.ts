@@ -60,6 +60,8 @@ interface WorldState {
   showWireframe: boolean;
   showForestDebug: boolean;
   showLifecycleDebug: boolean;
+  showMeshDebug: boolean;
+  meshDebugMode: 'wireframe' | 'normals' | 'heightmap' | 'watermap' | 'vertex-dots' | 'off';
   
   // Globe reference for spawning
   globeRef: THREE.Mesh | null;
@@ -87,6 +89,8 @@ interface WorldState {
   setShowWireframe: (show: boolean) => void;
   setShowForestDebug: (show: boolean) => void;
   setShowLifecycleDebug: (show: boolean) => void;
+  setShowMeshDebug: (show: boolean) => void;
+  setMeshDebugMode: (mode: 'wireframe' | 'normals' | 'heightmap' | 'watermap' | 'vertex-dots' | 'off') => void;
   exitPlacementMode: () => void;
   
   // Tree lifecycle actions
@@ -135,6 +139,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   showWireframe: false,
   showForestDebug: false,
   showLifecycleDebug: false,
+  showMeshDebug: false,
+  meshDebugMode: 'off',
   
   // Globe reference
   globeRef: null,
@@ -265,6 +271,14 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   
   setShowLifecycleDebug: (show: boolean) => {
     set({ showLifecycleDebug: show });
+  },
+  
+  setShowMeshDebug: (show: boolean) => {
+    set({ showMeshDebug: show });
+  },
+  
+  setMeshDebugMode: (mode: 'wireframe' | 'normals' | 'heightmap' | 'watermap' | 'vertex-dots' | 'off') => {
+    set({ meshDebugMode: mode });
   },
   
   // Terrain actions

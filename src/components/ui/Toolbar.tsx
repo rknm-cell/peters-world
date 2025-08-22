@@ -221,7 +221,7 @@ export function Toolbar() {
               </button>
 
               {/* Forest debug toggle */}
-              <button
+              {/* <button
                 onClick={() => setShowForestDebug(!showForestDebug)}
                 className={`flex items-center justify-center rounded-lg p-2 transition-all duration-200 ${
                   showForestDebug
@@ -229,12 +229,12 @@ export function Toolbar() {
                     : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
                 }`}
                 title="Toggle Forest Debug View"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11,1L7,4V6L11,3L15,6V4L11,1M11,8L7,11V13L11,10L15,13V11L11,8M6,7V9L2,12V14L6,11V13L10,10V12L14,9V11L18,8V10L22,7V5L18,8L14,11V9L10,12V10L6,7M11,15L7,18V20L11,17L15,20V18L11,15M11,22L7,19V17L11,20L15,17V19L11,22Z" />
-                </svg>
-                <span className="ml-1 text-xs hidden sm:inline">Forest</span>
-              </button>
+                > 
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11,1L7,4V6L11,3L15,6V4L11,1M11,8L7,11V13L11,10L15,13V11L11,8M6,7V9L2,12V14L6,11V13L10,10V12L14,9V11L18,8V10L22,7V5L18,8L14,11V9L10,12V10L6,7M11,15L7,18V20L11,17L15,20V18L11,15M11,22L7,19V17L11,20L15,17V19L11,22Z" />
+                  </svg>
+                  <span className="ml-1 text-xs hidden sm:inline">Forest</span>
+                </button>
 
               {/* Tree lifecycle debug toggle */}
               <button
@@ -257,9 +257,9 @@ export function Toolbar() {
       </div>
 
       {/* Time of day picker - smaller on mobile */}
-      <div className="fixed right-4 top-4 z-40 scale-90 sm:scale-100">
+      {/* <div className="fixed right-4 top-4 z-40 scale-90 sm:scale-100">
         <TimeOfDayPicker />
-      </div>
+      </div> */}
 
       {/* Object count - smaller on mobile */}
       <div className="fixed bottom-4 right-4 z-40">

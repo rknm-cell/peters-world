@@ -4,6 +4,7 @@ import { useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
 import { WaterSurface } from '../three/effects/WaterSurface';
+import { MeshDebugVisualizer } from '../three/debug/MeshDebugVisualizer';
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
@@ -16,6 +17,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     terrainVertices,
     setTerrainVertices,
     updateTerrainOctree,
+    meshDebugMode,
   } = useWorldStore();
 
   // Create high-resolution sphere geometry for terrain deformation
@@ -166,19 +168,90 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     if (meshRef.current && onTerrainMeshReady) {
       onTerrainMeshReady(meshRef.current);
     }
+    
+    // Debug: Log mesh state for debug visualizer
+    console.log('TerrainSystem mesh state:', {
+      meshExists: !!meshRef.current,
+      geometryExists: !!meshRef.current?.geometry,
+      hasUserData: !!meshRef.current?.userData?.isTerrainMesh
+    });
   }, [onTerrainMeshReady]);
 
-  // Create material with vertex color support
+  // Create material with vertex color support and debug modes
   const material = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      vertexColors: true, // Enable vertex colors
-      roughness: 0.8,
-      metalness: 0.1,
-      flatShading: false,
-      depthWrite: true,  // Ensure terrain writes to depth buffer
-      depthTest: true,   // Ensure terrain tests depth
-    });
-  }, []);
+    switch (meshDebugMode) {
+      case 'wireframe':
+        return new THREE.MeshBasicMaterial({
+          color: 0x00ff00,
+          wireframe: true,
+          transparent: false,
+          opacity: 1.0,
+        });
+      
+      case 'heightmap':
+        return new THREE.ShaderMaterial({
+          uniforms: {
+            uMinHeight: { value: -4.0 },
+            uMaxHeight: { value: 6.0 },
+          },
+          vertexShader: `
+            varying vec3 vPosition;
+            varying vec3 vNormal;
+            
+            void main() {
+              vPosition = position;
+              vNormal = normal;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float uMinHeight;
+            uniform float uMaxHeight;
+            
+            varying vec3 vPosition;
+            varying vec3 vNormal;
+            
+            void main() {
+              // Calculate distance from center (height deformation)
+              float distanceFromCenter = length(vPosition);
+              float baseRadius = 6.0;
+              float heightOffset = distanceFromCenter - baseRadius;
+              
+              // Normalize height to 0-1 range
+              float normalizedHeight = (heightOffset - uMinHeight) / (uMaxHeight - uMinHeight);
+              normalizedHeight = clamp(normalizedHeight, 0.0, 1.0);
+              
+              // Color gradient: Blue (low) -> Green (middle) -> Red (high)
+              vec3 color;
+              if (normalizedHeight < 0.5) {
+                color = mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0), normalizedHeight * 2.0);
+              } else {
+                color = mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), (normalizedHeight - 0.5) * 2.0);
+              }
+              
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `,
+          side: THREE.DoubleSide,
+        });
+      
+      case 'normals':
+        return new THREE.MeshNormalMaterial({
+          flatShading: false,
+        });
+      
+      default:
+        // Standard terrain material
+        return new THREE.MeshStandardMaterial({
+          vertexColors: true, // Enable vertex colors
+          roughness: 0.8,
+          metalness: 0.1,
+          flatShading: false,
+          depthWrite: true,  // Ensure terrain writes to depth buffer
+          depthTest: true,   // Ensure terrain tests depth
+        });
+    }
+  }, [meshDebugMode]);
 
   // Water creates depressions in the terrain - no separate water mesh needed
   // The water effect is achieved by the waterOffset in applyTerrainDeformation
@@ -202,12 +275,20 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         receiveShadow
         castShadow
         renderOrder={0} // Ensure terrain renders first
+        userData={{ isTerrainMesh: true }}
       />
 
       {/* Animated water surface using shaders */}
       {hasWater && (
         <WaterSurface terrainVertices={terrainVertices} radius={6} />
       )}
+
+      {/* Debug visualizer for mesh analysis */}
+      <MeshDebugVisualizer
+        mesh={meshRef.current}
+        terrainVertices={terrainVertices}
+        debugMode={meshDebugMode}
+      />
     </>
   );
 }

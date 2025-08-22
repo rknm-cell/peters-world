@@ -32,9 +32,9 @@ export const COLOR_PALETTES = {
 export const LIGHTING_PRESETS = {
   day: {
     ambientColor: "#ffffff",
-    ambientIntensity: 1,
+    ambientIntensity: 4.0,
     directionalColor: "#ffffff",
-    directionalIntensity: 5.0,
+    directionalIntensity: 2.0,
     directionalPosition: [10, 10, 5] as [number, number, number],
     fogColor: "#87CEEB",
     fogNear: 50, // Move fog further away so trees are visible
@@ -42,7 +42,7 @@ export const LIGHTING_PRESETS = {
   },
   sunset: {
     ambientColor: "#ff8c42",
-    ambientIntensity: 0.7,
+    ambientIntensity: 4.0,
     directionalColor: "#ff6b35",
     directionalIntensity: 0.8,
     directionalPosition: [5, 3, 5] as [number, number, number],
