@@ -160,6 +160,10 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     
     // === CHARACTER CONTROLLER LOGIC ===
     
+    // Get current position from physics body (needed for all logic below)
+    const currentPos = body.translation();
+    const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+    
     // Handle idle state
     if (isIdle) {
       const idleDuration = currentTime - idleStartTime;
@@ -192,10 +196,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       return;
     }
     
-    // Get current position from physics body
-    const currentPos = body.translation();
-    const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
-
 
     
     // === GRASS EATING LOGIC ===
