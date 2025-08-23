@@ -38,11 +38,11 @@ function formatDisplayName(objectType: string): string {
 // Shared 3D preview component that shows one object at a time
 function SharedObjectPreview({ objectType, category }: { objectType: string | null; category: string }) {
   if (!objectType) {
-    return (
-      <div className="w-full h-48 rounded-lg bg-black/20 flex items-center justify-center">
-        <span className="text-white/40 text-sm">Hover over an object to preview</span>
-      </div>
-    );
+      return (
+    <div className="w-full h-32 sm:h-48 rounded-lg bg-black/20 flex items-center justify-center">
+      <span className="text-white/40 text-sm">Hover over an object to preview</span>
+    </div>
+  );
   }
 
   const renderObject = () => {
@@ -80,7 +80,7 @@ function SharedObjectPreview({ objectType, category }: { objectType: string | nu
   };
 
   return (
-    <div className="w-full h-48 rounded-lg overflow-hidden bg-black/20">
+    <div className="w-full h-32 sm:h-48 rounded-lg overflow-hidden bg-black/20">
       <Canvas 
         gl={{ alpha: true, antialias: true }}
         camera={{ position: [2, 2, 2], fov: 50 }}
@@ -124,15 +124,15 @@ function ObjectItem({ objectType, category, onHover, onClick }: {
     <button
       onClick={() => onClick(objectType)}
       onMouseEnter={() => onHover(objectType)}
-      className="group relative bg-white/5 rounded-lg p-4 border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-200 min-h-[80px] flex flex-col items-center justify-center"
+      className="group relative bg-white/5 rounded-lg p-2 sm:p-4 border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-200 min-h-[60px] sm:min-h-[80px] flex flex-col items-center justify-center"
     >
       {/* Category icon */}
-      <div className="text-2xl mb-2">
+      <div className="text-lg sm:text-2xl mb-1 sm:mb-2">
         {getCategoryIcon()}
       </div>
       
       {/* Object name */}
-      <div className="text-xs font-medium text-white/80 group-hover:text-white text-center">
+      <div className="text-xs font-medium text-white/80 group-hover:text-white text-center leading-tight">
         {formatDisplayName(objectType)}
       </div>
     </button>
@@ -145,6 +145,11 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
   const [previewObjectType, setPreviewObjectType] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Calculate responsive dimensions
+  const menuWidth = Math.min(480, window.innerWidth - 40);
+  const menuHeight = Math.min(650, window.innerHeight - 40);
+  const gridCols = menuWidth < 400 ? 3 : 4;
 
   const categories = [
     { name: "trees", icon: "🌲", items: OBJECT_TYPES.trees },
@@ -166,18 +171,18 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       {/* Main grid menu */}
       <div
-        className="absolute bg-black/90 border border-white/20 rounded-lg backdrop-blur-sm p-6 shadow-2xl"
+        className="absolute bg-black/90 border border-white/20 rounded-lg backdrop-blur-sm p-4 sm:p-6 shadow-2xl flex flex-col"
         style={{
-          left: Math.min(position.x - 200, window.innerWidth - 500),
-          top: Math.min(position.y + 10, window.innerHeight - 500),
-          width: 480,
-          maxHeight: 700,
+          left: Math.max(20, Math.min(position.x - menuWidth / 2, window.innerWidth - menuWidth - 20)),
+          top: Math.max(20, Math.min(position.y + 10, window.innerHeight - menuHeight - 20)),
+          width: menuWidth,
+          height: menuHeight,
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Choose Object</h2>
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <h2 className="text-base sm:text-lg font-semibold text-white">Choose Object</h2>
           <button
             onClick={onClose}
             className="text-white/60 hover:text-white p-1 rounded"
@@ -187,7 +192,7 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-1">
+        <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-1 flex-shrink-0">
           {categories.map((category) => (
             <button
               key={category.name}
@@ -201,14 +206,14 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
                   : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
             >
-              <span className="text-base">{category.icon}</span>
+              <span className="text-sm sm:text-base">{category.icon}</span>
               <span className="hidden sm:inline capitalize">{category.name}</span>
             </button>
           ))}
         </div>
 
         {/* Shared 3D Preview */}
-        <div className="mb-4">
+        <div className="mb-4 flex-shrink-0">
           <SharedObjectPreview 
             objectType={previewObjectType} 
             category={selectedCategory} 
@@ -216,22 +221,30 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Objects grid */}
-        <div className="max-h-64 overflow-y-auto">
-          <div className="grid grid-cols-4 gap-2">
-            {currentCategory?.items.map((objectType) => (
-              <ObjectItem
-                key={objectType}
-                objectType={objectType}
-                category={selectedCategory}
-                onHover={setPreviewObjectType}
-                onClick={handleObjectSelect}
-              />
-            ))}
+        <div className="flex-1 overflow-hidden">
+          <div 
+            className="h-full overflow-y-auto pr-2 -mr-2 custom-scrollbar" 
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <div className={`grid gap-2 pb-2 ${gridCols === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+              {currentCategory?.items.map((objectType) => (
+                <ObjectItem
+                  key={objectType}
+                  objectType={objectType}
+                  category={selectedCategory}
+                  onHover={setPreviewObjectType}
+                  onClick={handleObjectSelect}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Instructions */}
-        <div className="mt-4 pt-4 border-t border-white/10">
+        <div className="pt-4 border-t border-white/10 flex-shrink-0">
           <p className="text-xs text-white/60 text-center">
             Click an object to place it in your world
           </p>
