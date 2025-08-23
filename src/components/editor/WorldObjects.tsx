@@ -6,6 +6,7 @@ import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Grass } from "~/components/three/objects/Grass";
 import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
+import { WolfPhysics } from "~/components/three/physics/WolfPhysics";
 import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS, type DECORATION_MODELS } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 

@@ -124,7 +124,6 @@ export function IdleOrientationTest() {
     addResult("=== Testing Idle State Bounce Animation Logic ===");
     
     // Simulate the bounce calculation from DeerPhysics.tsx:183-196
-    const mockCurrentTime = Date.now();
     const mockLastMovementSpeed = 1.5; // Previous movement speed
     const mockDelta = 0.016; // ~60 FPS
     

@@ -193,8 +193,8 @@ export class TerrainCollisionDetector {
   private findAlternativePosition(
     fromPosition: THREE.Vector3,
     blockedPosition: THREE.Vector3,
-    terrainVertices: TerrainVertex[],
-    terrainOctree: TerrainOctree | null
+    _terrainVertices: TerrainVertex[],
+    _terrainOctree: TerrainOctree | null
   ): THREE.Vector3 {
     const fromSphere = fromPosition.clone().normalize();
     const toSphere = blockedPosition.clone().normalize();
