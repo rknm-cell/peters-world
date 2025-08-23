@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useWorldStore, type TerrainVertex } from '~/lib/store';
-import { TerrainOctree } from '~/lib/utils/spatial-partitioning';
+import { type TerrainOctree } from '~/lib/utils/spatial-partitioning';
 
 export interface TerrainCollisionResult {
   canMove: boolean;
@@ -193,8 +193,8 @@ export class TerrainCollisionDetector {
   private findAlternativePosition(
     fromPosition: THREE.Vector3,
     blockedPosition: THREE.Vector3,
-    terrainVertices: TerrainVertex[],
-    terrainOctree: TerrainOctree | null
+    _terrainVertices: TerrainVertex[],
+    _terrainOctree: TerrainOctree | null
   ): THREE.Vector3 {
     const fromSphere = fromPosition.clone().normalize();
     const toSphere = blockedPosition.clone().normalize();

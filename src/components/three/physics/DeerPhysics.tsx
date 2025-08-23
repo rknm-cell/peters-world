@@ -176,25 +176,89 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setTarget(null); // Force new target generation
       }
       
+      // DISABLED: Bounce animation during idle to preserve orientation
+      // Previously this modified position which could interfere with surface alignment
       // Apply bounce decay when idle
-      const bounceDecayRate = 5.0; // How quickly bounce fades when idle
-      lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
+      // const bounceDecayRate = 5.0; // How quickly bounce fades when idle
+      // lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
       
       // Continue bounce animation with decaying speed
-      bouncePhase.current += lastMovementSpeed.current * 8.0 * delta;
+      // bouncePhase.current += lastMovementSpeed.current * 8.0 * delta;
       
       // Calculate fading bounce height
-      const maxBounceHeight = 0.08;
-      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
+      // const maxBounceHeight = 0.08;
+      // const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
       
-      // Deer should not bounce if idle
-      if (Math.abs(bounceHeight) > 0.01) {
-        const idealSurfaceDistance = 6.05 + bounceHeight;
-        const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-        body.setTranslation(adjustedPosition, true);
+      // Deer should not bounce if idle - DISABLED to preserve surface alignment
+      // if (Math.abs(bounceHeight) > 0.01) {
+      //   const idealSurfaceDistance = 6.05 + bounceHeight;
+      //   const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
+      //   body.setTranslation(adjustedPosition, true);
+      // }
+      
+      // Reset movement speed when entering idle to stop any residual bounce
+      lastMovementSpeed.current = 0;
+      
+      // === SURFACE ALIGNMENT MAINTENANCE DURING IDLE ===
+      // Prevent orientation drift by maintaining surface-relative alignment
+      
+      const surfaceNormal = currentPosition.clone().normalize();
+      const currentRotation = body.rotation();
+      const currentQuaternion = new THREE.Quaternion(
+        currentRotation.x, 
+        currentRotation.y, 
+        currentRotation.z, 
+        currentRotation.w
+      );
+      
+      // Calculate what the correct surface-aligned orientation should be
+      // Use a default forward direction (deer facing "north" relative to surface)
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const localForward = worldUp.clone()
+        .sub(surfaceNormal.clone().multiplyScalar(worldUp.dot(surfaceNormal)))
+        .normalize();
+      
+      // If forward vector is too small (e.g., at poles), use alternative direction
+      if (localForward.length() < 0.1) {
+        const worldForward = new THREE.Vector3(1, 0, 0);
+        localForward.copy(worldForward)
+          .sub(surfaceNormal.clone().multiplyScalar(worldForward.dot(surfaceNormal)))
+          .normalize();
       }
       
-      // During idle, no movement
+      // Calculate target surface-aligned rotation using existing utilities
+      const targetQuaternion = calculateTargetRotation(
+        currentPosition,
+        localForward, // Default forward direction for idle deer
+        surfaceNormal
+      );
+      
+      // Check how far we've drifted from proper surface alignment
+      const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
+      const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
+      
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD) {
+        // Gradually correct orientation drift during idle
+        // Use slower correction speed to avoid jittery movement
+        const IDLE_CORRECTION_SPEED = 0.5; // Slower than normal movement rotation
+        const correctedQuaternion = calculateSmoothedRotation(
+          currentQuaternion,
+          targetQuaternion,
+          delta * IDLE_CORRECTION_SPEED
+        );
+        
+        // Apply the corrected orientation
+        queueDeerTransformUpdate(objectId, () => {
+          body.setRotation(correctedQuaternion, true);
+        }, 'low'); // Low priority since this is just orientation maintenance
+        
+        // Debug logging (can be removed later)
+        if (orientationDifference > 0.2) { // Only log significant corrections
+          console.log(`🦌 Deer ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+        }
+      }
+      
+      // During idle, no movement but orientation is maintained
       return;
     }
     
@@ -212,7 +276,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         if (eatingGrassId) {
           const store = useWorldStore.getState();
           store.removeObject(eatingGrassId);
-          console.log(`🦌 Deer ${objectId}: Finished eating grass ${eatingGrassId}`);
         }
         
         // Stop eating and return to normal behavior
@@ -221,23 +284,28 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setTarget(null); // Force new target generation
       }
       
+      // DISABLED: Bounce animation during eating to preserve orientation
+      // Previously this modified position which could interfere with surface alignment
       // Apply bounce decay when eating (slower decay than idle)
-      const bounceDecayRate = 3.0; // Slower decay while eating
-      lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
+      // const bounceDecayRate = 3.0; // Slower decay while eating
+      // lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
       
       // Continue gentle bounce animation while eating
-      bouncePhase.current += lastMovementSpeed.current * 4.0 * delta; // Slower frequency while eating
+      // bouncePhase.current += lastMovementSpeed.current * 4.0 * delta; // Slower frequency while eating
       
       // Calculate gentle bounce height while eating
-      const maxBounceHeight = 0.04; // Smaller bounce while eating
-      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
+      // const maxBounceHeight = 0.04; // Smaller bounce while eating
+      // const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
       
-      // Apply subtle bounce to deer position while eating
-      if (Math.abs(bounceHeight) > 0.005) {
-        const idealSurfaceDistance = 6.05 + bounceHeight;
-        const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-        body.setTranslation(adjustedPosition, true);
-      }
+      // Apply subtle bounce to deer position while eating - DISABLED to preserve surface alignment
+      // if (Math.abs(bounceHeight) > 0.005) {
+      //   const idealSurfaceDistance = 6.05 + bounceHeight;
+      //   const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
+      //   body.setTranslation(adjustedPosition, true);
+      // }
+      
+      // Reset movement speed when eating to stop any residual bounce
+      lastMovementSpeed.current = 0;
       
       // During eating, no movement
       return;
@@ -252,7 +320,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       
       // If close enough to grass, start eating
       if (distanceToGrass <= GRASS_APPROACH_DISTANCE) {
-        console.log(`🦌 Deer ${objectId}: Started eating grass ${nearbyGrass.id}`);
         setIsEating(true);
         setEatingStartTime(currentTime);
         setEatingGrassId(nearbyGrass.id);
@@ -267,7 +334,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setTarget(grassPosition);
         setLastTargetTime(currentTime);
         setIsIdle(false);
-        console.log(`🦌 Deer ${objectId}: Approaching grass ${nearbyGrass.id}`);
       }
     }
     
@@ -490,7 +556,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         <Deer 
           type={type}
           position={[0, 0, 0]}
-          rotation={[0, 0, 0]}
           scale={[1, 1, 1]}
           selected={selected}
           objectId={objectId}

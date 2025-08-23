@@ -194,6 +194,49 @@ export const DEER_CONFIG = {
   },
 } as const;
 
+// Wolf spawning configuration
+export const WOLF_CONFIG = {
+  spawnProbability: 0.15, // 15% chance per check cycle (lower than deer)
+  checkInterval: 90000, // 90 seconds between checks (longer interval)
+  maxWolvesPerSpawn: 1, // Maximum wolves to spawn per cycle
+  spawnRadius: {
+    min: 1.5, // Minimum distance from spawn point
+    max: 4.0, // Maximum distance from spawn point
+  },
+  // Terrain conditions for wolf spawning - similar to deer but more restrictive
+  heightRange: {
+    min: -0.3, // Can spawn in slight depressions
+    max: 1.5,  // Can spawn on higher terrain than deer
+  },
+  waterLevelMax: 0.01, // Don't spawn in water areas
+  // Wolf behavior settings
+  maxWolvesInWorld: 6, // Maximum total wolves in the world (fewer than deer)
+  despawnProbability: 0.03, // 3% chance per check cycle for wolves to despawn
+  // Movement settings
+  movement: {
+    updateInterval: 80, // Update movement every 80ms (slightly faster than deer)
+    moveSpeed: {
+      min: 2.5, // Minimum movement speed (faster than deer)
+      max: 6.0, // Maximum movement speed (faster than deer)
+    },
+    targetDistance: {
+      min: 1.2, // Minimum distance to generate new target
+      max: 3.5, // Maximum distance to generate new target
+    },
+    idleTime: {
+      min: 1500, // Minimum time to stay idle (shorter than deer)
+      max: 4000, // Maximum time to stay idle (shorter than deer)
+    },
+  },
+  // Wolf hunting behavior
+  hunting: {
+    detectionRadius: 2.5, // How far wolves can detect deer
+    chaseSpeed: 7.0, // Speed when chasing deer (much faster)
+    chaseRadius: 4.0, // How far wolves will chase deer
+    huntingProbability: 0.8, // 80% chance to hunt when deer detected
+  },
+} as const;
+
 // Grass spawning configuration
 export const GRASS_CONFIG = {
   spawnProbability: 0.15, // 15% chance per check cycle

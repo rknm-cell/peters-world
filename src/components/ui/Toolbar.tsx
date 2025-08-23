@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useWorldStore } from "~/lib/store";
 import { DropdownMenu } from "./DropdownMenu";
-import { TimeOfDayPicker } from "./TimeOfDayPicker";
+
 
 export function Toolbar() {
   const { 
@@ -16,7 +16,6 @@ export function Toolbar() {
     showWireframe,
     setShowWireframe,
     showForestDebug,
-    setShowForestDebug,
     showLifecycleDebug,
     setShowLifecycleDebug
   } = useWorldStore();
