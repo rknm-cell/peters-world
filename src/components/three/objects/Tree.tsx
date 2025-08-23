@@ -8,6 +8,7 @@ import * as THREE from "three";
 import type { TreeLifecycleStage } from "~/lib/store";
 import { useWorldStore } from "~/lib/store";
 import { TREE_LIFECYCLE_CONFIG } from "~/lib/constants";
+import { applySpecialScaling } from "~/lib/utils/model-scaling";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
 type TreeType = 
@@ -58,20 +59,7 @@ export function Tree({
   // Handle loading state
   const isLoading = !gltfResult.scene;
   
-  // Get target height based on lifecycle stage
-  const getTargetHeight = (stage?: TreeLifecycleStage): number => {
-    switch (stage) {
-      case "youth-small": return 0.3;
-      case "youth-medium": return 0.6;
-      case "youth-medium-high": return 0.9;
-      case "youth-big": return 1.1;
-      case "adult": return 1.2;
-      case "dead-standing": return 1.0;
-      case "broken": return 0.2; // Much smaller - broken trees should be small stumps
-      case "logs": return 0.15; // Logs should be very small
-      default: return 1.2;
-    }
-  };
+  // Removed getTargetHeight - now using centralized scaling utility
 
   
   // Clone the scene to avoid sharing between instances - memoized with stable key
@@ -88,47 +76,8 @@ export function Tree({
       const clonedScene = gltfResult.scene.clone(true);
       console.log(`Tree ${type}: Scene cloned successfully:`, clonedScene);
 
-      // Reset transformations
-      clonedScene.position.set(0, 0, 0);
-      clonedScene.rotation.set(0, 0, 0);
-      clonedScene.scale.set(1, 1, 1);
-
-      // Scale to target height
-      const box = new THREE.Box3().setFromObject(clonedScene);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      
-      const targetHeight = getTargetHeight(lifecycleStage);
-      const currentHeight = Math.max(size.y, 0.001);
-      let scaleFactor = targetHeight / currentHeight;
-      
-      // DIRECT FIX: Force specific scaling for broken trees
-      if (type.includes("tree-dead-broken")) {
-        // Apply an extremely small fixed scale for broken trees
-        scaleFactor = 0.05; // Very tiny scale to counteract huge model
-        console.log(`BROKEN TREE - Forcing tiny scale:`, {
-          type,
-          originalSize: size,
-          originalHeight: currentHeight,
-          originalWidth: size.x,
-          originalDepth: size.z,
-          forcedScaleFactor: scaleFactor,
-          finalHeight: currentHeight * scaleFactor
-        });
-      } else if (lifecycleStage === "logs") {
-        // Similar treatment for logs
-        scaleFactor = 0.2;
-      } else {
-        // Normal scaling logic for other trees
-        // Safety check: prevent extreme scaling
-        scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
-      }
-      
-      // Apply scaling
-      clonedScene.scale.setScalar(scaleFactor);
-      
-      // Reset position to origin - let PlacementSystem handle positioning
-      clonedScene.position.set(0, 0, 0);
+      // Apply standardized scaling using the new utility
+      const scaleFactor = applySpecialScaling(clonedScene, type, lifecycleStage);
 
       // Enable shadows for all meshes in the tree model
       clonedScene.traverse((child: THREE.Object3D) => {
@@ -168,7 +117,6 @@ export function Tree({
 
       console.log(`Tree ready:`, { 
         type,
-        targetHeight, 
         scaleFactor,
         preview,
         canPlace,

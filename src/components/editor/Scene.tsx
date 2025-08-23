@@ -20,6 +20,8 @@ import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
 import { GravityController } from '~/components/three/physics/GravityController';
 import { PhysicsDebug } from '~/components/three/physics/PhysicsDebug';
 import { PhysicsStatusLogger } from '~/components/three/physics/PhysicsStatusLogger';
+import { AnimalOrientationTest } from '~/components/debug/AnimalOrientationTest';
+import { IdleOrientationTest } from '~/components/debug/IdleOrientationTest';
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -117,8 +119,9 @@ export function Scene() {
       {/* Deer spawning manager - handles automatic deer spawning and despawning */}
       <DeerSpawningManager />
       
-      {/* Wolf spawning manager - handles automatic wolf spawning and despawning */}
-      <WolfSpawningManager />
+      {/* Debug components for animal orientation testing */}
+      <AnimalOrientationTest />
+      <IdleOrientationTest />
     </>
   );
 }

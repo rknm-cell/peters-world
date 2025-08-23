@@ -6,8 +6,7 @@ import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Grass } from "~/components/three/objects/Grass";
 import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
-import { WolfPhysics } from "~/components/three/physics/WolfPhysics";
-import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS } from "~/lib/constants";
+import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS, type DECORATION_MODELS } from "~/lib/constants";
 import type { PlacedObject } from "~/lib/store";
 
 // Define proper types for object categories - now includes all lifecycle stages
@@ -22,7 +21,7 @@ type TreeType =
   | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
   | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
 type StructureType = "house" | "tower" | "bridge";
-type DecorationType = "rock" | "flower";
+type DecorationType = typeof DECORATION_MODELS[number] | "rock" | "flower"; // Include legacy types
 type GrassType = typeof GRASS_MODELS[number];
 type AnimalType = typeof ANIMAL_MODELS[number];
 
@@ -48,7 +47,7 @@ function isStructureType(type: string): type is StructureType {
 }
 
 function isDecorationType(type: string): type is DecorationType {
-  return OBJECT_TYPES.decorations.includes(type as DecorationType);
+  return (OBJECT_TYPES.decorations as readonly string[]).includes(type) || type === "rock" || type === "flower";
 }
 
 function isGrassType(type: string): type is GrassType {
