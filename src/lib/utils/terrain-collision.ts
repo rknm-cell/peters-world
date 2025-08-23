@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useWorldStore, type TerrainVertex } from '~/lib/store';
-import { TerrainOctree } from '~/lib/utils/spatial-partitioning';
+import { type TerrainOctree } from '~/lib/utils/spatial-partitioning';
 
 export interface TerrainCollisionResult {
   canMove: boolean;
