@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWorldStore } from "~/lib/store";
-import { DropdownMenu } from "./DropdownMenu";
+import { GridPlacementMenu } from "./GridPlacementMenu";
 
 
 export function Toolbar() {
@@ -269,8 +269,8 @@ export function Toolbar() {
         </div>
       </div>
 
-      {/* Dropdown menu */}
-      <DropdownMenu
+      {/* Grid placement menu */}
+      <GridPlacementMenu
         isOpen={showDropdownMenu}
         onClose={() => setShowDropdownMenu(false)}
         position={menuPosition}
