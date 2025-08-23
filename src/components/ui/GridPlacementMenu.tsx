@@ -35,8 +35,16 @@ function formatDisplayName(objectType: string): string {
 }
 
 
-// Preview component that renders a 3D object in a small canvas
-function ObjectPreview({ objectType, category }: { objectType: string; category: string }) {
+// Shared 3D preview component that shows one object at a time
+function SharedObjectPreview({ objectType, category }: { objectType: string | null; category: string }) {
+  if (!objectType) {
+    return (
+      <div className="w-full h-48 rounded-lg bg-black/20 flex items-center justify-center">
+        <span className="text-white/40 text-sm">Hover over an object to preview</span>
+      </div>
+    );
+  }
+
   const renderObject = () => {
     const baseProps = {
       type: objectType,
@@ -72,7 +80,7 @@ function ObjectPreview({ objectType, category }: { objectType: string; category:
   };
 
   return (
-    <div className="w-full h-24 rounded-lg overflow-hidden bg-black/20">
+    <div className="w-full h-48 rounded-lg overflow-hidden bg-black/20">
       <Canvas 
         gl={{ alpha: true, antialias: true }}
         camera={{ position: [2, 2, 2], fov: 50 }}
@@ -94,9 +102,47 @@ function ObjectPreview({ objectType, category }: { objectType: string; category:
   );
 }
 
+// Simple object item component that triggers preview on hover
+function ObjectItem({ objectType, category, onHover, onClick }: { 
+  objectType: string; 
+  category: string; 
+  onHover: (objectType: string) => void;
+  onClick: (objectType: string) => void;
+}) {
+  const getCategoryIcon = () => {
+    switch (category) {
+      case "trees": return "🌲";
+      case "decorations": return "🌸";
+      case "structures": return "🏠";
+      case "animals": return "🦌";
+      case "grass": return "🌿";
+      default: return "📦";
+    }
+  };
+
+  return (
+    <button
+      onClick={() => onClick(objectType)}
+      onMouseEnter={() => onHover(objectType)}
+      className="group relative bg-white/5 rounded-lg p-4 border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-200 min-h-[80px] flex flex-col items-center justify-center"
+    >
+      {/* Category icon */}
+      <div className="text-2xl mb-2">
+        {getCategoryIcon()}
+      </div>
+      
+      {/* Object name */}
+      <div className="text-xs font-medium text-white/80 group-hover:text-white text-center">
+        {formatDisplayName(objectType)}
+      </div>
+    </button>
+  );
+}
+
 export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMenuProps) {
   const { setPlacing, setSelectedObjectType } = useWorldStore();
   const [selectedCategory, setSelectedCategory] = useState<string>("trees");
+  const [previewObjectType, setPreviewObjectType] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -123,9 +169,9 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         className="absolute bg-black/90 border border-white/20 rounded-lg backdrop-blur-sm p-6 shadow-2xl"
         style={{
           left: Math.min(position.x - 200, window.innerWidth - 500),
-          top: Math.min(position.y + 10, window.innerHeight - 400),
+          top: Math.min(position.y + 10, window.innerHeight - 500),
           width: 480,
-          maxHeight: 600,
+          maxHeight: 700,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -145,7 +191,10 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
           {categories.map((category) => (
             <button
               key={category.name}
-              onClick={() => setSelectedCategory(category.name)}
+              onClick={() => {
+                setSelectedCategory(category.name);
+                setPreviewObjectType(null);
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
                 selectedCategory === category.name
                   ? "bg-blue-500 text-white"
@@ -158,23 +207,25 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
           ))}
         </div>
 
+        {/* Shared 3D Preview */}
+        <div className="mb-4">
+          <SharedObjectPreview 
+            objectType={previewObjectType} 
+            category={selectedCategory} 
+          />
+        </div>
+
         {/* Objects grid */}
-        <div className="max-h-80 overflow-y-auto">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="max-h-64 overflow-y-auto">
+          <div className="grid grid-cols-4 gap-2">
             {currentCategory?.items.map((objectType) => (
-              <button
+              <ObjectItem
                 key={objectType}
-                onClick={() => handleObjectSelect(objectType)}
-                className="group relative bg-white/5 rounded-lg p-3 border border-white/10 hover:border-blue-400/50 hover:bg-white/10 transition-all duration-200"
-              >
-                {/* 3D Preview */}
-                <ObjectPreview objectType={objectType} category={selectedCategory} />
-                
-                {/* Object name */}
-                <div className="mt-2 text-xs font-medium text-white/80 group-hover:text-white text-center">
-                  {formatDisplayName(objectType)}
-                </div>
-              </button>
+                objectType={objectType}
+                category={selectedCategory}
+                onHover={setPreviewObjectType}
+                onClick={handleObjectSelect}
+              />
             ))}
           </div>
         </div>
