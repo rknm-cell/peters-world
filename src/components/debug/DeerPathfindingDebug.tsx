@@ -37,9 +37,9 @@ function sampleTerrainHeight(
       closestVertices.push({ vertex, angle, weight: 0 });
     } else {
       const maxAngleIndex = closestVertices.reduce((maxIdx, curr, idx) => 
-        curr.angle > closestVertices[maxIdx].angle ? idx : maxIdx, 0);
+        curr.angle > closestVertices[maxIdx]!.angle ? idx : maxIdx, 0);
       
-      if (angle < closestVertices[maxAngleIndex].angle) {
+      if (angle < closestVertices[maxAngleIndex]!.angle) {
         closestVertices[maxAngleIndex] = { vertex, angle, weight: 0 };
       }
     }
@@ -278,11 +278,7 @@ export function DeerPathfindingDebug() {
                   <bufferGeometry>
                     <bufferAttribute
                       attach="attributes-position"
-                      count={deer.projectedPath.length}
-                      array={new Float32Array(
-                        deer.projectedPath.flatMap(p => [p.x, p.y, p.z])
-                      )}
-                      itemSize={3}
+                      args={[new Float32Array(deer.projectedPath.flatMap(p => [p.x, p.y, p.z])), 3]}
                     />
                   </bufferGeometry>
                   <lineBasicMaterial 
@@ -326,11 +322,7 @@ export function DeerPathfindingDebug() {
                 <bufferGeometry>
                   <bufferAttribute
                     attach="attributes-position"
-                    count={deer.pathHistory.length}
-                    array={new Float32Array(
-                      deer.pathHistory.flatMap(p => [p.x, p.y, p.z])
-                    )}
-                    itemSize={3}
+                    args={[new Float32Array(deer.pathHistory.flatMap(p => [p.x, p.y, p.z])), 3]}
                   />
                 </bufferGeometry>
                 <lineBasicMaterial 

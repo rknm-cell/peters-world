@@ -286,6 +286,46 @@ export function Toolbar() {
                 </svg>
                 <span className="ml-1 text-xs hidden sm:inline">Pathfind</span>
               </button>
+
+              {/* Height map debug toggle */}
+              <button
+                onClick={() => {
+                  // Toggle height map visibility
+                  const event = new KeyboardEvent('keydown', {
+                    key: 'H',
+                    ctrlKey: true,
+                    shiftKey: true
+                  });
+                  window.dispatchEvent(event);
+                }}
+                className="flex items-center justify-center rounded-lg p-2 transition-all duration-200 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                title="Toggle Height Map (Ctrl+Shift+H)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2M6.5,12.5L7.5,16.5L9.5,15.5L8.5,11.5L6.5,12.5M17.5,12.5L15.5,11.5L14.5,15.5L16.5,16.5L17.5,12.5Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Height</span>
+              </button>
+
+              {/* Normal map debug toggle */}
+              <button
+                onClick={() => {
+                  // Toggle normal map visibility
+                  const event = new KeyboardEvent('keydown', {
+                    key: 'N',
+                    ctrlKey: true,
+                    shiftKey: true
+                  });
+                  window.dispatchEvent(event);
+                }}
+                className="flex items-center justify-center rounded-lg p-2 transition-all duration-200 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                title="Toggle Normal Map (Ctrl+Shift+N)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10.5L12,11L8.5,10.5L12,6M6.5,12L10.5,15.5L11,12L10.5,8.5L6.5,12M17.5,12L13.5,8.5L13,12L13.5,15.5L17.5,12M12,18L8.5,13.5L12,13L15.5,13.5L12,18Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Normal</span>
+              </button>
             </div>
           </div>
         )}

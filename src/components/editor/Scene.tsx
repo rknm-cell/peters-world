@@ -26,6 +26,7 @@ import { TerrainCollisionTest } from '~/components/debug/TerrainCollisionTest';
 import { CollisionDebugVisualization } from '~/components/debug/CollisionMeshDebug';
 import { DeerPathfindingDebug } from '~/components/debug/DeerPathfindingDebug';
 
+
 export function Scene() {
   const { scene, gl } = useThree();
   const { timeOfDay, showDebugNormals } = useWorldStore();
@@ -89,6 +90,8 @@ export function Scene() {
         
         {/* Deer pathfinding debug visualization */}
         <DeerPathfindingDebug />
+        
+        {/* Terrain analysis debug tools - moved to page layout */}
         
         {/* Rotation group that contains all rotatable content */}
         <group ref={rotationGroupRef}>
