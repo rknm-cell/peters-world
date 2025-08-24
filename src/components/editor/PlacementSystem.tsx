@@ -178,7 +178,8 @@ export function PlacementSystem({
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
       if (!isPlacing || !selectedObjectType) {
-        setPlacementPreview(null);
+        // Only clear preview if it's not already null
+        setPlacementPreview((prev) => prev ? null : prev);
         return;
       }
 
@@ -208,7 +209,7 @@ export function PlacementSystem({
 
           setPlacementPreview(placementInfo);
         } else {
-          setPlacementPreview(null);
+          setPlacementPreview((prev) => prev ? null : prev);
         }
       }
     },
@@ -227,12 +228,23 @@ export function PlacementSystem({
     // This runs every frame - we can add any per-frame logic here
   });
 
-  // Add event listeners
+  // Add event listeners - use refs to avoid dependency issues
+  const handlePointerMoveRef = useRef(handlePointerMove);
+  const handlePointerDownRef = useRef(handlePointerDown);
+  
+  useEffect(() => {
+    handlePointerMoveRef.current = handlePointerMove;
+    handlePointerDownRef.current = handlePointerDown;
+  });
+
   useEffect(() => {
     const canvas = gl.domElement;
 
-    canvas.addEventListener("pointerdown", handlePointerDown);
-    canvas.addEventListener("pointermove", handlePointerMove);
+    const moveHandler = (e: PointerEvent) => handlePointerMoveRef.current(e);
+    const downHandler = (e: PointerEvent) => handlePointerDownRef.current(e);
+
+    canvas.addEventListener("pointerdown", downHandler);
+    canvas.addEventListener("pointermove", moveHandler);
 
     // Add keyboard event listener for Escape key to exit placement mode
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -244,11 +256,11 @@ export function PlacementSystem({
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      canvas.removeEventListener("pointerdown", handlePointerDown);
-      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerdown", downHandler);
+      canvas.removeEventListener("pointermove", moveHandler);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gl.domElement, handlePointerDown, handlePointerMove, isPlacing]);
+  }, [gl.domElement, isPlacing]);
 
   return (
     <>

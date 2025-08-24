@@ -185,6 +185,18 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     });
   }, [onTerrainMeshReady]);
 
+  // Notify parent when terrain is updated (for physics collider updates)
+  useEffect(() => {
+    if (meshRef.current && terrainVertices.length > 0) {
+      // Trigger terrain update callback when vertices change
+      const geometry = meshRef.current.geometry;
+      if (geometry) {
+        console.log('🏔️ TerrainSystem: Notifying terrain update');
+        onTerrainUpdate?.(geometry);
+      }
+    }
+  }, [terrainVertices, onTerrainUpdate]);
+
   // Create material with vertex color support and debug modes
   const material = useMemo(() => {
     switch (meshDebugMode) {
@@ -283,7 +295,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         receiveShadow
         castShadow
         renderOrder={0} // Ensure terrain renders first
-        userData={{ isTerrainMesh: true }}
+        userData={{ isTerrainMesh: true, meshType: 'terrain' }}
       />
 
       {/* Animated water surface using shaders */}

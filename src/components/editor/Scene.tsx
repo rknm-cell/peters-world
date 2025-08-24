@@ -22,6 +22,8 @@ import { PhysicsDebug } from '~/components/three/physics/PhysicsDebug';
 import { PhysicsStatusLogger } from '~/components/three/physics/PhysicsStatusLogger';
 import { AnimalOrientationTest } from '~/components/debug/AnimalOrientationTest';
 import { IdleOrientationTest } from '~/components/debug/IdleOrientationTest';
+import { TerrainCollisionTest } from '~/components/debug/TerrainCollisionTest';
+import { CollisionDebugVisualization } from '~/components/debug/CollisionMeshDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -81,6 +83,9 @@ export function Scene() {
         {/* Physics status logging for debugging */}
         <PhysicsStatusLogger />
         
+        {/* Collision mesh debug visualization (3D part) */}
+        <CollisionDebugVisualization />
+        
         {/* Rotation group that contains all rotatable content */}
         <group ref={rotationGroupRef}>
           {/* Placement System wraps all interactive objects */}
@@ -122,6 +127,9 @@ export function Scene() {
       {/* Debug components for animal orientation testing */}
       <AnimalOrientationTest />
       <IdleOrientationTest />
+      
+      {/* Debug component for terrain collision testing */}
+      <TerrainCollisionTest />
     </>
   );
 }
