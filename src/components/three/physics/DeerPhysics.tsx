@@ -11,6 +11,17 @@ import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVect
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 
+// Type for debug window functions
+interface DebugWindow extends Window {
+  updateDeerDebug?: (deerId: string, data: {
+    position?: THREE.Vector3;
+    target?: THREE.Vector3 | null;
+    state?: string;
+    lastDecision?: string;
+    collisionPoints?: THREE.Vector3[];
+  }) => void;
+}
+
 interface DeerPhysicsProps {
   objectId: string;
   position: [number, number, number];
@@ -165,6 +176,17 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     // Get current position from physics body (needed for all logic below)
     const currentPos = body.translation();
     const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+    
+    // Report debug state
+    const debugWindow = window as DebugWindow;
+    if (debugWindow.updateDeerDebug) {
+      debugWindow.updateDeerDebug(objectId, {
+        position: currentPosition,
+        target: target,
+        state: isEating ? 'eating' : isIdle ? 'idle' : 'moving',
+        lastDecision: isEating ? `Eating grass` : isIdle ? `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s` : target ? 'Moving to target' : 'Seeking target'
+      });
+    }
     
     // Handle idle state
     if (isIdle) {
@@ -395,6 +417,15 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
           slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
           groundHeight: terrainCollision.groundHeight.toFixed(2)
         });
+        
+        // Report collision to debug system
+        const debugWin = window as DebugWindow;
+        if (debugWin.updateDeerDebug) {
+          debugWin.updateDeerDebug(objectId, {
+            lastDecision: terrainCollision.isWater ? 'Blocked by water' : 'Blocked by steep slope',
+            collisionPoints: [targetPosition]
+          });
+        }
         
         // Use alternative position if available, otherwise generate new target
         if (terrainCollision.adjustedPosition) {

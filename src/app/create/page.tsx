@@ -7,6 +7,7 @@ import { Instructions } from "~/components/ui/Instructions";
 import { PerformanceDebug } from "~/components/ui/PerformanceDebug";
 import { MeshDebugPanel } from "~/components/ui/MeshDebugPanel";
 import { CollisionDebugPanel } from "~/components/debug/CollisionMeshDebug";
+import { PathfindingDebugPanel } from "~/components/debug/DeerPathfindingDebug";
 
 export default function CreatePage() {
   return (
@@ -18,6 +19,7 @@ export default function CreatePage() {
       <PerformanceDebug />
       <MeshDebugPanel />
       <CollisionDebugPanel />
+      <PathfindingDebugPanel />
     </div>
   );
 }

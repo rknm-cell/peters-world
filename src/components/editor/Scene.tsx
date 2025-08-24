@@ -24,6 +24,7 @@ import { AnimalOrientationTest } from '~/components/debug/AnimalOrientationTest'
 import { IdleOrientationTest } from '~/components/debug/IdleOrientationTest';
 import { TerrainCollisionTest } from '~/components/debug/TerrainCollisionTest';
 import { CollisionDebugVisualization } from '~/components/debug/CollisionMeshDebug';
+import { DeerPathfindingDebug } from '~/components/debug/DeerPathfindingDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -85,6 +86,9 @@ export function Scene() {
         
         {/* Collision mesh debug visualization (3D part) */}
         <CollisionDebugVisualization />
+        
+        {/* Deer pathfinding debug visualization */}
+        <DeerPathfindingDebug />
         
         {/* Rotation group that contains all rotatable content */}
         <group ref={rotationGroupRef}>
