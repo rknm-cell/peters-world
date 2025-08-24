@@ -53,7 +53,6 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const surfacePosition = initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
   
   const [target, setTarget] = useState<THREE.Vector3 | null>(null);
-  const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
 
@@ -127,9 +126,9 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   
   // Movement parameters for stable wandering
   const MOVEMENT_SPEED = 1.5; // Reduced slightly to reduce potential frame conflicts
-  const TARGET_DISTANCE = { min: 0.8, max: 1.5 }; // Distance to wander
-  const TARGET_UPDATE_INTERVAL = { min: 2000, max: 4000 }; // Time between targets
-  const IDLE_PROBABILITY = 0.2; // Reduced idle probability to see more movement
+  const TARGET_DISTANCE = { min: 2.0, max: 4.0 }; // Increased distance for longer journeys
+  const TARGET_REACHED_THRESHOLD = 0.3; // How close deer needs to be to consider target reached
+  const IDLE_PROBABILITY = 0.3; // Chance to idle after reaching target
   const IDLE_DURATION = { min: 1000, max: 3000 }; // Idle time
   
   // Eating parameters
@@ -180,11 +179,22 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     // Report debug state
     const debugWindow = window as DebugWindow;
     if (debugWindow.updateDeerDebug) {
+      const distanceToTarget = target ? currentPosition.distanceTo(target) : 0;
+      let decision = 'Seeking target';
+      
+      if (isEating) {
+        decision = `Eating grass`;
+      } else if (isIdle) {
+        decision = `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s`;
+      } else if (target) {
+        decision = `Traveling (${distanceToTarget.toFixed(1)}m to go)`;
+      }
+      
       debugWindow.updateDeerDebug(objectId, {
         position: currentPosition,
         target: target,
         state: isEating ? 'eating' : isIdle ? 'idle' : 'moving',
-        lastDecision: isEating ? `Eating grass` : isIdle ? `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s` : target ? 'Moving to target' : 'Seeking target'
+        lastDecision: decision
       });
     }
     
@@ -347,44 +357,49 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         setEatingGrassId(nearbyGrass.id);
         setTarget(null);
         setIsIdle(false);
+        console.log(`🦌 Deer ${objectId}: Starting to eat grass`);
         return;
       }
       
-      // If grass is nearby but not close enough, approach it
-      const timeSinceLastTarget = currentTime - lastTargetTime;
-      if (timeSinceLastTarget > 500) { // Update target every 500ms when approaching grass
+      // If grass is nearby but not close enough, set it as target (only if not already targeting it)
+      const targetingGrass = target && target.distanceTo(grassPosition) < 0.1;
+      if (!targetingGrass) {
         setTarget(grassPosition);
-        setLastTargetTime(currentTime);
         setIsIdle(false);
+        console.log(`🦌 Deer ${objectId}: Found grass, moving to eat it`);
       }
     }
     
     // Check if we need a new target (only if not pursuing grass)
     if (!nearbyGrass) {
       const distanceToTarget = target ? currentPosition.distanceTo(target) : Infinity;
-      const timeSinceLastTarget = currentTime - lastTargetTime;
-      const maxTargetInterval = TARGET_UPDATE_INTERVAL.min + 
-        Math.random() * (TARGET_UPDATE_INTERVAL.max - TARGET_UPDATE_INTERVAL.min);
       
-      const needsNewTarget = 
-        !target || 
-        distanceToTarget < 0.2 || // Close to target
-        timeSinceLastTarget > maxTargetInterval; // Time for new target
+      // Only generate new target when:
+      // 1. No target exists
+      // 2. Target has been reached (within threshold)
+      const targetReached = distanceToTarget < TARGET_REACHED_THRESHOLD;
+      const needsNewTarget = !target || targetReached;
       
       if (needsNewTarget) {
-        // Decide if deer should idle or move
-        if (Math.random() < IDLE_PROBABILITY) {
-          setIsIdle(true);
-          setIdleStartTime(currentTime);
-          setTarget(null);
-          return;
-        } else {
-          // Generate new wandering target
-          const newTarget = generateWanderingTarget(currentPosition);
-          if (newTarget) {
-            setTarget(newTarget);
-            setLastTargetTime(currentTime);
+        // If we just reached a target, decide whether to idle or continue moving
+        if (targetReached && target) {
+          console.log(`🦌 Deer ${objectId}: Reached target at distance ${distanceToTarget.toFixed(2)}`);
+          
+          // Decide if deer should idle or move to new location
+          if (Math.random() < IDLE_PROBABILITY) {
+            setIsIdle(true);
+            setIdleStartTime(currentTime);
+            setTarget(null);
+            console.log(`🦌 Deer ${objectId}: Starting idle period`);
+            return;
           }
+        }
+        
+        // Generate new wandering target
+        const newTarget = generateWanderingTarget(currentPosition);
+        if (newTarget) {
+          setTarget(newTarget);
+          console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
         }
       }
     }
