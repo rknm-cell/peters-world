@@ -10,6 +10,9 @@ import { useWorldStore } from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
+import { enhancedPathfinder } from '~/lib/utils/enhanced-pathfinding';
+import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
+
 
 // Type for debug window functions
 interface DebugWindow extends Window {
@@ -422,12 +425,36 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Calculate target position for this frame (before collision checking)
       let targetPosition = currentPosition.clone().add(movement);
       
-      // ** TERRAIN COLLISION DETECTION **
-      const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
+      // ** ENHANCED TERRAIN COLLISION DETECTION **
+      // Always use the most accurate collision detection available
+      console.log(`🦌 Deer ${objectId}: Checking movement from ${currentPosition.x.toFixed(2)}, ${currentPosition.y.toFixed(2)}, ${currentPosition.z.toFixed(2)} to ${targetPosition.x.toFixed(2)}, ${targetPosition.y.toFixed(2)}, ${targetPosition.z.toFixed(2)}`);
       
-      // If movement is blocked by terrain, handle collision
+      // Use traditional collision detection with physics data (most reliable)
+      const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
+      console.log(`🦌 Deer ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}`);
+      
+      let enhancedValidation = null;
+      
+      // Only use enhanced pathfinding for additional validation if traditional collision fails
       if (!terrainCollision.canMove) {
-        console.log(`🦌 Deer ${objectId}: Movement blocked by terrain`, {
+        enhancedValidation = enhancedPathfinder.validatePath(
+          currentPosition,
+          targetPosition,
+          {
+            maxSlopeAngle: Math.PI / 3, // 60 degrees
+            avoidWater: true,
+            samples: 3, // Quick validation for real-time movement
+            useHeightMap: true,
+            useNormalMap: false, // Disable normal map to reduce complexity
+            generateAlternatives: true // Generate alternatives if path is blocked
+          }
+        );
+        console.log(`🦌 Deer ${objectId}: Enhanced validation result: isValid=${enhancedValidation.isValid}, confidence=${(enhancedValidation.confidence * 100).toFixed(1)}%`);
+      }
+      
+      // Handle collision detection results
+      if (!terrainCollision.canMove) {
+        console.log(`🦌 Deer ${objectId}: Traditional collision detection blocked movement`, {
           isWater: terrainCollision.isWater,
           slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
           groundHeight: terrainCollision.groundHeight.toFixed(2)
@@ -442,21 +469,25 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
           });
         }
         
-        // Use alternative position if available, otherwise generate new target
-        if (terrainCollision.adjustedPosition) {
+        // Try using enhanced pathfinding alternative if available
+        if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
+          targetPosition = enhancedValidation.alternativePath[0]!;
+          console.log(`🦌 Deer ${objectId}: Using enhanced alternative path point`);
+        } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          console.log(`🦌 Deer ${objectId}: Using adjusted position`);
+          console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);
         } else {
-          // Generate new target in a different direction
+          // No alternative available, generate new target
           setTarget(null);
-          console.log(`🦌 Deer ${objectId}: Generating new target due to terrain collision`);
+          console.log(`🦌 Deer ${objectId}: Generating new target due to blocked movement`);
           return; // Skip movement this frame
         }
       } else {
-        // Use terrain-sampled ground height for accurate positioning
+        // Traditional collision detection passed, use accurate terrain height
         const terrainGroundHeight = terrainCollision.groundHeight;
         const surfaceNormal = targetPosition.clone().normalize();
-        targetPosition = surfaceNormal.multiplyScalar(terrainGroundHeight + 0.05); // Small offset above ground
+        targetPosition = surfaceNormal.multiplyScalar(terrainGroundHeight);
+        console.log(`🦌 Deer ${objectId}: Movement allowed, positioning at height ${terrainGroundHeight.toFixed(2)}`);
       }
       
       // Calculate actual movement that occurred (for rotation and bounce animation)
@@ -523,17 +554,17 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   
   /**
    * Generate a random wandering target on the globe surface
-   * Now includes terrain collision checking to avoid impassable areas
+   * Enhanced with height map and multi-method terrain validation
    */
   function generateWanderingTarget(currentPos: THREE.Vector3): THREE.Vector3 | null {
-    const maxAttempts = 16; // Try multiple directions to find valid target
+    const maxAttempts = 20; // Increased attempts for enhanced validation
     
     const baseDistance = TARGET_DISTANCE.min + Math.random() * (TARGET_DISTANCE.max - TARGET_DISTANCE.min);
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       // Generate random direction and distance for wandering
       const angle = Math.random() * Math.PI * 2;
-      const distance = baseDistance * (attempt > maxAttempts / 2 ? 0.7 : 1.0); // Reduce distance for later attempts
+      const distance = baseDistance * (attempt > maxAttempts / 2 ? 0.6 : 1.0); // Reduce distance for later attempts
       
       // Get current surface normal
       const normal = currentPos.clone().normalize();
@@ -560,16 +591,44 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         .add(tangent2.clone().multiplyScalar(localZ))
         .normalize();
       
-      // Use consistent surface radius to keep deer on surface
-      const targetRadius = 6.05; // Match initial positioning and gravity controller
+      // Use height map to get accurate terrain height at target location
+      let targetRadius = 6.05; // Default surface radius
+      const terrainHeight = terrainHeightMapGenerator.sampleHeight(targetDirection.clone().multiplyScalar(6.0));
+      if (terrainHeight !== null && terrainHeight > 5.0) {
+        targetRadius = terrainHeight + 0.05; // Small offset above terrain
+      }
+      
       const candidateTarget = targetDirection.multiplyScalar(targetRadius);
       
-      // Check if this target is reachable (not blocked by terrain)
-      const terrainCollision = terrainCollisionDetector.checkMovement(currentPos, candidateTarget);
+      // Use enhanced pathfinding for comprehensive validation
+      const pathValidation = enhancedPathfinder.validatePath(
+        currentPos,
+        candidateTarget,
+        {
+          maxSlopeAngle: Math.PI / 3, // 60 degrees - deer can climb moderate slopes
+          avoidWater: true,
+          samples: 8, // Fewer samples for performance during target generation
+          useHeightMap: true,
+          useNormalMap: true,
+          generateAlternatives: false // Don't need alternatives during target generation
+        }
+      );
       
-      if (terrainCollision.canMove) {
-        console.log(`🦌 Deer ${objectId}: Found valid target after ${attempt + 1} attempts`);
+      if (pathValidation.isValid && pathValidation.confidence > 0.6) {
+        console.log(`🦌 Deer ${objectId}: Enhanced pathfinding found valid target after ${attempt + 1} attempts (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`);
         return candidateTarget;
+      } else if (pathValidation.confidence > 0.3) {
+        // If path has moderate confidence but isn't fully valid, try traditional collision detection as fallback
+        const terrainCollision = terrainCollisionDetector.checkMovement(currentPos, candidateTarget);
+        if (terrainCollision.canMove) {
+          console.log(`🦌 Deer ${objectId}: Fallback collision detection found target after ${attempt + 1} attempts`);
+          return candidateTarget;
+        }
+      }
+      
+      // Log why this target was rejected for debugging
+      if (attempt % 5 === 0) { // Log every 5th attempt to avoid spam
+        console.log(`🦌 Deer ${objectId}: Target attempt ${attempt + 1} rejected - ${pathValidation.reason ?? 'Unknown reason'} (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`);
       }
     }
     

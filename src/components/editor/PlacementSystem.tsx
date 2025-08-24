@@ -178,8 +178,7 @@ export function PlacementSystem({
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
       if (!isPlacing || !selectedObjectType) {
-        // Only clear preview if it's not already null
-        setPlacementPreview((prev) => prev ? null : prev);
+        setPlacementPreview(null);
         return;
       }
 
@@ -209,7 +208,7 @@ export function PlacementSystem({
 
           setPlacementPreview(placementInfo);
         } else {
-          setPlacementPreview((prev) => prev ? null : prev);
+          setPlacementPreview(null);
         }
       }
     },
