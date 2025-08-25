@@ -19,21 +19,9 @@ export const OBJECT_METADATA = {
     bottomOffset: -0.15,
     baseRadius: 0.1,
   },
-  "tree-conifer": {
-    bottomOffset: -0.15,
-    baseRadius: 0.12,
-  },
   "tree-elipse": {
     bottomOffset: -0.15,
     baseRadius: 0.16,
-  },
-  "tree-fir": {
-    bottomOffset: -0.15,
-    baseRadius: 0.14,
-  },
-  "tree-forest": {
-    bottomOffset: -0.15,
-    baseRadius: 0.25,
   },
   "tree-lime": {
     bottomOffset: -0.15,
@@ -51,10 +39,7 @@ export const OBJECT_METADATA = {
     bottomOffset: -0.15,
     baseRadius: 0.15,
   },
-  "tree-spruce": {
-    bottomOffset: -0.15,
-    baseRadius: 0.13,
-  },
+
   "tree-tall": {
     bottomOffset: -0.15,
     baseRadius: 0.11,

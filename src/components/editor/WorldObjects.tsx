@@ -15,9 +15,9 @@ type TreeType =
   // Youth stages (bush models)
   | "bush-small" | "bush-medium" | "bush-medium-high" | "bush-big"
   // Adult trees
-  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer"
-  | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" 
-  | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall"
+  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch"
+  | "tree-elipse" | "tree-lime" | "tree-maple" 
+  | "tree-oak" | "tree-round" | "tree-tall"
   // Death stages
   | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
   | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";

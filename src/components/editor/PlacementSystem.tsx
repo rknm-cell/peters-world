@@ -19,8 +19,8 @@ import {
 } from "~/lib/utils/placement";
 
 // Type guard function to check if an object type is a tree
-function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall" {
-  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall");
+function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall" {
+  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall");
 }
 
 // Type guard function to check if an object type is a decoration

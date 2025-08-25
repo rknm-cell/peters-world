@@ -81,9 +81,9 @@ export const TREE_LIFECYCLE = {
   },
   // Adult stages - existing tree models
   adult: [
-    "tree", "tree-baobab", "tree-beech", "tree-birch", "tree-conifer",
-    "tree-elipse", "tree-fir", "tree-forest", "tree-lime", "tree-maple", 
-    "tree-oak", "tree-round", "tree-spruce", "tree-tall"
+    "tree", "tree-baobab", "tree-beech", "tree-birch",
+    "tree-elipse", "tree-lime", "tree-maple", 
+    "tree-oak", "tree-round", "tree-tall"
   ],
   // Death stages
   death: {
@@ -299,15 +299,11 @@ export const OBJECT_TYPES = {
     "tree-baobab",
     "tree-beech", 
     "tree-birch",
-    "tree-conifer",
     "tree-elipse",
-    "tree-fir",
-    "tree-forest",
     "tree-lime",
     "tree-maple",
     "tree-oak",
     "tree-round",
-    "tree-spruce",
     "tree-tall"
   ],
   structures: ["house", "tower", "bridge"],
