@@ -9,8 +9,6 @@ export function PlacementDebugPanel() {
   const { 
     showPlacementOrientationDebug, 
     setShowPlacementOrientationDebug,
-    placementDebugUseMeshNormals,
-    setPlacementDebugUseMeshNormals,
     placementDebugShowComparison,
     setPlacementDebugShowComparison
   } = useWorldStore();
@@ -132,7 +130,7 @@ export function PlacementDebugPanel() {
               </div>
               
               <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-800 rounded">
-                <p>💡 Arrows show the "up" direction of placed objects. They should point away from the globe center for proper radial alignment.</p>
+                <p>💡 Arrows show the &ldquo;up&rdquo; direction of placed objects. They should point away from the globe center for proper radial alignment.</p>
               </div>
             </>
           )}
@@ -143,7 +141,7 @@ export function PlacementDebugPanel() {
               <p><strong>Object Orientation:</strong></p>
               <p>• <span className="text-green-400">Green arrows</span> = Valid placement zones</p>
               <p>• <span className="text-red-400">Red arrows</span> = Invalid placement (collision/steep)</p>
-              <p>• Arrows show the "up" direction objects will have when placed</p>
+              <p>• Arrows show the &ldquo;up&rdquo; direction objects will have when placed</p>
               {placementDebugShowComparison && (
                 <p>• <span className="text-red-400">Shorter red arrows</span> = Debug normals (for comparison)</p>
               )}

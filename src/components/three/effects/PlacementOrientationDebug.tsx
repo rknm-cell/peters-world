@@ -19,7 +19,7 @@ export function PlacementOrientationDebug({
   normalLength = 0.3,
   density = 20,
   color = "#00ff00",
-  useMeshNormals = false,
+  useMeshNormals: _useMeshNormals = false,
   showMathNormalComparison = false
 }: PlacementOrientationDebugProps) {
   const { selectedObjectType, objects } = useWorldStore();
@@ -29,7 +29,7 @@ export function PlacementOrientationDebug({
     const arrows: THREE.ArrowHelper[] = [];
     const mathArrows: THREE.ArrowHelper[] = [];
     
-    const objectType = selectedObjectType || "tree";
+    const objectType = selectedObjectType ?? "tree";
     
     // Create a grid of points on the sphere - IDENTICAL to SurfaceNormalDebug
     for (let phi = 0; phi <= Math.PI; phi += Math.PI / density) {

@@ -30,7 +30,7 @@ import { DeerPathfindingDebug } from '~/components/debug/DeerPathfindingDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const { timeOfDay, showDebugNormals, showPlacementOrientationDebug, placementDebugUseMeshNormals, placementDebugShowComparison } = useWorldStore();
+  const { timeOfDay, showDebugNormals, showPlacementOrientationDebug, placementDebugShowComparison } = useWorldStore();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh>(null);
   const rotationGroupRef = useRef<THREE.Group>(null);
@@ -130,7 +130,6 @@ export function Scene() {
           normalLength={0.3}
           density={20}
           color="#00ff00"
-          useMeshNormals={placementDebugUseMeshNormals}
           showMathNormalComparison={placementDebugShowComparison}
         />
       )}
