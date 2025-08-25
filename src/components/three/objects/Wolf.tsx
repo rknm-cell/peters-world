@@ -129,12 +129,9 @@ export function Wolf({
   useFrame((state) => {
     if (!groupRef.current) return;
 
-    // Skip position syncing if controlled by physics (WolfPhysics component)
+    // Skip all updates if controlled by physics (WolfPhysics component)
+    // Physics system handles position, rotation, and all animations
     if (disablePositionSync) {
-      // Only handle selection animation, physics handles position
-      if (selected) {
-        groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 2) * 0.1;
-      }
       return;
     }
 
