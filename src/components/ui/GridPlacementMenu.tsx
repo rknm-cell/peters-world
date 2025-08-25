@@ -14,9 +14,9 @@ import { Grass } from "~/components/three/objects/Grass";
 
 // Type definitions for the object types
 type TreeType = 
-  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer"
-  | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" 
-  | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall";
+  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch"
+  | "tree-elipse" | "tree-lime" | "tree-maple" 
+  | "tree-oak" | "tree-round" | "tree-tall";
 
 type StructureType = "house" | "tower" | "bridge";
 

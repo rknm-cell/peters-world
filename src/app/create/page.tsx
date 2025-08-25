@@ -6,6 +6,7 @@ import { TerraformToolbar } from "~/components/ui/TerraformToolbar";
 import { Instructions } from "~/components/ui/Instructions";
 import { PerformanceDebug } from "~/components/ui/PerformanceDebug";
 import { MeshDebugPanel } from "~/components/ui/MeshDebugPanel";
+import { PlacementDebugPanel } from "~/components/ui/PlacementDebugPanel";
 import { CollisionDebugPanel } from "~/components/debug/CollisionMeshDebug";
 import { PathfindingDebugPanel } from "~/components/debug/DeerPathfindingDebug";
 import { CollisionValidationTest } from "~/components/debug/CollisionValidationTest";
@@ -25,6 +26,7 @@ export default function CreatePage() {
       <Instructions />
       <PerformanceDebug />
       <MeshDebugPanel />
+      <PlacementDebugPanel />
       <CollisionDebugPanel />
       <PathfindingDebugPanel />
       <CollisionValidationTest />

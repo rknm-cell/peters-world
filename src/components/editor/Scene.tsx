@@ -12,6 +12,7 @@ import { WorldObjects } from "./WorldObjects";
 import { InputManager } from "./InputManager";
 import { Sun } from '~/components/three/objects/Sun';
 import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
+import { PlacementOrientationDebug } from '~/components/three/effects/PlacementOrientationDebug';
 import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
 import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
 import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
@@ -29,7 +30,7 @@ import { DeerPathfindingDebug } from '~/components/debug/DeerPathfindingDebug';
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const { timeOfDay, showDebugNormals } = useWorldStore();
+  const { timeOfDay, showDebugNormals, showPlacementOrientationDebug, placementDebugShowComparison } = useWorldStore();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh>(null);
   const rotationGroupRef = useRef<THREE.Group>(null);
@@ -121,6 +122,17 @@ export function Scene() {
 
       {/* Debug surface normals - toggle with toolbar button */}
       {showDebugNormals && <SurfaceNormalDebug />}
+      
+      {/* Debug placement orientation - shows arrows indicating object orientation */}
+      {showPlacementOrientationDebug && (
+        <PlacementOrientationDebug 
+          globeRadius={6}
+          normalLength={0.3}
+          density={20}
+          color="#00ff00"
+          showMathNormalComparison={placementDebugShowComparison}
+        />
+      )}
       
       {/* Tree lifecycle manager - handles automatic tree aging */}
       <TreeLifecycleManager />

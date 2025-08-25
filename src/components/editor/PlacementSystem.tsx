@@ -19,8 +19,8 @@ import {
 } from "~/lib/utils/placement";
 
 // Type guard function to check if an object type is a tree
-function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall" {
-  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-conifer" | "tree-elipse" | "tree-fir" | "tree-forest" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-spruce" | "tree-tall");
+function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall" {
+  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall");
 }
 
 // Type guard function to check if an object type is a decoration
@@ -100,15 +100,16 @@ export function PlacementSystem({
         );
 
         if (detailedIntersection && currentObjectType) {
-          // Use the world coordinates directly - no need to convert to local space
-          // since WorldObjects is rendered as a child of the rotating group
-          const worldPoint = detailedIntersection.point.clone();
-          const worldNormal = detailedIntersection.normal.clone();
+          // Use mathematical coordinates for consistency with debug system
+          // This ensures placement matches the debug arrows exactly
+          const globeRadius = 6; // Match SurfaceNormalDebug exactly
+          const mathNormal = detailedIntersection.point.clone().normalize();
+          const mathSurfacePoint = mathNormal.clone().multiplyScalar(globeRadius);
 
           const placementInfo = calculatePlacement(
             currentObjectType,
-            worldPoint,
-            worldNormal,
+            mathSurfacePoint, // Use mathematical point
+            mathNormal,       // Use mathematical normal
             objectsRef.current,
           );
 
@@ -195,14 +196,15 @@ export function PlacementSystem({
         );
 
         if (detailedIntersection) {
-          // Use world coordinates directly for preview as well
-          const worldPoint = detailedIntersection.point.clone();
-          const worldNormal = detailedIntersection.normal.clone();
+          // Use mathematical coordinates for preview consistency with debug system
+          const globeRadius = 6; // Match SurfaceNormalDebug exactly
+          const mathNormal = detailedIntersection.point.clone().normalize();
+          const mathSurfacePoint = mathNormal.clone().multiplyScalar(globeRadius);
 
           const placementInfo = calculatePlacement(
             selectedObjectType,
-            worldPoint,
-            worldNormal,
+            mathSurfacePoint, // Use mathematical point
+            mathNormal,       // Use mathematical normal
             objects,
           );
 
@@ -361,7 +363,7 @@ export function PlacementSystem({
             />
           ) : null}
 
-          {/* Surface normal indicator */}
+          {/* Mathematical surface normal indicator (matches debug system) */}
           {placementPreview.surfaceNormal && (
             <group>
               <mesh position={[0, 0.1, 0]}>
