@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
 import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG, WOLF_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
+import { saveWorldToStorage, loadWorldFromStorage } from "./utils/world-persistence";
 
 // Optimized logging system for production
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -139,6 +140,8 @@ interface WorldState {
     timeOfDay: TimeOfDay;
   }) => void;
   resetWorld: () => void;
+  autoSaveWorld: () => void;
+  restoreWorldFromStorage: () => boolean;
 
 
 }
@@ -1467,6 +1470,29 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       isPlacing: false,
       isTerraforming: false,
     });
+  },
+
+  // Auto-save current world state to localStorage
+  autoSaveWorld: () => {
+    const state = _get();
+    saveWorldToStorage({
+      objects: state.objects,
+      terrainVertices: state.terrainVertices,
+      terraformMode: state.terraformMode,
+      brushSize: state.brushSize,
+      brushStrength: state.brushStrength,
+      timeOfDay: state.timeOfDay,
+    });
+  },
+
+  // Restore world from localStorage
+  restoreWorldFromStorage: () => {
+    const savedWorld = loadWorldFromStorage();
+    if (savedWorld) {
+      _get().loadWorld(savedWorld);
+      return true;
+    }
+    return false;
   },
 
 }));
