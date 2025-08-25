@@ -10,6 +10,7 @@ import { useWorldStore } from '~/lib/store';
 import { WOLF_CONFIG } from '~/lib/constants';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
+import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 
 interface WolfPhysicsProps {
   objectId: string;
@@ -57,6 +58,7 @@ export function WolfPhysics({ objectId, position, type, selected = false }: Wolf
   const lastMovementSpeed = useRef(0);
   
   const { rapier, world } = useRapier();
+  const terrainCollisionDetector = getTerrainCollisionDetector();
   
   // Clean up queued updates when component unmounts
   useEffect(() => {
@@ -300,6 +302,42 @@ export function WolfPhysics({ objectId, position, type, selected = false }: Wolf
       
       // Calculate target position for this frame
       let targetPosition = currentPosition.clone().add(movement);
+      
+      // ** BUILDING AND TERRAIN COLLISION DETECTION **
+      console.log(`🐺 Wolf ${objectId}: Checking movement from ${currentPosition.x.toFixed(2)}, ${currentPosition.y.toFixed(2)}, ${currentPosition.z.toFixed(2)} to ${targetPosition.x.toFixed(2)}, ${targetPosition.y.toFixed(2)}, ${targetPosition.z.toFixed(2)}`);
+      
+      // Check for collisions (terrain, water, buildings)
+      const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
+      console.log(`🐺 Wolf ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}, isBuildingBlocked=${terrainCollision.isBuildingBlocked}`);
+      
+      // Handle collision detection results
+      if (!terrainCollision.canMove) {
+        let blockReason = 'Unknown obstacle';
+        if (terrainCollision.isBuildingBlocked) {
+          blockReason = `Blocked by building (${terrainCollision.blockedByBuilding})`;
+        } else if (terrainCollision.isWater) {
+          blockReason = 'Blocked by water';
+        } else {
+          blockReason = 'Blocked by steep slope';
+        }
+        
+        console.log(`🐺 Wolf ${objectId}: Movement blocked - ${blockReason}`);
+        
+        // For building collisions, generate a new target instead of using adjusted position
+        if (terrainCollision.isBuildingBlocked) {
+          console.log(`🐺 Wolf ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
+          setTarget(null); // Force new target generation
+          return; // Skip movement this frame
+        } else if (terrainCollision.adjustedPosition) {
+          targetPosition = terrainCollision.adjustedPosition;
+          console.log(`🐺 Wolf ${objectId}: Using terrain adjusted position`);
+        } else {
+          // No alternative available, generate new target
+          setTarget(null);
+          console.log(`🐺 Wolf ${objectId}: Generating new target due to blocked movement`);
+          return; // Skip movement this frame
+        }
+      }
       
       // Ensure wolf stays on surface (handle this here instead of GravityController to avoid conflicts)
       const idealSurfaceDistance = 6.05 + bounceHeight; // Add bounce height to surface distance

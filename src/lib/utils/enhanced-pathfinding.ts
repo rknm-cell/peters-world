@@ -90,10 +90,19 @@ export class EnhancedPathfinder {
       const result = detector.checkMovement(prevPoint, currPoint);
       
       if (!result.canMove) {
+        let reason = 'Unknown obstacle';
+        if (result.isBuildingBlocked) {
+          reason = `Building obstacle (${result.blockedByBuilding})`;
+        } else if (result.isWater) {
+          reason = 'Water obstacle';
+        } else {
+          reason = 'Steep terrain';
+        }
+        
         return {
           isValid: false,
           blockedAt: path[i],
-          reason: result.isWater ? 'Water obstacle' : 'Steep terrain',
+          reason,
           confidence: 0.8
         };
       }

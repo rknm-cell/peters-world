@@ -454,8 +454,20 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       
       // Handle collision detection results
       if (!terrainCollision.canMove) {
+        let blockReason = 'Unknown obstacle';
+        if (terrainCollision.isBuildingBlocked) {
+          blockReason = `Blocked by building (${terrainCollision.blockedByBuilding})`;
+        } else if (terrainCollision.isWater) {
+          blockReason = 'Blocked by water';
+        } else {
+          blockReason = 'Blocked by steep slope';
+        }
+        
         console.log(`🦌 Deer ${objectId}: Traditional collision detection blocked movement`, {
+          reason: blockReason,
           isWater: terrainCollision.isWater,
+          isBuildingBlocked: terrainCollision.isBuildingBlocked,
+          blockedByBuilding: terrainCollision.blockedByBuilding,
           slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
           groundHeight: terrainCollision.groundHeight.toFixed(2)
         });
@@ -464,13 +476,17 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         const debugWin = window as DebugWindow;
         if (debugWin.updateDeerDebug) {
           debugWin.updateDeerDebug(objectId, {
-            lastDecision: terrainCollision.isWater ? 'Blocked by water' : 'Blocked by steep slope',
+            lastDecision: blockReason,
             collisionPoints: [targetPosition]
           });
         }
         
-        // Try using enhanced pathfinding alternative if available
-        if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
+        // For building collisions, generate a new target instead of using adjusted position
+        if (terrainCollision.isBuildingBlocked) {
+          console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
+          setTarget(null); // Force new target generation
+          return; // Skip movement this frame
+        } else if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
           targetPosition = enhancedValidation.alternativePath[0]!;
           console.log(`🦌 Deer ${objectId}: Using enhanced alternative path point`);
         } else if (terrainCollision.adjustedPosition) {

@@ -1,13 +1,16 @@
 import * as THREE from 'three';
-import { useWorldStore, type TerrainVertex } from '~/lib/store';
+import { useWorldStore, type TerrainVertex, type PlacedObject } from '~/lib/store';
 import { type TerrainOctree } from '~/lib/utils/spatial-partitioning';
 import { globalTerrainCollider } from '~/components/three/physics/GlobePhysics';
+import { OBJECT_METADATA } from '~/lib/utils/placement';
 
 export interface TerrainCollisionResult {
   canMove: boolean;
   groundHeight: number;
   slopeAngle: number;
   isWater: boolean;
+  isBuildingBlocked: boolean;
+  blockedByBuilding?: string; // ID of the building causing the collision
   adjustedPosition?: THREE.Vector3;
 }
 
@@ -41,15 +44,30 @@ export class TerrainCollisionDetector {
     }
     
     const store = useWorldStore.getState();
-    const { terrainVertices, terrainOctree } = store;
+    const { terrainVertices, terrainOctree, objects } = store;
     
-    // If no terrain data, allow movement
+    // Check for building collisions first
+    const buildingCollision = this.checkBuildingCollisions(fromPosition, toPosition, objects);
+    if (buildingCollision.isBuildingBlocked) {
+      return {
+        canMove: false,
+        groundHeight: this.GLOBE_RADIUS,
+        slopeAngle: 0,
+        isWater: false,
+        isBuildingBlocked: true,
+        blockedByBuilding: buildingCollision.blockedByBuilding,
+        adjustedPosition: buildingCollision.adjustedPosition
+      };
+    }
+    
+    // If no terrain data, allow movement (but still check buildings)
     if (!terrainVertices || terrainVertices.length === 0) {
       return {
         canMove: true,
         groundHeight: this.GLOBE_RADIUS,
         slopeAngle: 0,
-        isWater: false
+        isWater: false,
+        isBuildingBlocked: false
       };
     }
     
@@ -63,6 +81,7 @@ export class TerrainCollisionDetector {
         groundHeight: terrainSample.groundHeight,
         slopeAngle: 0,
         isWater: true,
+        isBuildingBlocked: false,
         adjustedPosition: this.findNearestValidPosition(toPosition, terrainVertices, terrainOctree)
       };
     }
@@ -77,6 +96,7 @@ export class TerrainCollisionDetector {
         groundHeight: terrainSample.groundHeight,
         slopeAngle,
         isWater: false,
+        isBuildingBlocked: false,
         adjustedPosition: this.findAlternativePosition(fromPosition, toPosition, terrainVertices, terrainOctree)
       };
     }
@@ -86,7 +106,8 @@ export class TerrainCollisionDetector {
       canMove: true,
       groundHeight: terrainSample.groundHeight,
       slopeAngle,
-      isWater: false
+      isWater: false,
+      isBuildingBlocked: false
     };
   }
 
@@ -103,7 +124,24 @@ export class TerrainCollisionDetector {
         canMove: true,
         groundHeight: this.GLOBE_RADIUS,
         slopeAngle: 0,
-        isWater: false
+        isWater: false,
+        isBuildingBlocked: false
+      };
+    }
+    
+    // Check for building collisions first
+    const store = useWorldStore.getState();
+    const { objects } = store;
+    const buildingCollision = this.checkBuildingCollisions(fromPosition, toPosition, objects);
+    if (buildingCollision.isBuildingBlocked) {
+      return {
+        canMove: false,
+        groundHeight: this.GLOBE_RADIUS,
+        slopeAngle: 0,
+        isWater: false,
+        isBuildingBlocked: true,
+        blockedByBuilding: buildingCollision.blockedByBuilding,
+        adjustedPosition: buildingCollision.adjustedPosition
       };
     }
     
@@ -118,7 +156,8 @@ export class TerrainCollisionDetector {
         canMove: false,
         groundHeight: destinationHeight,
         slopeAngle: 0,
-        isWater: true
+        isWater: true,
+        isBuildingBlocked: false
       };
     }
     
@@ -134,7 +173,8 @@ export class TerrainCollisionDetector {
         canMove: false,
         groundHeight: destinationHeight,
         slopeAngle,
-        isWater: false
+        isWater: false,
+        isBuildingBlocked: false
       };
     }
     
@@ -143,7 +183,8 @@ export class TerrainCollisionDetector {
       canMove: true,
       groundHeight: destinationHeight,
       slopeAngle,
-      isWater: false
+      isWater: false,
+      isBuildingBlocked: false
     };
   }
 
@@ -395,6 +436,129 @@ export class TerrainCollisionDetector {
       height: weightedHeight / totalWeight,
       waterLevel: weightedWater / totalWeight
     };
+  }
+
+  /**
+   * Check for building collisions along the movement path
+   */
+  private checkBuildingCollisions(
+    fromPosition: THREE.Vector3,
+    toPosition: THREE.Vector3,
+    objects: PlacedObject[]
+  ): { isBuildingBlocked: boolean; blockedByBuilding?: string; adjustedPosition?: THREE.Vector3 } {
+    // Filter for structure objects only
+    const structures = objects.filter(obj => 
+      obj.type === 'house' || obj.type === 'tower' || obj.type === 'bridge'
+    );
+
+    // If no structures, no collision possible
+    if (structures.length === 0) {
+      return { isBuildingBlocked: false };
+    }
+
+    // Animal collision radius (smaller to be less aggressive)
+    const animalRadius = 0.1;
+
+    for (const structure of structures) {
+      const structurePos = new THREE.Vector3(...structure.position);
+      
+      // Get structure metadata for collision bounds
+      const metadata = OBJECT_METADATA[structure.type as keyof typeof OBJECT_METADATA] || OBJECT_METADATA.house;
+      const structureRadius = metadata.baseRadius + animalRadius; // Add smaller animal radius for buffer
+
+      // Check if the movement path intersects with the structure
+      if (this.checkPathIntersectsCircle(fromPosition, toPosition, structurePos, structureRadius)) {
+        // Find an adjusted position around the building
+        const adjustedPosition = this.findPathAroundBuilding(fromPosition, toPosition, structurePos, structureRadius);
+        
+        return {
+          isBuildingBlocked: true,
+          blockedByBuilding: structure.id,
+          adjustedPosition
+        };
+      }
+    }
+
+    return { isBuildingBlocked: false };
+  }
+
+  /**
+   * Check if a path (line segment) intersects with a circle (building footprint)
+   */
+  private checkPathIntersectsCircle(
+    start: THREE.Vector3,
+    end: THREE.Vector3,
+    center: THREE.Vector3,
+    radius: number
+  ): boolean {
+    // Convert radius from world units to angular distance on sphere
+    // For small distances, angular distance ≈ euclidean distance / sphere radius
+    const SPHERE_RADIUS = 6.0;
+    const angularRadius = radius / SPHERE_RADIUS;
+    
+    // Project all points onto the globe surface for spherical collision detection
+    const startNorm = start.clone().normalize();
+    const endNorm = end.clone().normalize();
+    const centerNorm = center.clone().normalize();
+
+    // Calculate angular distance from start to center using dot product
+    const startToCenterAngle = Math.acos(Math.max(-1, Math.min(1, startNorm.dot(centerNorm))));
+    
+    // For very short paths, just check if start is within building radius
+    const pathVector = endNorm.clone().sub(startNorm);
+    const pathLength = pathVector.length();
+    if (pathLength < 0.001) {
+      return startToCenterAngle < angularRadius;
+    }
+
+    // For longer paths, find the closest point on the path to the building center
+    const pathDirection = pathVector.normalize();
+    const startToCenter = centerNorm.clone().sub(startNorm);
+    const projectionLength = startToCenter.dot(pathDirection);
+    
+    // Clamp projection to path bounds
+    const clampedProjection = Math.max(0, Math.min(pathLength, projectionLength));
+    const closestPointOnPath = startNorm.clone().add(pathDirection.multiplyScalar(clampedProjection));
+    
+    // Normalize the closest point back to sphere surface
+    closestPointOnPath.normalize();
+    
+    // Calculate angular distance from closest point to building center
+    const closestToCenterAngle = Math.acos(Math.max(-1, Math.min(1, closestPointOnPath.dot(centerNorm))));
+    return closestToCenterAngle < angularRadius;
+  }
+
+  /**
+   * Find an alternative path around a building
+   */
+  private findPathAroundBuilding(
+    start: THREE.Vector3,
+    end: THREE.Vector3,
+    buildingCenter: THREE.Vector3,
+    buildingRadius: number
+  ): THREE.Vector3 {
+    // Normalize positions to sphere surface
+    const startNorm = start.clone().normalize();
+    const endNorm = end.clone().normalize();
+
+    // Calculate the intended movement direction
+    const movementDirection = endNorm.clone().sub(startNorm).normalize();
+    
+    // Find the perpendicular direction on the sphere surface to avoid the building
+    const surfaceNormal = startNorm.clone(); // Normal to sphere at start position
+    const avoidanceDirection = movementDirection.clone().cross(surfaceNormal).normalize();
+    
+    // Make a small adjustment perpendicular to movement direction
+    // This keeps the deer close to its intended path while avoiding the building
+    const adjustmentDistance = buildingRadius * 1.2; // Small adjustment, not dramatic
+    const adjustedDirection = startNorm.clone().add(avoidanceDirection.multiplyScalar(adjustmentDistance));
+    
+    // Project back onto sphere surface and maintain similar height to start position
+    const adjustedNorm = adjustedDirection.normalize();
+    const startRadius = start.length(); // Keep similar distance from center as start position
+    
+    // Use a position that's only slightly different from the start position
+    return adjustedNorm.multiplyScalar(startRadius);
   }
 }
 
