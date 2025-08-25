@@ -135,10 +135,8 @@ export function Deer({
       const timeOffset = objectId ? parseFloat('0.' + objectId.replace(/[^0-9]/g, '').slice(0, 6)) : 0;
       const uniqueTime = state.clock.elapsedTime + timeOffset;
       // Store base rotation and set absolute rotation with animation
-      if (!groupRef.current.userData.baseRotationY) {
-        groupRef.current.userData.baseRotationY = groupRef.current.rotation.y;
-      }
-      const baseRotationY = groupRef.current.userData.baseRotationY;
+      groupRef.current.userData.baseRotationY ??= groupRef.current.rotation.y;
+      const baseRotationY = groupRef.current.userData.baseRotationY as number;
       groupRef.current.rotation.y = baseRotationY + Math.sin(uniqueTime * 2) * 0.1;
     } else {
       // Clear stored base rotation when not selected

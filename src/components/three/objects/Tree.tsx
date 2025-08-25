@@ -6,8 +6,6 @@ import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
 import type { TreeLifecycleStage } from "~/lib/store";
-import { useWorldStore } from "~/lib/store";
-import { TREE_LIFECYCLE_CONFIG } from "~/lib/constants";
 import { applySpecialScaling } from "~/lib/utils/model-scaling";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
@@ -147,7 +145,7 @@ export function Tree({
         userData={{ isPlacedObject: !preview, objectId }}
       >
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
-          <sphereGeometry args={[0.2, 8, 6]} />
+          {/* <sphereGeometry args={[0.2, 8, 6]} /> */}
           <meshStandardMaterial 
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#ff0000"}
             transparent={preview}
@@ -200,16 +198,6 @@ export function Tree({
               color={canPlace ? "#00ff00" : "#ff0000"} 
               transparent 
               opacity={0.7} 
-            />
-          </mesh>
-          
-          {/* Placement validity indicator ring */}
-          <mesh position={[0, -0.1, 0]}>
-            <ringGeometry args={[0.8, 1.0, 16]} />
-            <meshBasicMaterial 
-              color={canPlace ? "#00ff00" : "#ff0000"} 
-              transparent 
-              opacity={0.4} 
             />
           </mesh>
           
@@ -275,7 +263,8 @@ export function Tree({
       {/* Lifecycle stage indicator - small colored dot */}
       {lifecycleStage && !preview && (
         <mesh position={[0.5, 0.1, 0]}>
-          <sphereGeometry args={[0.05, 8, 6]} />
+          {/* spheregeometry debug */}
+          {/* <sphereGeometry args={[0.05, 8, 6]} /> */}
           <meshBasicMaterial 
             color={
               lifecycleStage.startsWith("youth") ? "#00ff00" :     // Green for youth
