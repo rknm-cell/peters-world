@@ -43,7 +43,7 @@ export const worldRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1).max(100),
-        data: z.record(z.any()),
+        data: z.any(), // Accept any structured data (SerializedWorld)
         screenshot: z.string().optional(),
         userId: z.string().optional(),
       }),
@@ -68,7 +68,7 @@ export const worldRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string().min(1).max(100).optional(),
-        data: z.record(z.any()).optional(),
+        data: z.any().optional(), // Accept any structured data (SerializedWorld)
         screenshot: z.string().optional(),
       }),
     )

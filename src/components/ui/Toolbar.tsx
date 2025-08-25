@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWorldStore } from "~/lib/store";
 import { GridPlacementMenu } from "./GridPlacementMenu";
 import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugStore";
 import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
 import { api } from "~/trpc/react";
 import { serializeWorld, generateWorldName } from "~/lib/utils/world-serialization";
+import { hasStoredWorld } from "~/lib/utils/world-persistence";
 
 
 export function Toolbar() {
@@ -33,10 +34,16 @@ export function Toolbar() {
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showDebugTools, setShowDebugTools] = useState(false);
+  const [hasAutoSave, setHasAutoSave] = useState(false);
 
   // tRPC mutations
   const createWorld = api.world.create.useMutation();
   const createShare = api.world.createShare.useMutation();
+
+  // Check if there's auto-saved data (client-side only to avoid hydration issues)
+  useEffect(() => {
+    setHasAutoSave(hasStoredWorld());
+  }, []);
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -61,6 +68,13 @@ export function Toolbar() {
 
       // Generate a name for the world
       const worldName = generateWorldName(objects);
+
+      console.log("🔍 Saving world data:", {
+        name: worldName,
+        dataType: typeof worldData,
+        dataKeys: Object.keys(worldData),
+        worldData
+      });
 
       // Save to database
       const savedWorld = await createWorld.mutateAsync({
@@ -415,12 +429,20 @@ export function Toolbar() {
         <TimeOfDayPicker />
       </div> */}
 
-      {/* Object count - smaller on mobile */}
+      {/* Object count and auto-save status - smaller on mobile */}
       <div className="fixed bottom-4 right-4 z-40">
         <div className="rounded-lg border border-white/20 bg-black/70 px-2 py-1 sm:px-3 sm:py-2 backdrop-blur-sm">
-          <span className="text-xs sm:text-sm text-white/80">
-            Objects: {objects.length}/{50}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm text-white/80">
+              Objects: {objects.length}/{50}
+            </span>
+            {hasAutoSave && (
+              <div className="flex items-center gap-1" title="Auto-save enabled">
+                <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                <span className="text-xs text-green-400">Auto</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
