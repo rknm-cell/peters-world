@@ -11,7 +11,7 @@ import { DEER_CONFIG } from '~/lib/constants';
 export function DeerSpawningManager() {
   const attemptDeerSpawning = useWorldStore((state) => state.attemptDeerSpawning);
   const attemptDeerDespawning = useWorldStore((state) => state.attemptDeerDespawning);
-  const updateDeerMovement = useWorldStore((state) => state.updateDeerMovement);
+
   const testDeerMovement = useWorldStore((state) => state.testDeerMovement);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const movementIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -40,16 +40,11 @@ export function DeerSpawningManager() {
     }
   }, [attemptDeerDespawning]);
 
-  // Memoize the movement function
+  // Movement is now handled by physics system - no longer needed
   const moveDeer = useCallback(() => {
-    console.warn(`🦌 moveDeer called - isActive: ${isActiveRef.current}, isPaused: ${isMovementPausedRef.current}`);
-    if (isActiveRef.current && !isMovementPausedRef.current) {
-      console.warn("🦌 moveDeer: Conditions met, calling updateDeerMovement...");
-      updateDeerMovement();
-    } else {
-      console.warn("🦌 moveDeer: Conditions NOT met - movement blocked");
-    }
-  }, [updateDeerMovement]);
+    // Physics-based movement is handled automatically by DeerPhysics components
+    console.debug("🦌 Movement handled by physics system");
+  }, []);
 
   // Test function to check if movement system works
   const testMovement = useCallback(() => {
@@ -60,10 +55,10 @@ export function DeerSpawningManager() {
       // Wait a bit then test movement update
       setTimeout(() => {
         console.log("🧪 DeerSpawningManager: Testing movement update...");
-        updateDeerMovement();
+        testDeerMovement();
       }, 1000);
     }
-  }, [testDeerMovement, updateDeerMovement]);
+  }, [testDeerMovement]);
 
   // Expose debugging functions globally after all callbacks are defined
   useEffect(() => {
@@ -92,7 +87,7 @@ export function DeerSpawningManager() {
       const deer = state.objects.filter(obj => obj.type === "animals/deer");
       console.warn("🔍 Current deer state:", deer);
       deer.forEach(d => {
-        console.warn(`   Deer ${d.id}: pos [${d.position.join(', ')}], movement:`, d.deerMovement);
+        console.warn(`   Deer ${d.id}: pos [${d.position.join(', ')}] - physics-controlled`);
       });
     };
     debugWindow.checkSpawnRequirements = () => {
@@ -179,7 +174,7 @@ export function DeerSpawningManager() {
         clearInterval(movementIntervalRefCurrent);
       }
     };
-  }, [spawnDeer, despawnDeer, moveDeer, testMovement, updateDeerMovement]);
+  }, [spawnDeer, despawnDeer, moveDeer, testMovement]);
 
   // This component doesn't render anything visible
   return null;

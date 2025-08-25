@@ -4,9 +4,16 @@ import * as THREE from "three";
 import { TerrainOctree } from "./utils/spatial-partitioning";
 import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG, WOLF_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
-// REMOVED: deer rotation and movement utilities (no longer needed with physics-based movement)
-// import { calculateYRotationFromDirection } from "./utils/deer-rotation";
-// import { queueDeerMovementUpdate } from "./utils/debounced-updates";
+
+// Optimized logging system for production
+const isDevelopment = process.env.NODE_ENV === 'development';
+const logger = {
+  debug: isDevelopment ? console.debug : (): void => { /* no-op */ },
+  info: isDevelopment ? console.log : (): void => { /* no-op */ },
+  warn: console.warn,
+  error: console.error,
+};
+
 
 export type TreeLifecycleStage = 
   | "youth-small" | "youth-medium" | "youth-medium-high" | "youth-big"
@@ -29,14 +36,7 @@ export interface PlacedObject {
   rotation: [number, number, number];
   scale: [number, number, number];
   treeLifecycle?: TreeLifecycleData; // Only for tree objects
-  // Deer movement data
-  deerMovement?: {
-    targetPosition: [number, number, number];
-    moveSpeed: number;
-    lastMoveTime: number;
-    isMoving: boolean;
-    moveDirection: [number, number, number];
-  };
+
 }
 
 export interface TerrainVertex {
@@ -129,8 +129,18 @@ interface WorldState {
   updateTerrainOctree: () => void;
   resetTerrain: () => void;
 
-  // Deer movement functions
-  updateDeerMovement: () => void;
+  // World loading/saving actions
+  loadWorld: (worldData: {
+    objects: PlacedObject[];
+    terrainVertices: TerrainVertex[];
+    terraformMode: TerraformMode;
+    brushSize: number;
+    brushStrength: number;
+    timeOfDay: TimeOfDay;
+  }) => void;
+  resetWorld: () => void;
+
+
 }
 
 export const useWorldStore = create<WorldState>((set, _get) => ({
@@ -241,7 +251,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
 
   setPlacing: (placing: boolean) => {
-    console.log(`📍 isPlacing changed: ${placing}`);
+    logger.debug(`📍 isPlacing changed: ${placing}`);
     set({ isPlacing: placing });
   },
 
@@ -287,7 +297,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   
   // Terrain actions
   setTerraformMode: (mode: TerraformMode) => {
-    console.log(`🔧 terraformMode changed: ${mode}`);
+    logger.debug(`🔧 terraformMode changed: ${mode}`);
     set({ terraformMode: mode });
   },
   
@@ -497,7 +507,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       // Second pass: advance all trees in a single state update
       if (treesToAdvance.length > 0) {
-        console.log(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
+        logger.debug(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
         
         // Use the existing advanceTreeLifecycle logic but apply it synchronously
         const updatedObjects = state.objects.map(obj => {
@@ -726,12 +736,11 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Tree spawning function with proper surface placement
   attemptTreeSpawning: () => {
     set((state) => {
-      console.log("🌱 Tree spawning attempt started...");
-      console.log("🎮 Pre-spawn state:", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
+      logger.debug("🌱 Tree spawning attempt started");
       
       // Check if we have globe reference for surface placement
       if (!state.globeRef) {
-        console.warn("❌ Tree spawning: No globe reference available");
+        logger.warn("❌ Tree spawning: No globe reference available");
         return state;
       }
 
@@ -745,15 +754,11 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       const forestTrees = eligibleSpawners.filter(tree => tree.treeLifecycle?.isPartOfForest);
       const isolatedTrees = eligibleSpawners.filter(tree => !tree.treeLifecycle?.isPartOfForest);
 
-      console.log(`🌳 Found ${eligibleSpawners.length} eligible spawner trees (adult stage)`);
-      console.log(`🌲 Forest trees: ${forestTrees.length}, Isolated trees: ${isolatedTrees.length}`);
+      logger.debug(`🌳 Found ${eligibleSpawners.length} eligible spawners (${forestTrees.length} forest, ${isolatedTrees.length} isolated)`);
       
       if (eligibleSpawners.length === 0) {
-        console.log("❌ No eligible spawner trees found");
         return state; // No eligible spawner trees
       }
-
-      console.log(`🎲 Spawn probabilities: Forest trees ${TREE_LIFECYCLE_CONFIG.spawning.forestTreeSpawnProbability * 100}%, Isolated trees ${TREE_LIFECYCLE_CONFIG.spawning.spawnProbability * 100}%`);
 
       const newTrees: PlacedObject[] = [];
       const raycaster = new THREE.Raycaster();
@@ -1039,38 +1044,28 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Deer spawning function - spawns deer on suitable terrain areas
   attemptDeerSpawning: () => {
     set((state) => {
-      console.log("🦌 Deer spawning attempt started...");
-      console.log("🦌 Current state:", {
-        hasGlobeRef: !!state.globeRef,
-        terrainVerticesCount: state.terrainVertices?.length || 0,
-        currentDeerCount: state.objects.filter(obj => obj.type === "animals/deer").length,
-        maxDeerInWorld: DEER_CONFIG.maxDeerInWorld
-      });
+      const currentDeerCount = state.objects.filter(obj => obj.type === "animals/deer").length;
+      logger.debug(`🦌 Deer spawning: ${currentDeerCount}/${DEER_CONFIG.maxDeerInWorld} deer`);
       
       // Check if we have globe reference for surface placement
       if (!state.globeRef) {
-        console.error("❌ Deer spawning: No globe reference available");
-        console.error("   This usually means the Globe component hasn't set the globeRef yet");
-        console.error("   Check if Globe component is rendered and calls setGlobeRef");
+        logger.error("❌ Deer spawning: No globe reference available");
         return state;
       }
 
       // Check if we have terrain data for color/height analysis
       if (!state.terrainVertices || state.terrainVertices.length === 0) {
-        console.error("❌ Deer spawning: No terrain data available");
-        console.error("   This usually means terrain deformation hasn't been initialized");
-        console.error("   terrainVertices count:", state.terrainVertices?.length || 0);
+        logger.error("❌ Deer spawning: No terrain data available");
         return state;
       }
 
       // Check if we're already at max deer capacity
-      const currentDeerCount = state.objects.filter(obj => obj.type === "animals/deer").length;
       if (currentDeerCount >= DEER_CONFIG.maxDeerInWorld) {
-        console.log("❌ Deer spawning: Already at max capacity");
+        logger.debug("❌ Deer spawning: Already at max capacity");
         return state;
       }
 
-      console.log("🦌 Deer spawning: Starting spawn attempts...");
+      logger.debug("🦌 Deer spawning: Starting spawn attempts");
 
       const newDeer: PlacedObject[] = [];
       const raycaster = new THREE.Raycaster();
@@ -1417,67 +1412,61 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     });
   },
 
-  // Test deer movement - manually test if movement system is working
+  // Test deer movement - physics-based movement testing
   testDeerMovement: () => {
-    console.log("🧪 Testing deer movement system...");
+    logger.debug("🧪 Testing physics-based deer movement system");
     
     set((state) => {
       const deerObjects = state.objects.filter(obj => obj.type === "animals/deer");
       
       if (deerObjects.length === 0) {
-        console.log("🧪 No deer found to test");
+        logger.debug("🧪 No deer found to test");
         return state;
       }
       
-      console.log(`🧪 Found ${deerObjects.length} deer to test`);
-      
-      // Test the first deer
-      const testDeer = deerObjects[0];
-      
-      if (!testDeer) {
-        console.log("🧪 No deer found to test");
-        return state;
-      }
-      
-      console.log("🧪 Testing deer:", {
-        id: testDeer.id,
-        position: testDeer.position,
-        rotation: testDeer.rotation,
-        hasMovementData: !!testDeer.deerMovement
-      });
-      
-      // Create a test deer with movement data
-      const updatedObjects = state.objects.map(obj => {
-        if (obj.id === testDeer.id) {
-          const updatedObj = { ...obj };
-          
-          // Initialize movement data for testing
-          updatedObj.deerMovement = {
-            targetPosition: [obj.position[0] + 1, obj.position[1], obj.position[2] + 1] as [number, number, number],
-            moveSpeed: 2.0,
-            lastMoveTime: Date.now(),
-            isMoving: true,
-            moveDirection: [1, 0, 1] as [number, number, number],
-          };
-          
-          console.log("🧪 Created test movement data:", updatedObj.deerMovement);
-          return updatedObj;
-        }
-        return obj;
-      });
-      
-      return {
-        ...state,
-        objects: updatedObjects
-      };
+      logger.debug(`🧪 Found ${deerObjects.length} deer - physics system handles movement automatically`);
+      return state; // No state changes needed - physics handles movement
     });
   },
 
-  // DISABLED: Store-based deer movement - now using physics-based movement
-  updateDeerMovement: () => {
-    console.warn("🦌 Store-based movement is disabled - using physics-based movement instead");
-    // Physics-based movement is handled by DeerPhysics components
-    // This prevents conflicts between store updates and physics system
-    return;
+  // Load world data and restore state
+  loadWorld: (worldData) => {
+    set({
+      objects: worldData.objects,
+      terrainVertices: worldData.terrainVertices,
+      terraformMode: worldData.terraformMode,
+      brushSize: worldData.brushSize,
+      brushStrength: worldData.brushStrength,
+      timeOfDay: worldData.timeOfDay,
+      // Reset UI state
+      selectedObject: null,
+      selectedObjectType: null,
+      isPlacing: false,
+      isTerraforming: false,
+    });
+    
+    // Update terrain octree after loading
+    _get().updateTerrainOctree();
+    
+    // Run forest detection after loading (with delay to ensure objects are rendered)
+    setTimeout(() => _get().detectForests(), 500);
   },
+
+  // Reset world to initial state
+  resetWorld: () => {
+    set({
+      objects: [],
+      terrainVertices: [],
+      terrainOctree: null,
+      terraformMode: "none",
+      brushSize: 0.5,
+      brushStrength: 0.1,
+      timeOfDay: "day",
+      selectedObject: null,
+      selectedObjectType: null,
+      isPlacing: false,
+      isTerraforming: false,
+    });
+  },
+
 }));
