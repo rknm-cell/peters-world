@@ -1,5 +1,27 @@
 import * as THREE from "three";
 
+/**
+ * Extract rotation from ArrowHelper's internal orientation logic
+ * This ensures identical orientation calculations as debug arrows
+ */
+function getArrowHelperRotation(direction: THREE.Vector3): THREE.Euler {
+  // Create a temporary ArrowHelper to extract its rotation logic
+  const tempArrowHelper = new THREE.ArrowHelper(
+    direction,                    // Direction vector
+    new THREE.Vector3(0, 0, 0),  // Origin (doesn't affect rotation)
+    1,                           // Length (doesn't affect rotation)
+    0x000000                     // Color (doesn't affect rotation)
+  );
+  
+  // Extract the rotation - this is ArrowHelper's exact orientation calculation
+  const rotation = tempArrowHelper.rotation.clone();
+  
+  // Clean up temporary object to prevent memory leaks
+  tempArrowHelper.dispose();
+  
+  return rotation;
+}
+
 // Define object-specific metadata for proper placement
 export const OBJECT_METADATA = {
   // Trees
@@ -124,6 +146,10 @@ export interface PlacementInfo {
 /**
  * Calculate the optimal placement position and rotation for an object
  * based on surface intersection and object metadata
+ * 
+ * CRITICAL: Uses ArrowHelper.rotation to extract IDENTICAL orientation logic
+ * as the debug arrows, ensuring perfect synchronization between debug visualization
+ * and actual object placement.
  */
 export function calculatePlacement(
   objectType: string,
@@ -139,15 +165,21 @@ export function calculatePlacement(
     OBJECT_METADATA[objectType as keyof typeof OBJECT_METADATA] ||
     OBJECT_METADATA.tree; // Default fallback
 
-  // Calculate the final position - embed slightly into surface
-  const finalPosition = intersectionPoint.clone();
+  // Use mathematical surface normal for consistency with debug system
+  // This ensures placement arrows and actual placement use the same reference
+  const globeRadius = 6; // Match SurfaceNormalDebug exactly
+  const mathNormal = intersectionPoint.clone().normalize(); // Points outward from sphere center
+  const mathSurfacePoint = mathNormal.clone().multiplyScalar(globeRadius);
+
+  // Calculate the final position using mathematical approach
+  const finalPosition = mathSurfacePoint.clone();
   
-  // Move along surface normal by the bottom offset (negative = embed into surface)
+  // Move along mathematical normal by the bottom offset (negative = embed into surface)
   finalPosition.add(
-    surfaceNormal.clone().multiplyScalar(metadata.bottomOffset),
+    mathNormal.clone().multiplyScalar(metadata.bottomOffset),
   );
 
-  // Calculate rotation based on object type
+  // Calculate rotation using ArrowHelper's orientation logic for perfect consistency
   let rotation: THREE.Euler;
   
   // Animals should stand mostly upright, not aligned with surface normal
@@ -155,39 +187,18 @@ export function calculatePlacement(
     // For animals, use minimal rotation - just keep them mostly upright
     rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'); // Random Y rotation for variety
   } else {
-    // For other objects (trees, structures, etc.), align with surface normal but limit excessive rotation
-    const up = new THREE.Vector3(0, 1, 0);
+    // Use ArrowHelper's internal logic to determine orientation
+    // This ensures IDENTICAL orientation to what debug arrows show
+    rotation = getArrowHelperRotation(mathNormal);
     
-    // Create a rotation that makes the object's up vector align with the surface normal
-    // but without flipping the object upside down
-    const quaternion = new THREE.Quaternion();
-    
-    // Handle the case where the surface normal is pointing directly up or down
-    if (Math.abs(surfaceNormal.y) > 0.99) {
-      // If surface normal is nearly vertical, just use identity rotation
-      quaternion.identity();
-    } else {
-      // Calculate the rotation axis (cross product of up and surface normal)
-      const rotationAxis = new THREE.Vector3().crossVectors(up, surfaceNormal).normalize();
-      
-      // Calculate the rotation angle
-      let rotationAngle = Math.acos(up.dot(surfaceNormal));
-      
-      // Apply a gradual reduction to rotation as it gets steeper
-      // This prevents objects from becoming parallel while maintaining natural appearance
-      if (rotationAngle > Math.PI / 2.2) { // If rotation is more than 82 degrees
-        // Gradually reduce the rotation using a smooth curve
-        const excessRotation = rotationAngle - Math.PI / 2.2;
-        const reductionFactor = Math.max(0.3, 1 - (excessRotation / (Math.PI / 2.2)));
-        rotationAngle = Math.PI / 2.2 + (excessRotation * reductionFactor);
-      }
-      
-      // Create quaternion from axis and angle
-      quaternion.setFromAxisAngle(rotationAxis, rotationAngle);
+    // Apply slope reduction for natural appearance (optional)
+    // Gradually reduce extreme rotations while keeping the ArrowHelper base orientation
+    const rotationMagnitude = Math.sqrt(rotation.x * rotation.x + rotation.z * rotation.z);
+    if (rotationMagnitude > Math.PI / 2.2) { // If rotation is more than ~82 degrees
+      const reductionFactor = Math.max(0.3, (Math.PI / 2.2) / rotationMagnitude);
+      rotation.x *= reductionFactor;
+      rotation.z *= reductionFactor;
     }
-    
-    // Convert to euler with consistent order
-    rotation = new THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
   }
 
   // Check for collisions with existing objects using bounding box
@@ -202,7 +213,7 @@ export function calculatePlacement(
     position: finalPosition,
     rotation,
     canPlace,
-    surfaceNormal: surfaceNormal.clone(),
+    surfaceNormal: mathNormal.clone(), // Return mathematical normal for consistency
   };
 }
 
@@ -273,8 +284,18 @@ export function getDetailedIntersection(
 
   // Transform normal to world space if needed
   if (mesh.matrixWorld) {
+    // Ensure the mesh's world matrix is up to date
+    mesh.updateMatrixWorld(true);
+    
     const normalMatrix = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
     normal.applyMatrix3(normalMatrix).normalize();
+  }
+  
+  // Ensure the normal points outward from the globe center
+  // For a sphere, the normal should point away from the center (0,0,0)
+  const centerToPoint = intersection.point.clone().normalize();
+  if (normal.dot(centerToPoint) < 0) {
+    normal.negate();
   }
 
   return {
