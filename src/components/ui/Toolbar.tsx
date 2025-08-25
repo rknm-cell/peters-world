@@ -5,6 +5,8 @@ import { useWorldStore } from "~/lib/store";
 import { GridPlacementMenu } from "./GridPlacementMenu";
 import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugStore";
 import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
+import { api } from "~/trpc/react";
+import { serializeWorld, generateWorldName } from "~/lib/utils/world-serialization";
 
 
 export function Toolbar() {
@@ -19,7 +21,12 @@ export function Toolbar() {
     setShowWireframe,
     showForestDebug,
     showLifecycleDebug,
-    setShowLifecycleDebug
+    setShowLifecycleDebug,
+    terrainVertices,
+    terraformMode,
+    brushSize,
+    brushStrength,
+    timeOfDay
   } = useWorldStore();
   const { showCollisionMesh, toggleCollisionMesh } = useCollisionDebugStore();
   const { showPathfinding, togglePathfinding } = usePathfindingDebugStore();
@@ -27,6 +34,9 @@ export function Toolbar() {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showDebugTools, setShowDebugTools] = useState(false);
 
+  // tRPC mutations
+  const createWorld = api.world.create.useMutation();
+  const createShare = api.world.createShare.useMutation();
 
   const handleAddObject = (event: React.MouseEvent) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -38,8 +48,34 @@ export function Toolbar() {
   };
 
   const handleSaveWorld = async () => {
-    // TODO: Implement world saving with tRPC
-    console.log("Saving world:", objects);
+    try {
+      // Serialize current world state
+      const worldData = serializeWorld({
+        objects,
+        terrainVertices,
+        terraformMode,
+        brushSize,
+        brushStrength,
+        timeOfDay,
+      });
+
+      // Generate a name for the world
+      const worldName = generateWorldName(objects);
+
+      // Save to database
+      const savedWorld = await createWorld.mutateAsync({
+        name: worldName,
+        data: worldData,
+        // TODO: Add screenshot when implemented
+      });
+
+      console.log("✅ World saved successfully:", savedWorld?.id);
+      
+      // TODO: Show success notification
+    } catch (error) {
+      console.error("❌ Failed to save world:", error);
+      // TODO: Show error notification
+    }
   };
 
   const handleScreenshot = () => {
@@ -47,9 +83,52 @@ export function Toolbar() {
     console.log("Taking screenshot");
   };
 
-  const handleShare = () => {
-    // TODO: Implement sharing functionality
-    console.log("Sharing world");
+  const handleShare = async () => {
+    if (objects.length === 0) {
+      console.log("❌ Cannot share empty world");
+      return;
+    }
+
+    try {
+      // First save the world
+      const worldData = serializeWorld({
+        objects,
+        terrainVertices,
+        terraformMode,
+        brushSize,
+        brushStrength,
+        timeOfDay,
+      });
+
+      const worldName = generateWorldName(objects);
+      const savedWorld = await createWorld.mutateAsync({
+        name: worldName,
+        data: worldData,
+      });
+
+      if (!savedWorld?.id) {
+        throw new Error("Failed to save world");
+      }
+
+      // Then create a share code
+      const share = await createShare.mutateAsync({
+        worldId: savedWorld.id,
+      });
+
+      if (!share?.shortCode) {
+        throw new Error("Failed to create share code");
+      }
+
+      // Copy share URL to clipboard
+      const shareUrl = `${window.location.origin}/world/${share.shortCode}`;
+      await navigator.clipboard.writeText(shareUrl);
+
+      console.log("✅ World shared! URL copied to clipboard:", shareUrl);
+      // TODO: Show success notification with share code
+    } catch (error) {
+      console.error("❌ Failed to share world:", error);
+      // TODO: Show error notification
+    }
   };
 
   return (
@@ -135,9 +214,9 @@ export function Toolbar() {
             {/* Save button */}
             <button
               onClick={handleSaveWorld}
-              disabled={objects.length === 0}
+              disabled={objects.length === 0 || createWorld.isPending}
               className="rounded-lg bg-green-500/20 p-2 sm:p-3 text-green-400 transition-all duration-200 hover:bg-green-500/30 hover:text-green-300 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Save World"
+              title={createWorld.isPending ? "Saving..." : "Save World"}
             >
               <svg
                 width="18"
@@ -170,9 +249,9 @@ export function Toolbar() {
             {/* Share button */}
             <button
               onClick={handleShare}
-              disabled={objects.length === 0}
+              disabled={objects.length === 0 || createWorld.isPending || createShare.isPending}
               className="rounded-lg bg-blue-500/20 p-2 sm:p-3 text-blue-400 transition-all duration-200 hover:bg-blue-500/30 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Share"
+              title={createWorld.isPending || createShare.isPending ? "Sharing..." : "Share"}
             >
               <svg
                 width="18"

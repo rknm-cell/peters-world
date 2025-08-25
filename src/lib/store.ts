@@ -129,6 +129,17 @@ interface WorldState {
   updateTerrainOctree: () => void;
   resetTerrain: () => void;
 
+  // World loading/saving actions
+  loadWorld: (worldData: {
+    objects: PlacedObject[];
+    terrainVertices: TerrainVertex[];
+    terraformMode: TerraformMode;
+    brushSize: number;
+    brushStrength: number;
+    timeOfDay: TimeOfDay;
+  }) => void;
+  resetWorld: () => void;
+
 
 }
 
@@ -1418,5 +1429,44 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     });
   },
 
+  // Load world data and restore state
+  loadWorld: (worldData) => {
+    set({
+      objects: worldData.objects,
+      terrainVertices: worldData.terrainVertices,
+      terraformMode: worldData.terraformMode,
+      brushSize: worldData.brushSize,
+      brushStrength: worldData.brushStrength,
+      timeOfDay: worldData.timeOfDay,
+      // Reset UI state
+      selectedObject: null,
+      selectedObjectType: null,
+      isPlacing: false,
+      isTerraforming: false,
+    });
+    
+    // Update terrain octree after loading
+    _get().updateTerrainOctree();
+    
+    // Run forest detection after loading (with delay to ensure objects are rendered)
+    setTimeout(() => _get().detectForests(), 500);
+  },
+
+  // Reset world to initial state
+  resetWorld: () => {
+    set({
+      objects: [],
+      terrainVertices: [],
+      terrainOctree: null,
+      terraformMode: "none",
+      brushSize: 0.5,
+      brushStrength: 0.1,
+      timeOfDay: "day",
+      selectedObject: null,
+      selectedObjectType: null,
+      isPlacing: false,
+      isTerraforming: false,
+    });
+  },
 
 }));

@@ -21,7 +21,7 @@ export interface DebugConfig {
 class DebugControlsManager {
   private static instance: DebugControlsManager;
   private config: DebugConfig;
-  private lastUpdateTime: number = 0;
+  private lastUpdateTime = 0;
 
   private constructor() {
     this.config = {
@@ -75,7 +75,7 @@ class DebugControlsManager {
     return false;
   }
 
-  conditionalLog(level: DebugLevel, message: string, ...args: any[]): void {
+  conditionalLog(level: DebugLevel, message: string, ...args: unknown[]): void {
     if (this.shouldLog(level)) {
       console.log(`[DEBUG:${DebugLevel[level]}] ${message}`, ...args);
     }
@@ -86,10 +86,10 @@ class DebugControlsManager {
       try {
         const saved = localStorage.getItem('debug-config');
         if (saved) {
-          const parsed = JSON.parse(saved);
+          const parsed = JSON.parse(saved) as Partial<DebugConfig>;
           this.config = { ...this.config, ...parsed };
         }
-      } catch (e) {
+      } catch {
         // Ignore localStorage errors
       }
     }
@@ -99,7 +99,7 @@ class DebugControlsManager {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('debug-config', JSON.stringify(this.config));
-      } catch (e) {
+      } catch {
         // Ignore localStorage errors
       }
     }
@@ -113,6 +113,6 @@ export const debugControls = DebugControlsManager.getInstance();
 export const isDebugEnabled = () => debugControls.isDebugEnabled();
 export const shouldShowVisualDebug = () => debugControls.shouldShowVisualDebug();
 export const shouldLog = (level: DebugLevel = DebugLevel.BASIC) => debugControls.shouldLog(level);
-export const conditionalLog = (level: DebugLevel, message: string, ...args: any[]) => 
+export const conditionalLog = (level: DebugLevel, message: string, ...args: unknown[]) => 
   debugControls.conditionalLog(level, message, ...args);
 export const shouldThrottle = () => debugControls.shouldThrottle();
