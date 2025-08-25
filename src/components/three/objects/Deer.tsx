@@ -99,12 +99,9 @@ export function Deer({
   useFrame((state) => {
     if (!groupRef.current) return;
 
-    // Skip position syncing if controlled by physics (DeerPhysics component)
+    // Skip all updates if controlled by physics (DeerPhysics component)
+    // Physics system handles position, rotation, and all animations
     if (disablePositionSync) {
-      // Only handle selection animation, physics handles position
-      if (selected) {
-        groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 2) * 0.1;
-      }
       return;
     }
 
@@ -132,9 +129,20 @@ export function Deer({
       groupRef.current.rotation.set(...rotation);
     }
 
-    // Selected state animation (override rotation temporarily)
+    // Selected state animation (absolute rotation, not additive)
+    // Use object-specific time offset to prevent synchronization with other deer
     if (selected) {
-      groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      const timeOffset = objectId ? parseFloat('0.' + objectId.replace(/[^0-9]/g, '').slice(0, 6)) : 0;
+      const uniqueTime = state.clock.elapsedTime + timeOffset;
+      // Store base rotation and set absolute rotation with animation
+      groupRef.current.userData.baseRotationY ??= groupRef.current.rotation.y;
+      const baseRotationY = groupRef.current.userData.baseRotationY as number;
+      groupRef.current.rotation.y = baseRotationY + Math.sin(uniqueTime * 2) * 0.1;
+    } else {
+      // Clear stored base rotation when not selected
+      if (groupRef.current.userData.baseRotationY !== undefined) {
+        groupRef.current.userData.baseRotationY = undefined;
+      }
     }
   });
 
