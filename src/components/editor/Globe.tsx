@@ -13,6 +13,7 @@ interface GlobeProps {
 export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
   ({ onRotationChange: _onRotationChange, onTerrainMeshReady }, ref) => {
     const meshRef = useRef<THREE.Mesh>(null);
+    const terrainMeshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const { showWireframe, setGlobeRef } = useWorldStore();
     
@@ -70,7 +71,14 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
         
         {/* Terrain System - this will handle the actual terrain */}
         <TerrainSystem 
-          onTerrainMeshReady={onTerrainMeshReady}
+          onTerrainMeshReady={(terrainMesh) => {
+            console.log("🏔️ TerrainSystem mesh ready in Globe");
+            terrainMeshRef.current = terrainMesh;
+            // Pass the actual terrain mesh to physics, not the reference sphere
+            if (onTerrainMeshReady) {
+              onTerrainMeshReady(terrainMesh);
+            }
+          }}
           onTerrainUpdate={(geometry) => {
             // Update the reference mesh if needed
             if (meshRef.current) {

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useWorldStore } from "~/lib/store";
 import { GridPlacementMenu } from "./GridPlacementMenu";
+import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugStore";
+import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
 
 
 export function Toolbar() {
@@ -19,6 +21,8 @@ export function Toolbar() {
     showLifecycleDebug,
     setShowLifecycleDebug
   } = useWorldStore();
+  const { showCollisionMesh, toggleCollisionMesh } = useCollisionDebugStore();
+  const { showPathfinding, togglePathfinding } = usePathfindingDebugStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showDebugTools, setShowDebugTools] = useState(false);
@@ -108,7 +112,7 @@ export function Toolbar() {
             <button
               onClick={() => setShowDebugTools(!showDebugTools)}
               className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
-                showDebugTools || showDebugNormals || showWireframe || showForestDebug || showLifecycleDebug
+                showDebugTools || showDebugNormals || showWireframe || showForestDebug || showLifecycleDebug || showCollisionMesh || showPathfinding
                   ? "bg-gray-500 text-white"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
@@ -249,6 +253,78 @@ export function Toolbar() {
                   <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
                 </svg>
                 <span className="ml-1 text-xs hidden sm:inline">Tree</span>
+              </button>
+
+              {/* Collision debug toggle */}
+              <button
+                onClick={toggleCollisionMesh}
+                className={`flex items-center justify-center rounded-lg p-2 transition-all duration-200 ${
+                  showCollisionMesh
+                    ? "bg-green-500 text-white"
+                    : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                }`}
+                title="Toggle Collision Mesh Debug (Ctrl+Shift+C)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M12,4C7.57,4 4,7.57 4,12C4,16.43 7.57,20 12,20C16.43,20 20,16.43 20,12C20,7.57 16.43,4 12,4M12,6C15.31,6 18,8.69 18,12C18,15.31 15.31,18 12,18C8.69,18 6,15.31 6,12C6,8.69 8.69,6 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Collision</span>
+              </button>
+
+              {/* Pathfinding debug toggle */}
+              <button
+                onClick={togglePathfinding}
+                className={`flex items-center justify-center rounded-lg p-2 transition-all duration-200 ${
+                  showPathfinding
+                    ? "bg-yellow-500 text-white"
+                    : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                }`}
+                title="Toggle Pathfinding Debug (Ctrl+Shift+D)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18M10,13L8,11V14H16V11L14,13L12,11L10,13Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Pathfind</span>
+              </button>
+
+              {/* Height map debug toggle */}
+              <button
+                onClick={() => {
+                  // Toggle height map visibility
+                  const event = new KeyboardEvent('keydown', {
+                    key: 'H',
+                    ctrlKey: true,
+                    shiftKey: true
+                  });
+                  window.dispatchEvent(event);
+                }}
+                className="flex items-center justify-center rounded-lg p-2 transition-all duration-200 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                title="Toggle Height Map (Ctrl+Shift+H)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2M6.5,12.5L7.5,16.5L9.5,15.5L8.5,11.5L6.5,12.5M17.5,12.5L15.5,11.5L14.5,15.5L16.5,16.5L17.5,12.5Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Height</span>
+              </button>
+
+              {/* Normal map debug toggle */}
+              <button
+                onClick={() => {
+                  // Toggle normal map visibility
+                  const event = new KeyboardEvent('keydown', {
+                    key: 'N',
+                    ctrlKey: true,
+                    shiftKey: true
+                  });
+                  window.dispatchEvent(event);
+                }}
+                className="flex items-center justify-center rounded-lg p-2 transition-all duration-200 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                title="Toggle Normal Map (Ctrl+Shift+N)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10.5L12,11L8.5,10.5L12,6M6.5,12L10.5,15.5L11,12L10.5,8.5L6.5,12M17.5,12L13.5,8.5L13,12L13.5,15.5L17.5,12M12,18L8.5,13.5L12,13L15.5,13.5L12,18Z" />
+                </svg>
+                <span className="ml-1 text-xs hidden sm:inline">Normal</span>
               </button>
             </div>
           </div>

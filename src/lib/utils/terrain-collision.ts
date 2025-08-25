@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useWorldStore, type TerrainVertex } from '~/lib/store';
 import { type TerrainOctree } from '~/lib/utils/spatial-partitioning';
+import { globalTerrainCollider } from '~/components/three/physics/GlobePhysics';
 
 export interface TerrainCollisionResult {
   canMove: boolean;
@@ -34,6 +35,11 @@ export class TerrainCollisionDetector {
     fromPosition: THREE.Vector3, 
     toPosition: THREE.Vector3
   ): TerrainCollisionResult {
+    // Try to use physics collider data first (most accurate)
+    if (globalTerrainCollider?.vertices && globalTerrainCollider?.indices) {
+      return this.checkMovementWithPhysicsData(fromPosition, toPosition);
+    }
+    
     const store = useWorldStore.getState();
     const { terrainVertices, terrainOctree } = store;
     
@@ -82,6 +88,94 @@ export class TerrainCollisionDetector {
       slopeAngle,
       isWater: false
     };
+  }
+
+  /**
+   * Enhanced collision detection using physics collider data
+   */
+  private checkMovementWithPhysicsData(
+    fromPosition: THREE.Vector3,
+    toPosition: THREE.Vector3
+  ): TerrainCollisionResult {
+    if (!globalTerrainCollider) {
+      // Fallback if no physics data available
+      return {
+        canMove: true,
+        groundHeight: this.GLOBE_RADIUS,
+        slopeAngle: 0,
+        isWater: false
+      };
+    }
+    
+    const vertices = globalTerrainCollider.vertices;
+    
+    // Sample terrain height at destination using physics data
+    const destinationHeight = this.sampleHeightFromPhysicsData(toPosition, vertices);
+    
+    // Check if destination is underwater (below base radius)
+    if (destinationHeight < this.GLOBE_RADIUS - 0.2) {
+      return {
+        canMove: false,
+        groundHeight: destinationHeight,
+        slopeAngle: 0,
+        isWater: true
+      };
+    }
+    
+    // Calculate slope using physics data
+    const fromHeight = this.sampleHeightFromPhysicsData(fromPosition, vertices);
+    const distance = fromPosition.distanceTo(toPosition);
+    const heightDiff = destinationHeight - fromHeight;
+    const slopeAngle = distance > 0.001 ? Math.atan2(Math.abs(heightDiff), distance) : 0;
+    
+    // Check if slope is too steep
+    if (slopeAngle > this.MAX_SLOPE_ANGLE) {
+      return {
+        canMove: false,
+        groundHeight: destinationHeight,
+        slopeAngle,
+        isWater: false
+      };
+    }
+    
+    // Movement is allowed
+    return {
+      canMove: true,
+      groundHeight: destinationHeight,
+      slopeAngle,
+      isWater: false
+    };
+  }
+
+  /**
+   * Sample terrain height from physics collider vertices
+   */
+  private sampleHeightFromPhysicsData(
+    position: THREE.Vector3,
+    vertices: Float32Array
+  ): number {
+    const spherePos = position.clone().normalize();
+    let closestDistance = Infinity;
+    let closestHeight = this.GLOBE_RADIUS;
+
+    // Find closest vertices to this position
+    for (let i = 0; i < vertices.length; i += 3) {
+      const vertex = new THREE.Vector3(
+        vertices[i],
+        vertices[i + 1],
+        vertices[i + 2]
+      );
+      
+      const vertexOnSphere = vertex.clone().normalize();
+      const distance = spherePos.distanceTo(vertexOnSphere);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestHeight = vertex.length(); // Distance from origin = height
+      }
+    }
+
+    return closestHeight + 0.05; // Small offset above surface
   }
   
   /**
