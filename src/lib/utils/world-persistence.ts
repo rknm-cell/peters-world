@@ -65,7 +65,7 @@ class WorldPersistence {
         return null;
       }
 
-      const parsed = JSON.parse(saved);
+      const parsed = JSON.parse(saved) as unknown;
       const worldData = deserializeWorld(parsed);
       console.log("📂 World restored from localStorage");
       return worldData;
