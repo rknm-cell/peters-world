@@ -18,20 +18,18 @@ interface NormalMapData {
 export class TerrainNormalMapGenerator {
   private static instance: TerrainNormalMapGenerator | null = null;
   private normalMapData: NormalMapData | null = null;
-  private lastUpdate: number = 0;
+  private lastUpdate = 0;
   private readonly UPDATE_INTERVAL = 1000;
 
   static getInstance(): TerrainNormalMapGenerator {
-    if (!TerrainNormalMapGenerator.instance) {
-      TerrainNormalMapGenerator.instance = new TerrainNormalMapGenerator();
-    }
+    TerrainNormalMapGenerator.instance ??= new TerrainNormalMapGenerator();
     return TerrainNormalMapGenerator.instance;
   }
 
   /**
    * Generate normal map from collision mesh
    */
-  generateNormalMap(resolution: number = 256): NormalMapData | null {
+  generateNormalMap(resolution = 256): NormalMapData | null {
     const now = Date.now();
     
     if (this.normalMapData && (now - this.lastUpdate) < this.UPDATE_INTERVAL) {

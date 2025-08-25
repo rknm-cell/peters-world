@@ -23,7 +23,7 @@ export function CollisionValidationTest() {
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [showTestPanel, setShowTestPanel] = useState(false);
-  const { objects } = useWorldStore();
+  const {} = useWorldStore(); // Keep store connection for future use
 
   // Test positions on the globe
   const testPositions = [
@@ -238,7 +238,7 @@ export function CollisionValidationTest() {
       
       results.push({
         method: 'Best Path Finding',
-        success: !!(pathResult && pathResult.path && pathResult.path.length > 0),
+        success: !!(pathResult?.path && pathResult.path.length > 0),
         performance: endTime - startTime,
         details: pathResult ? `Generated path with ${pathResult.path.length} points, confidence: ${(pathResult.confidence * 100).toFixed(1)}%` : 'Failed to generate path'
       });
@@ -260,7 +260,7 @@ export function CollisionValidationTest() {
     results.forEach(result => {
       const status = result.success ? '✅' : '❌';
       const perf = result.performance ? ` (${result.performance.toFixed(2)}ms)` : '';
-      console.log(`${status} ${result.method}${perf}: ${result.details || result.error || 'No details'}`);
+      console.log(`${status} ${result.method}${perf}: ${result.details ?? result.error ?? 'No details'}`);
     });
   };
 
@@ -331,9 +331,9 @@ export function CollisionValidationTest() {
                     </span>
                   )}
                 </div>
-                {(result.details || result.error) && (
+                {(result.details ?? result.error) && (
                   <div className="text-gray-400 ml-4 mt-1">
-                    {result.details || result.error}
+                    {result.details ?? result.error}
                   </div>
                 )}
               </div>

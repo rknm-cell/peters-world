@@ -18,20 +18,18 @@ interface HeightMapData {
 export class TerrainHeightMapGenerator {
   private static instance: TerrainHeightMapGenerator | null = null;
   private heightMapData: HeightMapData | null = null;
-  private lastUpdate: number = 0;
+  private lastUpdate = 0;
   private readonly UPDATE_INTERVAL = 1000; // Update every second
 
   static getInstance(): TerrainHeightMapGenerator {
-    if (!TerrainHeightMapGenerator.instance) {
-      TerrainHeightMapGenerator.instance = new TerrainHeightMapGenerator();
-    }
+    TerrainHeightMapGenerator.instance ??= new TerrainHeightMapGenerator();
     return TerrainHeightMapGenerator.instance;
   }
 
   /**
    * Generate height map from collision mesh vertices
    */
-  generateHeightMap(resolution: number = 256): HeightMapData | null {
+  generateHeightMap(resolution = 256): HeightMapData | null {
     const now = Date.now();
     
     // Throttle updates
@@ -191,7 +189,7 @@ export class TerrainHeightMapGenerator {
     startPos: THREE.Vector3, 
     endPos: THREE.Vector3, 
     maxSlopeAngle: number = Math.PI / 4,
-    samples: number = 10
+    samples = 10
   ): { valid: boolean; blockedAt?: THREE.Vector3; reason?: string } {
     if (!this.heightMapData) {
       return { valid: false, reason: 'No height map available' };

@@ -1,15 +1,24 @@
 "use client";
 
 import { forwardRef, useRef, useEffect, useCallback } from 'react';
-import { RigidBody, MeshCollider, useRapier } from '@react-three/rapier';
-import type { RapierRigidBody } from '@react-three/rapier';
+import { RigidBody, useRapier } from '@react-three/rapier';
+import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 import { Globe } from '~/components/editor/Globe';
 import { useWorldStore } from '~/lib/store';
-import type { Mesh, BufferGeometry } from 'three';
-import * as THREE from 'three';
+import type { Mesh } from 'three';
 
 // Global reference to the terrain collider for debug visualization
-export let globalTerrainCollider: any = null;
+// Global reference to terrain collider for external access
+// Use unknown type to avoid Collider type issues
+export interface GlobalTerrainCollider {
+  collider: RapierCollider;
+  vertices: Float32Array;
+  indices: Uint32Array;
+  vertexCount: number;
+  triangleCount: number;
+}
+
+export let globalTerrainCollider: GlobalTerrainCollider | null = null;
 
 interface GlobePhysicsProps {
   onTerrainMeshReady?: (mesh: Mesh) => void;
@@ -24,7 +33,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
     const { world, rapier } = useRapier();
     const rigidBodyRef = useRef<RapierRigidBody | null>(null);
     const terrainMeshRef = useRef<Mesh | null>(null);
-    const colliderRef = useRef<any>(null);
+    const colliderRef = useRef<RapierCollider | null>(null);
     const { terrainVertices } = useWorldStore();
     const lastUpdateHash = useRef<string>('');
 
@@ -135,7 +144,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
      */
     const handleTerrainMeshReady = useCallback((mesh: Mesh) => {
       console.log('🌍 Terrain mesh ready for physics', {
-        isTerrainMesh: mesh?.userData?.isTerrainMesh,
+        isTerrainMesh: (mesh?.userData as { isTerrainMesh?: boolean })?.isTerrainMesh,
         meshType: mesh?.constructor?.name,
         hasGeometry: !!mesh?.geometry
       });

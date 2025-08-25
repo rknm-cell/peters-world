@@ -97,6 +97,16 @@ export class TerrainCollisionDetector {
     fromPosition: THREE.Vector3,
     toPosition: THREE.Vector3
   ): TerrainCollisionResult {
+    if (!globalTerrainCollider) {
+      // Fallback if no physics data available
+      return {
+        canMove: true,
+        groundHeight: this.GLOBE_RADIUS,
+        slopeAngle: 0,
+        isWater: false
+      };
+    }
+    
     const vertices = globalTerrainCollider.vertices;
     
     // Sample terrain height at destination using physics data
@@ -151,9 +161,9 @@ export class TerrainCollisionDetector {
     // Find closest vertices to this position
     for (let i = 0; i < vertices.length; i += 3) {
       const vertex = new THREE.Vector3(
-        vertices[i]!,
-        vertices[i + 1]!,
-        vertices[i + 2]!
+        vertices[i],
+        vertices[i + 1],
+        vertices[i + 2]
       );
       
       const vertexOnSphere = vertex.clone().normalize();

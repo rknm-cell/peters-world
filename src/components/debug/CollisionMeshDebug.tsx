@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
@@ -13,6 +12,27 @@ interface CollisionMeshDebugProps {
   color?: string;
   opacity?: number;
   wireframe?: boolean;
+}
+
+// Extended Rapier types for collision mesh access
+interface RapierColliderWithMethods {
+  shapeType?: () => number | string;
+  vertices?: () => Float32Array | null;
+  indices?: () => Uint32Array | null;
+  trimeshVertices?: () => Float32Array | null;
+  trimeshIndices?: () => Uint32Array | null;
+  shape?: {
+    vertices?: Float32Array;
+    indices?: Uint32Array;
+    type?: string;
+  };
+}
+
+interface RapierWorldWithColliders {
+  forEachCollider?: (callback: (collider: RapierColliderWithMethods) => void) => void;
+  colliders?: Map<unknown, RapierColliderWithMethods> | {
+    forEach: (callback: (collider: RapierColliderWithMethods) => void) => void;
+  };
 }
 
 /**
@@ -43,7 +63,7 @@ export function CollisionMeshDebug({
 
       try {
         // Find the globe collider (it should be the largest trimesh collider)
-        let globeCollider: any = null;
+        let globeCollider: RapierColliderWithMethods | null = null;
         let maxVertices = 0;
         let colliderCount = 0;
 
@@ -51,9 +71,10 @@ export function CollisionMeshDebug({
         console.log('🔍 Searching for colliders in world:', world);
         
         // Try different methods to access colliders based on Rapier version
-        if (world.forEachCollider) {
+        const rapierWorld = world as unknown as RapierWorldWithColliders;
+        if (rapierWorld.forEachCollider) {
           // Method 1: Use forEachCollider if available
-          world.forEachCollider((collider: any) => {
+          rapierWorld.forEachCollider((collider: RapierColliderWithMethods) => {
             colliderCount++;
             console.log(`📦 Collider ${colliderCount}:`, {
               type: collider.shapeType?.(),
@@ -65,7 +86,7 @@ export function CollisionMeshDebug({
             const shapeType = collider.shapeType?.();
             if (shapeType === 9 || shapeType === 'TriMesh') {
               // Try to get vertices
-              const vertices = collider.vertices?.() || collider.shape?.vertices;
+              const vertices = collider.vertices?.() ?? collider.shape?.vertices;
               if (vertices && vertices.length > maxVertices) {
                 maxVertices = vertices.length;
                 globeCollider = collider;
@@ -73,21 +94,23 @@ export function CollisionMeshDebug({
               }
             }
           });
-        } else if (world.colliders) {
+        } else if (rapierWorld.colliders) {
           // Method 2: Direct access to colliders map
-          world.colliders.forEach((collider: any) => {
+          if ('forEach' in rapierWorld.colliders) {
+            rapierWorld.colliders.forEach((collider: RapierColliderWithMethods) => {
             colliderCount++;
-            const shapeType = collider.shapeType?.() || collider.shape?.type;
+            const shapeType = collider.shapeType?.() ?? collider.shape?.type;
             console.log(`📦 Collider ${colliderCount} type:`, shapeType);
             
             if (shapeType === 9 || shapeType === 'TriMesh') {
-              const vertices = collider.vertices?.() || collider.shape?.vertices;
+              const vertices = collider.vertices?.() ?? collider.shape?.vertices;
               if (vertices && vertices.length > maxVertices) {
                 maxVertices = vertices.length;
                 globeCollider = collider;
               }
             }
-          });
+            });
+          }
         }
 
         console.log(`📊 Total colliders found: ${colliderCount}`);
@@ -96,13 +119,26 @@ export function CollisionMeshDebug({
           console.log('🔍 Found globe collider, extracting geometry...');
           
           // Try different methods to extract vertices and indices
-          const vertices = globeCollider.vertices?.() || 
-                          globeCollider.shape?.vertices || 
-                          globeCollider.trimeshVertices?.();
+          let vertices: Float32Array | null = null;
+          let indices: Uint32Array | null = null;
           
-          const indices = globeCollider.indices?.() || 
-                         globeCollider.shape?.indices || 
-                         globeCollider.trimeshIndices?.();
+          try {
+            const collider = globeCollider as RapierColliderWithMethods;
+            vertices = collider.vertices?.() ?? 
+                      collider.shape?.vertices ?? 
+                      collider.trimeshVertices?.() ?? null;
+          } catch (e) {
+            console.warn('Failed to extract vertices:', e);
+          }
+          
+          try {
+            const collider = globeCollider as RapierColliderWithMethods;
+            indices = collider.indices?.() ?? 
+                     collider.shape?.indices ?? 
+                     collider.trimeshIndices?.() ?? null;
+          } catch (e) {
+            console.warn('Failed to extract indices:', e);
+          }
 
           console.log('📐 Extracted data:', {
             hasVertices: !!vertices,
@@ -140,7 +176,7 @@ export function CollisionMeshDebug({
           // Fallback: Try to use global terrain collider reference
           console.log('⚠️ No collider found via world iteration, trying global reference...');
           
-          if (globalTerrainCollider && globalTerrainCollider.vertices && globalTerrainCollider.indices) {
+          if (globalTerrainCollider?.vertices && globalTerrainCollider.indices) {
             console.log('✨ Using global terrain collider reference');
             
             const geometry = new THREE.BufferGeometry();

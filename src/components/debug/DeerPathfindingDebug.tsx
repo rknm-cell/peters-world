@@ -77,7 +77,7 @@ function calculateProjectedPath(
   start: THREE.Vector3, 
   end: THREE.Vector3,
   terrainVertices: TerrainVertex[] = [],
-  segments: number = 20
+  segments = 20
 ): THREE.Vector3[] {
   const path: THREE.Vector3[] = [];
   
@@ -226,8 +226,8 @@ export function DeerPathfindingDebug() {
         Object.assign(existing, data);
         
         // If position or target changed, recalculate projected path
-        if ((data.position || data.target !== undefined)) {
-          const currentPos = data.position || existing.position;
+        if ((data.position ?? data.target !== undefined)) {
+          const currentPos = data.position ?? existing.position;
           
           if (existing.target) {
             existing.projectedPath = calculateProjectedPath(
@@ -246,10 +246,10 @@ export function DeerPathfindingDebug() {
     };
 
     // Expose globally for DeerPhysics to use
-    (window as any).updateDeerDebug = updateDeerDebug;
+    (window as Window & { updateDeerDebug?: typeof updateDeerDebug }).updateDeerDebug = updateDeerDebug;
 
     return () => {
-      delete (window as any).updateDeerDebug;
+      delete (window as Window & { updateDeerDebug?: typeof updateDeerDebug }).updateDeerDebug;
     };
   }, [showPathfinding, terrainVertices]);
 

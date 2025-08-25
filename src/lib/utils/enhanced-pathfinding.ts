@@ -36,9 +36,7 @@ export class EnhancedPathfinder {
   };
 
   static getInstance(): EnhancedPathfinder {
-    if (!EnhancedPathfinder.instance) {
-      EnhancedPathfinder.instance = new EnhancedPathfinder();
-    }
+    EnhancedPathfinder.instance ??= new EnhancedPathfinder();
     return EnhancedPathfinder.instance;
   }
 
@@ -200,7 +198,7 @@ export class EnhancedPathfinder {
       return {
         isValid: false,
         blockedAt: highestConfidenceInvalid?.blockedAt,
-        reason: highestConfidenceInvalid?.reason || 'Path blocked',
+        reason: highestConfidenceInvalid?.reason ?? 'Path blocked',
         confidence: 1 - validityScore
       };
     }
@@ -290,7 +288,7 @@ export class EnhancedPathfinder {
     
     if (validation.isValid) {
       return {
-        path: this.generatePathPoints(startPos, endPos, options.samples || this.defaultOptions.samples),
+        path: this.generatePathPoints(startPos, endPos, options.samples ?? this.defaultOptions.samples),
         confidence: validation.confidence
       };
     } else if (validation.alternativePath) {
