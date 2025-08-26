@@ -18,7 +18,7 @@ type TreeType =
   | "tree-elipse" | "tree-lime" | "tree-maple" 
   | "tree-oak" | "tree-round" | "tree-tall";
 
-type StructureType = "house" | "tower" | "bridge";
+type StructureType = "house" | "tower";
 
 interface GridPlacementMenuProps {
   isOpen: boolean;
@@ -151,7 +151,7 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
 
   // Calculate responsive dimensions
   const menuWidth = Math.min(480, window.innerWidth - 40);
-  const menuHeight = Math.min(650, window.innerHeight - 40);
+  const menuHeight = Math.min(650, window.innerHeight - 80); // More padding from edges
   const gridCols = menuWidth < 400 ? 3 : 4;
 
   const categories = [
@@ -183,7 +183,7 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         className="absolute bg-black/90 border border-white/20 rounded-lg backdrop-blur-sm p-4 sm:p-6 shadow-2xl flex flex-col"
         style={{
           left: Math.max(20, Math.min(position.x - menuWidth / 2, window.innerWidth - menuWidth - 20)),
-          top: Math.max(20, Math.min(position.y + 10, window.innerHeight - menuHeight - 20)),
+          top: Math.max(40, Math.min(position.y + 10, window.innerHeight - menuHeight - 40)),
           width: menuWidth,
           height: menuHeight,
         }}
@@ -201,24 +201,26 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-1 flex-shrink-0">
-          {categories.map((category) => (
-            <button
-              key={category.name}
-              onClick={() => {
-                setSelectedCategory(category.name);
-                setSelectedItem(null);
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                selectedCategory === category.name
-                  ? "bg-blue-500 text-white"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <span className="text-sm sm:text-base">{category.icon}</span>
-              <span className="hidden sm:inline capitalize">{category.name}</span>
-            </button>
-          ))}
+        <div className="mb-4 bg-white/5 rounded-lg p-1 flex-shrink-0 overflow-hidden">
+          <div className="flex gap-1 overflow-x-auto custom-scrollbar">
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => {
+                  setSelectedCategory(category.name);
+                  setSelectedItem(null);
+                }}
+                className={`flex items-center justify-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 min-w-0 ${
+                  selectedCategory === category.name
+                    ? "bg-blue-500 text-white"
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <span className="text-base sm:text-lg">{category.icon}</span>
+                <span className="hidden sm:inline capitalize text-xs sm:text-sm">{category.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Shared 3D Preview */}
@@ -240,12 +242,13 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Objects grid */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0">
           <div 
             className="h-full overflow-y-auto pr-2 -mr-2 custom-scrollbar" 
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: 'rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1)',
+              maxHeight: '100%',
             }}
           >
             <div className={`grid gap-2 pb-2 ${gridCols === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>

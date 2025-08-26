@@ -304,7 +304,7 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType === "house" || selectedObjectType === "tower" || selectedObjectType === "bridge") ? (
+          ) : (selectedObjectType === "house" || selectedObjectType === "tower") ? (
             <Structure
               type={selectedObjectType}
               position={[0, 0, 0]}
