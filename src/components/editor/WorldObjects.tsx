@@ -1,6 +1,7 @@
 "use client";
 
-import { useWorldStore } from "~/lib/store";
+import React from "react";
+import { useWorldObjectsList, useSelectedObject } from "~/lib/store";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
@@ -59,10 +60,11 @@ function isAnimalType(type: string): type is AnimalType {
   return (ANIMAL_MODELS as readonly string[]).includes(type);
 }
 
-export function WorldObjects() {
-  const { objects, selectedObject } = useWorldStore();
+export const WorldObjects = React.memo(function WorldObjects() {
+  const objects = useWorldObjectsList();
+  const selectedObject = useSelectedObject();
 
-  const renderObject = (obj: PlacedObject) => {
+  const renderObject = React.useCallback((obj: PlacedObject) => {
     const isSelected = selectedObject === obj.id;
     const props = {
       position: obj.position,
@@ -136,7 +138,7 @@ export function WorldObjects() {
 
     // Default fallback for unknown types
     return <Tree key={obj.id} type="tree" {...props} />;
-  };
+  }, [selectedObject]);
 
   return <>{objects.map(renderObject)}</>;
-}
+});

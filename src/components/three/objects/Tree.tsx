@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import React, { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
@@ -32,7 +32,7 @@ interface TreeProps {
   lifecycleStage?: TreeLifecycleStage;
 }
 
-export function Tree({
+const TreeComponent = ({
   type,
   position,
   rotation = [0, 0, 0],
@@ -42,7 +42,7 @@ export function Tree({
   preview = false,
   canPlace = true,
   lifecycleStage,
-}: TreeProps) {
+}: TreeProps) => {
   const groupRef = useRef<THREE.Group>(null);
 
 
@@ -122,7 +122,7 @@ export function Tree({
       console.error(`Tree ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfResult, isLoading, type, lifecycleStage, preview, canPlace]); // Include all dependencies
+  }, [gltfResult.scene, type, lifecycleStage, preview, canPlace, isLoading]); // Include all dependencies
 
   // Animation for selected state - throttled to reduce flickering
   useFrame((state) => {
@@ -281,4 +281,6 @@ export function Tree({
       )}
     </group>
   );
-}
+};
+
+export const Tree = React.memo(TreeComponent);

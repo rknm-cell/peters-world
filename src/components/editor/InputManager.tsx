@@ -3,7 +3,11 @@
 import { useRef, useCallback, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useWorldStore } from "~/lib/store";
+import { 
+  useIsPlacing, useIsDeleting, useIsTerraforming, useTerraformMode,
+  useBrushSize, useBrushStrength, useTerrainVertices, useObjects,
+  useRemoveObject, useUpdateTerrainVerticesBatch
+} from "~/lib/store";
 
 interface InputManagerProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
@@ -13,18 +17,18 @@ interface InputManagerProps {
 
 export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRef: _rotationGroupRef }: InputManagerProps) {
   const { gl, camera, scene } = useThree();
-  const {
-    isPlacing,
-    isDeleting,
-    isTerraforming,
-    terraformMode,
-    brushSize,
-    brushStrength,
-    terrainVertices,
-    updateTerrainVertex,
-    objects,
-    removeObject,
-  } = useWorldStore();
+  
+  // Individual hook subscriptions for optimal performance
+  const isPlacing = useIsPlacing();
+  const isDeleting = useIsDeleting();
+  const isTerraforming = useIsTerraforming();
+  const terraformMode = useTerraformMode();
+  const brushSize = useBrushSize();
+  const brushStrength = useBrushStrength();
+  const terrainVertices = useTerrainVertices();
+  const objects = useObjects();
+  const removeObject = useRemoveObject();
+  const updateTerrainVerticesBatch = useUpdateTerrainVerticesBatch();
 
   // Shared interaction state
   const mouseRef = useRef(new THREE.Vector2());
@@ -54,13 +58,14 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     const intersectionPoint = intersects[0]?.point;
     if (!intersectionPoint) return;
     
-    // Apply terraforming by updating the store
+    // Apply terraforming by collecting updates for batch processing
     const geometry = terrainMesh.geometry;
     const positionAttribute = geometry.attributes.position;
     if (!positionAttribute) return;
     
     const maxCheckDistance = brushSize * 1.5;
     let processedVertices = 0;
+    const batchUpdates: Array<{ index: number; updates: Partial<{ height: number; waterLevel: number }> }> = [];
     
     for (let i = 0; i < positionAttribute.count && i < terrainVertices.length; i++) {
       const vertex = terrainVertices[i];
@@ -92,16 +97,18 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
           case "raise":
             falloff = Math.pow(1 - normalizedDistance, 3);
             strength = brushStrength * falloff * 2.0;
-            updateTerrainVertex(i, {
-              height: Math.min(vertex.height + strength, 6.0)
+            batchUpdates.push({
+              index: i,
+              updates: { height: Math.min(vertex.height + strength, 6.0) }
             });
             break;
             
           case "lower":
             falloff = Math.pow(1 - normalizedDistance, 3);
             strength = brushStrength * falloff * 2.0;
-            updateTerrainVertex(i, {
-              height: Math.max(vertex.height - strength, -4.0)
+            batchUpdates.push({
+              index: i,
+              updates: { height: Math.max(vertex.height - strength, -4.0) }
             });
             break;
             
@@ -110,12 +117,14 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
             strength = brushStrength * falloff * 3.0;
             
             if (isShiftPressedRef.current) {
-              updateTerrainVertex(i, {
-                waterLevel: Math.max(vertex.waterLevel - strength, 0.0)
+              batchUpdates.push({
+                index: i,
+                updates: { waterLevel: Math.max(vertex.waterLevel - strength, 0.0) }
               });
             } else {
-              updateTerrainVertex(i, {
-                waterLevel: Math.min(vertex.waterLevel + strength, 1.0)
+              batchUpdates.push({
+                index: i,
+                updates: { waterLevel: Math.min(vertex.waterLevel + strength, 1.0) }
               });
             }
             break;
@@ -133,9 +142,12 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
               const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
               const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
               
-              updateTerrainVertex(i, {
-                height: vertex.height + (avgHeight - vertex.height) * smoothStrength,
-                waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * smoothStrength * 0.5
+              batchUpdates.push({
+                index: i,
+                updates: {
+                  height: vertex.height + (avgHeight - vertex.height) * smoothStrength,
+                  waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * smoothStrength * 0.5
+                }
               });
             }
             break;
@@ -143,10 +155,15 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
       }
     }
     
+    // Apply all updates in a single batch operation to prevent update depth exceeded
+    if (batchUpdates.length > 0) {
+      updateTerrainVerticesBatch(batchUpdates);
+    }
+    
     if (terraformMode === 'water' && processedVertices > 0) {
       console.log(`Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`);
     }
-  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
+  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVerticesBatch]);
 
   // Delete action handler
   const handleDeleteAction = useCallback((event: PointerEvent) => {
