@@ -304,7 +304,7 @@ export const OBJECT_TYPES = {
     "tree-round",
     "tree-tall"
   ],
-  structures: ["house", "tower"],
+  structures: ["house", "tower", "building-cabin-small", "building-cabin-big"],
   decorations: DECORATION_MODELS,
   grass: GRASS_MODELS,
   animals: ANIMAL_MODELS,
@@ -364,6 +364,8 @@ export const MODEL_SCALING = {
     structures: {
       house: 1.5,
       tower: 2.0,
+      "building-cabin-small": 0.5, // Scale to match tree height
+      "building-cabin-big": 0.5,   // Scale to be slightly larger than trees
     }
   },
   // Global scale factor applied to all models (for easy adjustment)

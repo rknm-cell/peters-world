@@ -28,6 +28,11 @@ function isDecorationType(objectType: string): boolean {
   return (OBJECT_TYPES.decorations as readonly string[]).includes(objectType) || objectType === "rock" || objectType === "flower";
 }
 
+// Type guard function to check if an object type is a structure
+function isStructureType(objectType: string): boolean {
+  return OBJECT_TYPES.structures.includes(objectType as any);
+}
+
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
   rotationGroupRef?: React.RefObject<THREE.Group | null>;
@@ -325,7 +330,7 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType === "house" || selectedObjectType === "tower") ? (
+          ) : isStructureType(selectedObjectType) ? (
             <Structure
               type={selectedObjectType}
               position={[0, 0, 0]}
