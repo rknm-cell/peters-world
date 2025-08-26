@@ -72,16 +72,18 @@ export function DropdownMenu({ isOpen, onClose, position }: DropdownMenuProps) {
                 {/* Sub-menu for object types */}
                 {selectedCategory === category.name && (
                   <div className="mt-1 ml-4 rounded border border-white/10 bg-black/60 p-2">
-                    <div className="space-y-1">
-                      {category.items.map((item) => (
-                        <button
-                          key={item}
-                          className="block w-full rounded px-3 py-2 text-left text-sm capitalize text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
-                          onClick={() => handleObjectSelect(item)}
-                        >
-                          {item}
-                        </button>
-                      ))}
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                      <div className="space-y-1">
+                        {category.items.map((item) => (
+                          <button
+                            key={item}
+                            className="block w-full rounded px-3 py-2 text-left text-sm capitalize text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+                            onClick={() => handleObjectSelect(item)}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

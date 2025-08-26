@@ -687,12 +687,12 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         />
         
         {/* Eating indicator */}
-        {isEating && (
+        {/* {isEating && (
           <mesh position={[0, 1.2, 0]}>
             <sphereGeometry args={[0.08, 8, 8]} />
             <meshBasicMaterial color="green" />
           </mesh>
-        )}
+        )} */}
       </group>
 
     </RigidBody>
