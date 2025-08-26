@@ -46,6 +46,11 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
+  
+  // Debug: Log wolf initialization
+  useEffect(() => {
+    console.log(`🐺 Wolf ${objectId}: Initialized at position`, position);
+  }, [objectId, position]);
 
   // Wolf-specific hunting states
   const [isHunting, setIsHunting] = useState(false);
@@ -158,6 +163,12 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     }
     lastUpdateTime.current = currentTime;
     
+    // Debug logging every few seconds to track wolf state
+    const debugInterval = 3000; // Log every 3 seconds
+    if (currentTime % debugInterval < minUpdateInterval) {
+      console.log(`🐺 Wolf ${objectId}: State check - isIdle: ${isIdle}, isHunting: ${isHunting}, hasTarget: ${target !== null}, huntingTarget: ${huntingTarget}`);
+    }
+    
     // === CHARACTER CONTROLLER LOGIC ===
     
     // Get current position from physics body (needed for all logic below)
@@ -170,8 +181,14 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       const maxIdleDuration = IDLE_DURATION.min + Math.random() * (IDLE_DURATION.max - IDLE_DURATION.min);
       
       if (idleDuration > maxIdleDuration) {
+        console.log(`🐺 Wolf ${objectId}: Ending idle state after ${(idleDuration/1000).toFixed(1)}s`);
         setIsIdle(false);
         setTarget(null); // Force new target generation
+      } else {
+        // Periodically log idle progress
+        if (Math.floor(idleDuration / 1000) !== Math.floor((idleDuration - minUpdateInterval) / 1000)) {
+          console.log(`🐺 Wolf ${objectId}: Idling - ${(idleDuration/1000).toFixed(1)}s/${(maxIdleDuration/1000).toFixed(1)}s`);
+        }
       }
       
       // Apply bounce decay when idle
@@ -254,17 +271,25 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       
       if (needsNewTarget) {
         // Decide if wolf should idle or move
-        if (Math.random() < IDLE_PROBABILITY) {
+        const idleRoll = Math.random();
+        console.log(`🐺 Wolf ${objectId}: Generating new target - idle roll: ${idleRoll.toFixed(2)}, idle threshold: ${IDLE_PROBABILITY}`);
+        
+        if (idleRoll < IDLE_PROBABILITY) {
+          console.log(`🐺 Wolf ${objectId}: Entering idle state`);
           setIsIdle(true);
           setIdleStartTime(currentTime);
           setTarget(null);
           return;
         } else {
           // Generate new wandering target
+          console.log(`🐺 Wolf ${objectId}: Generating new wandering target`);
           const newTarget = generateWanderingTarget(currentPosition);
           if (newTarget) {
+            console.log(`🐺 Wolf ${objectId}: New target generated at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
             setTarget(newTarget);
             setLastTargetTime(currentTime);
+          } else {
+            console.log(`🐺 Wolf ${objectId}: Failed to generate target, will try again next frame`);
           }
         }
       }
@@ -272,6 +297,9 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     
     // Move toward target using kinematic movement
     if (target && !isIdle) {
+      const distanceToTarget = currentPosition.distanceTo(target);
+      console.log(`🐺 Wolf ${objectId}: Moving toward target - distance: ${distanceToTarget.toFixed(2)}, hunting: ${isHunting}`);
+      
       const direction = target.clone().sub(currentPosition).normalize();
       
       // Get surface normal for surface-parallel movement

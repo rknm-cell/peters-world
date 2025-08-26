@@ -20,10 +20,6 @@
     "pre-commit": "bun run format:write && bun run lint:fix && bun run typecheck",
     "preview": "next build && next start",
     "start": "next start",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "test:coverage": "bun test --coverage",
-    "test:terraforming": "bun test src/lib/store.test.ts src/components/editor/TerrainSystem.test.tsx src/components/editor/TerraformController.test.tsx src/components/ui/TerraformToolbar.test.tsx src/components/editor/__tests__/TerraformingIntegration.test.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -57,26 +53,21 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.0.1",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.30.5",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
     "eslint-plugin-drizzle": "^0.2.3",
-    "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "react-scan": "^0.4.3",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.27.0",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.27.0"
   },
   "ct3aMetadata": {
     "initVersion": "7.39.3"
