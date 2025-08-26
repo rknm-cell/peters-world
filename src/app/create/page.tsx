@@ -24,14 +24,14 @@ export default function CreatePage() {
       <Toolbar />
       <TerraformToolbar />
       <Instructions />
-      <PerformanceDebug />
-      <MeshDebugPanel />
-      <PlacementDebugPanel />
-      <CollisionDebugPanel />
-      <PathfindingDebugPanel />
-      <CollisionValidationTest />
-      <TerrainHeightMapDebug />
-      <TerrainNormalMapDebug />
+      {/* <PerformanceDebug /> */}
+      {/* <MeshDebugPanel /> */}
+      {/* <PlacementDebugPanel /> */}
+      {/* <CollisionDebugPanel /> */}
+      {/* <PathfindingDebugPanel /> */}
+      {/* <CollisionValidationTest /> */}
+      {/* <TerrainHeightMapDebug /> */}
+      {/* <TerrainNormalMapDebug /> */}
       
       {/* Show restoration indicator - only on client to avoid hydration issues */}
       {typeof window !== "undefined" && hasRestoredWorld && (

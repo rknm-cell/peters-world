@@ -7,7 +7,7 @@ import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugSto
 import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
 import { api } from "~/trpc/react";
 import { serializeWorld, generateWorldName } from "~/lib/utils/world-serialization";
-import { hasStoredWorld } from "~/lib/utils/world-persistence";
+import { hasStoredWorld, clearStoredWorld } from "~/lib/utils/world-persistence";
 
 
 export function Toolbar() {
@@ -27,7 +27,8 @@ export function Toolbar() {
     terraformMode,
     brushSize,
     brushStrength,
-    timeOfDay
+    timeOfDay,
+    resetWorld
   } = useWorldStore();
   const { showCollisionMesh, toggleCollisionMesh } = useCollisionDebugStore();
   const { showPathfinding, togglePathfinding } = usePathfindingDebugStore();
@@ -142,6 +143,15 @@ export function Toolbar() {
     } catch (error) {
       console.error("❌ Failed to share world:", error);
       // TODO: Show error notification
+    }
+  };
+
+  const handleDeleteWorld = () => {
+    if (confirm("Are you sure you want to delete your saved world? This will clear all objects, terrain, and settings. This cannot be undone.")) {
+      resetWorld();
+      clearStoredWorld();
+      setHasAutoSave(false);
+      console.log("🗑️ World deleted successfully");
     }
   };
 
@@ -275,6 +285,27 @@ export function Toolbar() {
                 className="sm:w-5 sm:h-5"
               >
                 <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.61 20.92,19C20.92,17.39 19.61,16.08 18,16.08M18,4A1,1 0 0,1 19,5A1,1 0 0,1 18,6A1,1 0 0,1 17,5A1,1 0 0,1 18,4M6,13A1,1 0 0,1 5,12A1,1 0 0,1 6,11A1,1 0 0,1 7,12A1,1 0 0,1 6,13M18,20C17.45,20 17,19.55 17,19C17,18.45 17.45,18 18,18C18.55,18 19,18.45 19,19C19,19.55 18.55,20 18,20Z" />
+              </svg>
+            </button>
+
+            {/* Separator */}
+            <div className="hidden sm:block h-8 w-px bg-white/20" />
+
+            {/* Delete button */}
+            <button
+              onClick={handleDeleteWorld}
+              disabled={objects.length === 0 && terrainVertices.length === 0 && !hasAutoSave}
+              className="rounded-lg bg-red-500/20 p-2 sm:p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Delete World"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="sm:w-5 sm:h-5"
+              >
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
               </svg>
             </button>
           </div>
