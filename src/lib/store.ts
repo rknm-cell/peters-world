@@ -81,6 +81,10 @@ interface WorldState {
 
   // Debounced grass spawning to prevent rapid successive calls
   _grassSpawningTimeout: NodeJS.Timeout | null;
+  
+  // Throttled terrain updates to prevent update depth exceeded
+  _terrainUpdateThrottle: NodeJS.Timeout | null;
+  _lastTerrainUpdate: number;
 
   // Actions
   addObject: (type: string, position: Vector3) => void;
@@ -137,6 +141,7 @@ interface WorldState {
   setIsTerraforming: (isTerraforming: boolean) => void;
   updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
   updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
+  updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
   setTerrainVertices: (vertices: TerrainVertex[]) => void;
   updateTerrainOctree: () => void;
   resetTerrain: () => void;
@@ -188,6 +193,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   // Debounced grass spawning to prevent rapid successive calls
   _grassSpawningTimeout: null as NodeJS.Timeout | null,
+  
+  // Throttled terrain updates to prevent update depth exceeded
+  _terrainUpdateThrottle: null as NodeJS.Timeout | null,
+  _lastTerrainUpdate: 0,
 
   // Debounced grass spawning function
   attemptGrassSpawningDebounced: () => {
@@ -417,6 +426,39 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
       });
       return { terrainVertices: newVertices };
+    });
+  },
+  
+  // Throttled terrain batch update to prevent excessive state updates
+  updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => {
+    const state = _get();
+    const now = Date.now();
+    const THROTTLE_MS = 16; // ~60fps limit
+    
+    // If we're within throttle window, don't update
+    if (now - state._lastTerrainUpdate < THROTTLE_MS) {
+      return;
+    }
+    
+    // Clear existing throttle timeout if any
+    if (state._terrainUpdateThrottle) {
+      clearTimeout(state._terrainUpdateThrottle);
+    }
+    
+    // Update immediately and set timestamp
+    set((currentState) => {
+      const newVertices = [...currentState.terrainVertices];
+      updates.forEach(({ index, updates: vertexUpdates }) => {
+        const vertex = newVertices[index];
+        if (index >= 0 && index < newVertices.length && vertex) {
+          newVertices[index] = { ...vertex, ...vertexUpdates };
+        }
+      });
+      return { 
+        terrainVertices: newVertices,
+        _lastTerrainUpdate: now,
+        _terrainUpdateThrottle: null
+      };
     });
   },
   
@@ -1628,6 +1670,7 @@ export const useSelectedObject = () => useWorldStore(state => state.selectedObje
 
 // Terrain operations  
 export const useUpdateTerrainVerticesBatch = () => useWorldStore((state) => state.updateTerrainVerticesBatch);
+export const useUpdateTerrainVerticesBatchThrottled = () => useWorldStore((state) => state.updateTerrainVerticesBatchThrottled);
 export const useTerrainVertices = () => useWorldStore(state => state.terrainVertices);
 
 // Other operations
