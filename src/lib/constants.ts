@@ -153,9 +153,7 @@ export const GRASS_MODELS = [
 export const ANIMAL_MODELS = [
   "animals/deer",
   "animals/wolf",
-  "animals/seagull",
-  "animals/crab",
-  "animals/butterfly"
+  "animals/crab"
 ] as const;
 
 // Deer spawning configuration
@@ -306,7 +304,7 @@ export const OBJECT_TYPES = {
     "tree-round",
     "tree-tall"
   ],
-  structures: ["house", "tower", "bridge"],
+  structures: ["house", "tower"],
   decorations: DECORATION_MODELS,
   grass: GRASS_MODELS,
   animals: ANIMAL_MODELS,
@@ -331,9 +329,7 @@ export const MODEL_SCALING = {
     animals: {
       deer: 0.8,
       wolf: 0.7,
-      seagull: 0.3,
       crab: 0.2,
-      butterfly: 0.1,
     },
     // Grass
     grass: {
@@ -368,7 +364,6 @@ export const MODEL_SCALING = {
     structures: {
       house: 1.5,
       tower: 2.0,
-      bridge: 0.8,
     }
   },
   // Global scale factor applied to all models (for easy adjustment)
