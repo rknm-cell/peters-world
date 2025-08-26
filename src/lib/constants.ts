@@ -341,7 +341,7 @@ export const MODEL_SCALING = {
       "bear_brown": 0.6,
       cow: 0.5,
       hen: 0.3,
-      horse: 1.0,
+      horse: 0.8,
       penguin: 0.4,
       pig: 0.7,
     },

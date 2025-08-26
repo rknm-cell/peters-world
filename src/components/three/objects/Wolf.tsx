@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useWorldStore } from '~/lib/store';
+import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
 
 interface WolfProps {
   type: string;
@@ -37,20 +38,7 @@ export function Wolf({
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
   const isLoading = !gltfResult || !gltfScene;
 
-  // Get target height for wolf - larger than deer
-  const getTargetHeight = (wolfType: string): number => {
-    // Base target height for wolf
-    let baseHeight = 0.9; // Default wolf height (larger than deer)
-    
-    // Adjust based on wolf type (if we add more wolf variants later)
-    if (wolfType.includes("pup")) {
-      baseHeight = 0.6; // Wolf pup
-    } else if (wolfType.includes("alpha")) {
-      baseHeight = 1.1; // Alpha wolf
-    }
-    
-    return baseHeight;
-  };
+  // Removed getTargetHeight - now using centralized scaling utility
 
   // Clone the scene to avoid sharing between instances
   const wolfModel = useMemo(() => {
@@ -65,25 +53,12 @@ export function Wolf({
     try {
       const clonedScene = gltfScene.clone(true);
       
-      // Reset transformations - same as other models
-      clonedScene.position.set(0, 0, 0);
-      clonedScene.rotation.set(0, 0, 0);
-      clonedScene.scale.set(1, 1, 1);
-
-      // Scale to target height - same logic as deer
-      const box = new THREE.Box3().setFromObject(clonedScene);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      
-      const targetHeight = getTargetHeight(type);
-      const currentHeight = Math.max(size.y, 0.001);
-      let scaleFactor = targetHeight / currentHeight;
-      
-      // Safety check: prevent extreme scaling
-      scaleFactor = Math.max(0.1, Math.min(scaleFactor, 10.0));
-      
-      // Apply scaling
-      clonedScene.scale.setScalar(scaleFactor);
+      // Apply standardized scaling using the new utility
+      const scaleFactor = applyStandardizedScaling(clonedScene, {
+        objectType: 'animal',
+        modelType: type,
+        preview
+      });
       
       // Reset position to origin - let PlacementSystem handle positioning
       clonedScene.position.set(0, 0, 0);
@@ -112,9 +87,7 @@ export function Wolf({
 
       console.log(`Wolf ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
-        targetHeight,
         scaleFactor,
-        originalSize: size,
         'wolf positioned by PlacementSystem': true
       });
 

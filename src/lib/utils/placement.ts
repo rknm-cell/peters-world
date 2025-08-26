@@ -215,26 +215,23 @@ export function calculatePlacement(
     mathNormal.clone().multiplyScalar(metadata.bottomOffset),
   );
 
-  // Calculate rotation using ArrowHelper's orientation logic for perfect consistency
-  let rotation: THREE.Euler;
+  // All objects (including animals) use identical orientation logic for consistency
+  // Use ArrowHelper's internal logic to determine orientation
+  // This ensures IDENTICAL orientation to what debug arrows show
+  const rotation = getArrowHelperRotation(mathNormal);
   
-  // Animals should stand mostly upright, not aligned with surface normal
+  // Apply slope reduction for natural appearance (optional)
+  // Gradually reduce extreme rotations while keeping the ArrowHelper base orientation
+  const rotationMagnitude = Math.sqrt(rotation.x * rotation.x + rotation.z * rotation.z);
+  if (rotationMagnitude > Math.PI / 2.2) { // If rotation is more than ~82 degrees
+    const reductionFactor = Math.max(0.3, (Math.PI / 2.2) / rotationMagnitude);
+    rotation.x *= reductionFactor;
+    rotation.z *= reductionFactor;
+  }
+  
+  // Rotate animals 90 degrees for proper orientation
   if (objectType.startsWith("animals/")) {
-    // For animals, use minimal rotation - just keep them mostly upright
-    rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'); // Random Y rotation for variety
-  } else {
-    // Use ArrowHelper's internal logic to determine orientation
-    // This ensures IDENTICAL orientation to what debug arrows show
-    rotation = getArrowHelperRotation(mathNormal);
-    
-    // Apply slope reduction for natural appearance (optional)
-    // Gradually reduce extreme rotations while keeping the ArrowHelper base orientation
-    const rotationMagnitude = Math.sqrt(rotation.x * rotation.x + rotation.z * rotation.z);
-    if (rotationMagnitude > Math.PI / 2.2) { // If rotation is more than ~82 degrees
-      const reductionFactor = Math.max(0.3, (Math.PI / 2.2) / rotationMagnitude);
-      rotation.x *= reductionFactor;
-      rotation.z *= reductionFactor;
-    }
+    rotation.x += Math.PI / 2 ; // Add 90 degrees (π/2 radians) to Y rotation
   }
 
   // Check for collisions with existing objects using bounding box

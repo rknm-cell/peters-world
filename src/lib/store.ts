@@ -432,34 +432,32 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Throttled terrain batch update to prevent excessive state updates
   updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => {
     const state = _get();
-    const now = Date.now();
-    const THROTTLE_MS = 16; // ~60fps limit
-    
-    // If we're within throttle window, don't update
-    if (now - state._lastTerrainUpdate < THROTTLE_MS) {
-      return;
-    }
     
     // Clear existing throttle timeout if any
     if (state._terrainUpdateThrottle) {
       clearTimeout(state._terrainUpdateThrottle);
     }
     
-    // Update immediately and set timestamp
-    set((currentState) => {
-      const newVertices = [...currentState.terrainVertices];
-      updates.forEach(({ index, updates: vertexUpdates }) => {
-        const vertex = newVertices[index];
-        if (index >= 0 && index < newVertices.length && vertex) {
-          newVertices[index] = { ...vertex, ...vertexUpdates };
-        }
+    // Always defer the update to avoid nested state update issues
+    const timeoutId = setTimeout(() => {
+      set((currentState) => {
+        const newVertices = [...currentState.terrainVertices];
+        updates.forEach(({ index, updates: vertexUpdates }) => {
+          const vertex = newVertices[index];
+          if (index >= 0 && index < newVertices.length && vertex) {
+            newVertices[index] = { ...vertex, ...vertexUpdates };
+          }
+        });
+        return { 
+          terrainVertices: newVertices,
+          _lastTerrainUpdate: Date.now(),
+          _terrainUpdateThrottle: null
+        };
       });
-      return { 
-        terrainVertices: newVertices,
-        _lastTerrainUpdate: now,
-        _terrainUpdateThrottle: null
-      };
-    });
+    }, 16); // Use 16ms delay to avoid immediate execution
+    
+    // Store the timeout ID
+    set({ _terrainUpdateThrottle: timeoutId });
   },
   
   setTerrainVertices: (vertices: TerrainVertex[]) => {
