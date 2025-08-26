@@ -153,7 +153,14 @@ export const GRASS_MODELS = [
 export const ANIMAL_MODELS = [
   "animals/deer",
   "animals/wolf",
-  "animals/crab"
+  "animals/crab",
+  "animals/sheep-white",
+  "animals/bear_brown",
+  "animals/cow",
+  "animals/hen",
+  "animals/horse",
+  "animals/penguin",
+  "animals/pig"
 ] as const;
 
 // Deer spawning configuration
@@ -330,6 +337,13 @@ export const MODEL_SCALING = {
       deer: 0.8,
       wolf: 0.7,
       crab: 0.2,
+      "sheep-white": 0.6,
+      "bear_brown": 0.9,
+      cow: 1.1,
+      hen: 0.3,
+      horse: 1.0,
+      penguin: 0.4,
+      pig: 0.7,
     },
     // Grass
     grass: {

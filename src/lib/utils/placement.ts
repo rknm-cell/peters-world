@@ -142,6 +142,34 @@ export const OBJECT_METADATA = {
     bottomOffset: 0.1, // Butterfly should float above ground
     baseRadius: 0.08,
   },
+  "animals/sheep-white": {
+    bottomOffset: -0.1, // Sheep should stand on the ground
+    baseRadius: 0.35, // Sheep collision radius
+  },
+  "animals/bear_brown": {
+    bottomOffset: -0.1, // Bear should stand on the ground
+    baseRadius: 0.5, // Bear collision radius (larger than deer)
+  },
+  "animals/cow": {
+    bottomOffset: -0.1, // Cow should stand on the ground
+    baseRadius: 0.6, // Cow collision radius (largest land animal)
+  },
+  "animals/hen": {
+    bottomOffset: -0.05, // Hen should stand on the ground
+    baseRadius: 0.2, // Hen collision radius
+  },
+  "animals/horse": {
+    bottomOffset: -0.1, // Horse should stand on the ground
+    baseRadius: 0.55, // Horse collision radius
+  },
+  "animals/penguin": {
+    bottomOffset: -0.05, // Penguin should stand on the ground
+    baseRadius: 0.25, // Penguin collision radius
+  },
+  "animals/pig": {
+    bottomOffset: -0.1, // Pig should stand on the ground
+    baseRadius: 0.4, // Pig collision radius
+  },
 } as const;
 
 export interface PlacementInfo {

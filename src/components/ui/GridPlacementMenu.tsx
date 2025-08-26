@@ -125,6 +125,14 @@ function ObjectItem({ objectType, category, onClick, isSelected }: {
         // Use specific emojis for different animals
         if (objectType === "animals/deer") return "🦌";
         if (objectType === "animals/wolf") return "🐺";
+        if (objectType === "animals/crab") return "🦀";
+        if (objectType === "animals/sheep-white") return "🐑";
+        if (objectType === "animals/bear_brown") return "🐻";
+        if (objectType === "animals/cow") return "🐄";
+        if (objectType === "animals/hen") return "🐔";
+        if (objectType === "animals/horse") return "🐎";
+        if (objectType === "animals/penguin") return "🐧";
+        if (objectType === "animals/pig") return "🐷";
         return "🦌"; // fallback
       }
       case "grass": return "🌿";
