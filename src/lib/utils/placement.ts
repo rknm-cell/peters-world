@@ -80,6 +80,14 @@ export const OBJECT_METADATA = {
     bottomOffset: -0.15,
     baseRadius: 1.0,
   },
+  "building-cabin-small": {
+    bottomOffset: -0.15,
+    baseRadius: 0.5, // Small cabin foundation - adjusted for scale
+  },
+  "building-cabin-big": {
+    bottomOffset: -0.15,
+    baseRadius: 0.7, // Big cabin foundation - adjusted for scale
+  },
 
   // Decorations
   rock: {

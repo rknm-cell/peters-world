@@ -6,7 +6,8 @@ import * as THREE from "three";
 import { 
   useIsPlacing, useIsDeleting, useIsTerraforming, useTerraformMode,
   useBrushSize, useBrushStrength, useTerrainVertices, useObjects,
-  useRemoveObject, useUpdateTerrainVerticesBatch
+  useRemoveObject, useUpdateTerrainVerticesBatchThrottled,
+  useSetTerraformMode, useSetIsTerraforming
 } from "~/lib/store";
 
 interface InputManagerProps {
@@ -28,7 +29,9 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const terrainVertices = useTerrainVertices();
   const objects = useObjects();
   const removeObject = useRemoveObject();
-  const updateTerrainVerticesBatch = useUpdateTerrainVerticesBatch();
+  const updateTerrainVerticesBatchThrottled = useUpdateTerrainVerticesBatchThrottled();
+  const setTerraformMode = useSetTerraformMode();
+  const setIsTerraforming = useSetIsTerraforming();
 
   // Shared interaction state
   const mouseRef = useRef(new THREE.Vector2());
@@ -44,6 +47,34 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     if (isTerraforming && terraformMode !== 'none') return 'terraforming';
     return 'idle';
   }, [isPlacing, isDeleting, isTerraforming, terraformMode]);
+
+  // Handle clicks outside the world (disable terraform tools)
+  const handleOffWorldClick = useCallback((event: PointerEvent) => {
+    if (!terrainMesh) return false;
+
+    // Update mouse position for raycast
+    const canvas = gl.domElement;
+    const rect = canvas.getBoundingClientRect();
+    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Raycast to check if we hit the terrain
+    raycasterRef.current.setFromCamera(mouseRef.current, camera);
+    const intersects = raycasterRef.current.intersectObject(terrainMesh);
+
+    // If no intersection with terrain, it's an off-world click
+    if (intersects.length === 0) {
+      // Disable terraform tools when clicking off-world
+      if (isTerraforming) {
+        setTerraformMode("none");
+        setIsTerraforming(false);
+        console.log("🏔️ Terraform mode disabled - clicked outside world");
+      }
+      return true; // Indicates this was an off-world click
+    }
+
+    return false; // Hit the terrain, not an off-world click
+  }, [terrainMesh, gl.domElement, camera, isTerraforming, setTerraformMode, setIsTerraforming]);
 
   // Terraforming action handler
   const handleTerraformAction = useCallback((_event: PointerEvent) => {
@@ -155,15 +186,15 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
       }
     }
     
-    // Apply all updates in a single batch operation to prevent update depth exceeded
+    // Apply all updates in a single throttled batch operation to prevent update depth exceeded
     if (batchUpdates.length > 0) {
-      updateTerrainVerticesBatch(batchUpdates);
+      updateTerrainVerticesBatchThrottled(batchUpdates);
     }
     
     if (terraformMode === 'water' && processedVertices > 0) {
       console.log(`Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`);
     }
-  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVerticesBatch]);
+  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVerticesBatchThrottled]);
 
   // Delete action handler
   const handleDeleteAction = useCallback((event: PointerEvent) => {
@@ -236,6 +267,13 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const handlePointerDown = useCallback((event: PointerEvent) => {
     const mode = getInteractionMode();
     
+    // Always check for off-world clicks first (in idle mode)
+    if (mode === 'idle') {
+      handleOffWorldClick(event);
+      // Let OrbitControls handle all events in idle mode
+      return;
+    }
+    
     // Only handle events that this system should process
     switch (mode) {
       case 'placing':
@@ -250,6 +288,12 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         previousMouseRef.current.copy(mouseRef.current);
+        
+        // Check if this is an off-world click (will disable terraform if so)
+        if (handleOffWorldClick(event)) {
+          // Off-world click detected, terraform disabled, let OrbitControls handle
+          return;
+        }
         
         // Track shift key state
         isShiftPressedRef.current = event.shiftKey;
@@ -274,12 +318,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         deleteCanvas.style.cursor = "crosshair";
         handleDeleteAction(event);
         break;
-        
-      case 'idle':
-        // Do nothing - let OrbitControls handle all events
-        return;
     }
-  }, [getInteractionMode, gl.domElement, handleTerraformAction, handleDeleteAction]);
+  }, [getInteractionMode, gl.domElement, handleTerraformAction, handleDeleteAction, handleOffWorldClick]);
 
   // Unified pointer move handler
   const handlePointerMove = useCallback((event: PointerEvent) => {

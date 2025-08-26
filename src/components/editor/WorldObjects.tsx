@@ -22,7 +22,7 @@ type TreeType =
   // Death stages
   | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
   | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
-type StructureType = "house" | "tower";
+type StructureType = "house" | "tower" | "building-cabin-small" | "building-cabin-big";
 type DecorationType = typeof DECORATION_MODELS[number] | "rock" | "flower"; // Include legacy types
 type GrassType = typeof GRASS_MODELS[number];
 type AnimalType = typeof ANIMAL_MODELS[number];

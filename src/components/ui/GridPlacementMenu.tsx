@@ -18,7 +18,7 @@ type TreeType =
   | "tree-elipse" | "tree-lime" | "tree-maple" 
   | "tree-oak" | "tree-round" | "tree-tall";
 
-type StructureType = "house" | "tower";
+type StructureType = "house" | "tower" | "building-cabin-small" | "building-cabin-big";
 
 interface GridPlacementMenuProps {
   isOpen: boolean;
@@ -113,7 +113,14 @@ function ObjectItem({ objectType, category, onClick, isSelected }: {
     switch (category) {
       case "trees": return "🌲";
       case "decorations": return "🌸";
-      case "structures": return "🏠";
+      case "structures": {
+        // Use specific emojis for different building types
+        if (objectType === "house") return "🏠";
+        if (objectType === "tower") return "🗼";
+        if (objectType === "building-cabin-small") return "🏡";
+        if (objectType === "building-cabin-big") return "🏘️";
+        return "🏠"; // fallback
+      }
       case "animals": {
         // Use specific emojis for different animals
         if (objectType === "animals/deer") return "🦌";

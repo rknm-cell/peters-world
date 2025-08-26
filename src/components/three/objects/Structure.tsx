@@ -2,11 +2,16 @@
 
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { COLOR_PALETTES } from "~/lib/constants";
+import { COLOR_PALETTES, MODEL_SCALING } from "~/lib/constants";
+
+// Preload GLB models
+useGLTF.preload("/buildings/building-cabin-small.glb");
+useGLTF.preload("/buildings/building-cabin-big.glb");
 
 interface StructureProps {
-  type?: "house" | "tower" | "bridge";
+  type?: "house" | "tower" | "bridge" | "building-cabin-small" | "building-cabin-big";
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -59,6 +64,51 @@ export function Structure({
       }),
     };
   }, [preview, canPlace]);
+
+  // Load GLB models for the new building types
+  const cabinSmallModel = useGLTF("/buildings/building-cabin-small.glb");
+  const cabinBigModel = useGLTF("/buildings/building-cabin-big.glb");
+
+  // Calculate scale factor to match target heights
+  const getBuildingScale = useMemo(() => {
+    const targetHeight = MODEL_SCALING.targetHeights.structures[type as keyof typeof MODEL_SCALING.targetHeights.structures] || 1.0;
+    
+    // Estimate the original height of the GLB model (this may need adjustment based on actual model dimensions)
+    let originalHeight = 1.0;
+    
+    switch (type) {
+      case "building-cabin-small":
+        originalHeight = 2.0; // Estimate - adjust based on actual model
+        break;
+      case "building-cabin-big":
+        originalHeight = 3.0; // Estimate - adjust based on actual model
+        break;
+      default:
+        originalHeight = 1.0;
+    }
+    
+    // Calculate scale factor to achieve target height
+    const scaleFactor = targetHeight / originalHeight;
+    
+    // Apply global scale factor and ensure it's within bounds
+    const finalScale = Math.max(
+      MODEL_SCALING.minScaleFactor,
+      Math.min(MODEL_SCALING.maxScaleFactor, scaleFactor * MODEL_SCALING.globalScaleFactor)
+    );
+    
+    // Debug logging for scaling
+    if (type === "building-cabin-small" || type === "building-cabin-big") {
+      console.log(`🏗️ ${type} scaling:`, {
+        targetHeight,
+        originalHeight,
+        scaleFactor,
+        finalScale,
+        type
+      });
+    }
+    
+    return finalScale;
+  }, [type]);
 
   // Generate structure geometry based on type
   const renderStructure = () => {
@@ -131,6 +181,22 @@ export function Structure({
               castShadow
             />
           </>
+        );
+
+      case "building-cabin-small":
+        return (
+          <primitive 
+            object={cabinSmallModel.scene.clone()} 
+            scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
+          />
+        );
+
+      case "building-cabin-big":
+        return (
+          <primitive 
+            object={cabinBigModel.scene.clone()} 
+            scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
+          />
         );
 
       default:
