@@ -31,7 +31,7 @@ export default function Home() {
             {/* Title */}
             <div className="w-full h-32 sm:h-48 mb-4 flex items-center justify-center">
               <h1 
-                className="text-[12rem] sm:text-9xl md:text-[12rem] font-regular text-white text-center leading-none"
+                className="text-6xl sm:text-4xl md:text-8xl lg:text-[12rem] font-regular text-white text-center leading-none"
                 style={{ fontFamily: 'Modak, cursive' }}
               >
                 Peter&apos;s World
