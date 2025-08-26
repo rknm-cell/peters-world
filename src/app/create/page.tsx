@@ -33,7 +33,7 @@ export default function CreatePage() {
       
       {/* Show restoration indicator - only on client to avoid hydration issues */}
       {typeof window !== "undefined" && hasRestoredWorld && (
-        <div className="fixed bottom-4 left-4 z-40 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 backdrop-blur-sm">
+        <div className="fixed bottom-4 left-20 z-40 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 backdrop-blur-sm">
           <p className="text-sm text-green-400">
             ✅ World restored from auto-save
           </p>

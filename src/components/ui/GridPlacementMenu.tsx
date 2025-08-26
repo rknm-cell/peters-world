@@ -114,7 +114,12 @@ function ObjectItem({ objectType, category, onClick, isSelected }: {
       case "trees": return "🌲";
       case "decorations": return "🌸";
       case "structures": return "🏠";
-      case "animals": return "🦌";
+      case "animals": {
+        // Use specific emojis for different animals
+        if (objectType === "animals/deer") return "🦌";
+        if (objectType === "animals/wolf") return "🐺";
+        return "🦌"; // fallback
+      }
       case "grass": return "🌿";
       default: return "📦";
     }
@@ -159,7 +164,7 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
     { name: "structures", icon: "🏠", items: OBJECT_TYPES.structures },
     { name: "decorations", icon: "🌸", items: OBJECT_TYPES.decorations },
     { name: "grass", icon: "🌿", items: OBJECT_TYPES.grass },
-    { name: "animals", icon: "🦌", items: OBJECT_TYPES.animals },
+    { name: "animals", icon: "🐾", items: OBJECT_TYPES.animals },
   ];
 
   const currentCategory = categories.find(c => c.name === selectedCategory);
