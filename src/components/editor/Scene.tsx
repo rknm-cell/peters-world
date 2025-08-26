@@ -81,16 +81,16 @@ export function Scene() {
         <GravityController />
         
         {/* Physics debug visualization */}
-        <PhysicsDebug />
+        {/* <PhysicsDebug /> */}
         
         {/* Physics status logging for debugging */}
         <PhysicsStatusLogger />
         
         {/* Collision mesh debug visualization (3D part) */}
-        <CollisionDebugVisualization />
+        {/* <CollisionDebugVisualization /> */}
         
         {/* Deer pathfinding debug visualization */}
-        <DeerPathfindingDebug />
+        {/* <DeerPathfindingDebug /> */}
         
         {/* Terrain analysis debug tools - moved to page layout */}
         
@@ -121,10 +121,10 @@ export function Scene() {
       />
 
       {/* Debug surface normals - toggle with toolbar button */}
-      {showDebugNormals && <SurfaceNormalDebug />}
+      {/* {showDebugNormals && <SurfaceNormalDebug />} */}
       
       {/* Debug placement orientation - shows arrows indicating object orientation */}
-      {showPlacementOrientationDebug && (
+      {/* {showPlacementOrientationDebug && (
         <PlacementOrientationDebug 
           globeRadius={6}
           normalLength={0.3}
@@ -132,7 +132,7 @@ export function Scene() {
           color="#00ff00"
           showMathNormalComparison={placementDebugShowComparison}
         />
-      )}
+      )} */}
       
       {/* Tree lifecycle manager - handles automatic tree aging */}
       <TreeLifecycleManager />
@@ -144,11 +144,11 @@ export function Scene() {
       <DeerSpawningManager />
       
       {/* Debug components for animal orientation testing */}
-      <AnimalOrientationTest />
-      <IdleOrientationTest />
+      {/* <AnimalOrientationTest /> */}
+      {/* <IdleOrientationTest /> */}
       
       {/* Debug component for terrain collision testing */}
-      <TerrainCollisionTest />
+      {/* <TerrainCollisionTest /> */}
     </>
   );
 }

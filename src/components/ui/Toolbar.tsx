@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useWorldStore } from "~/lib/store";
 import { GridPlacementMenu } from "./GridPlacementMenu";
-import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugStore";
-import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
+// import { useCollisionDebugStore } from "~/components/debug/CollisionMeshDebugStore";
+// import { usePathfindingDebugStore } from "~/components/debug/PathfindingDebugStore";
 import { api } from "~/trpc/react";
 import { serializeWorld, generateWorldName } from "~/lib/utils/world-serialization";
 import { hasStoredWorld, clearStoredWorld } from "~/lib/utils/world-persistence";
@@ -42,8 +42,8 @@ export function Toolbar() {
     timeOfDay,
     resetWorld
   } = useWorldStore();
-  const { showCollisionMesh, toggleCollisionMesh } = useCollisionDebugStore();
-  const { showPathfinding, togglePathfinding } = usePathfindingDebugStore();
+  // const { showCollisionMesh, toggleCollisionMesh } = useCollisionDebugStore();
+  // const { showPathfinding, togglePathfinding } = usePathfindingDebugStore();
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showTerraformMenu, setShowTerraformMenu] = useState(false);
@@ -359,7 +359,7 @@ export function Toolbar() {
             <button
               onClick={() => setShowDebugTools(!showDebugTools)}
               className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
-                showDebugTools || showDebugNormals || showWireframe || showForestDebug || showLifecycleDebug || showCollisionMesh || showPathfinding
+                showDebugTools || showDebugNormals || showWireframe || showForestDebug || showLifecycleDebug
                   ? "bg-gray-500 text-white"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
@@ -524,7 +524,7 @@ export function Toolbar() {
               </button>
 
               {/* Collision debug toggle */}
-              <button
+              {/* <button
                 onClick={toggleCollisionMesh}
                 className={`flex items-center justify-center rounded-lg p-2 transition-all duration-200 ${
                   showCollisionMesh
@@ -537,10 +537,10 @@ export function Toolbar() {
                   <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M12,4C7.57,4 4,7.57 4,12C4,16.43 7.57,20 12,20C16.43,20 20,16.43 20,12C20,7.57 16.43,4 12,4M12,6C15.31,6 18,8.69 18,12C18,15.31 15.31,18 12,18C8.69,18 6,15.31 6,12C6,8.69 8.69,6 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10Z" />
                 </svg>
                 <span className="ml-1 text-xs hidden sm:inline">Collision</span>
-              </button>
+              </button> */}
 
               {/* Pathfinding debug toggle */}
-              <button
+              {/* <button
                 onClick={togglePathfinding}
                 className={`flex items-center justify-center rounded-lg p-2 transition-all duration-200 ${
                   showPathfinding
@@ -553,7 +553,7 @@ export function Toolbar() {
                   <path d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18M10,13L8,11V14H16V11L14,13L12,11L10,13Z" />
                 </svg>
                 <span className="ml-1 text-xs hidden sm:inline">Pathfind</span>
-              </button>
+              </button> */}
 
               {/* Height map debug toggle */}
               <button
