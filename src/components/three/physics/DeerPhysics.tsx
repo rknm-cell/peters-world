@@ -342,7 +342,65 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Reset movement speed when eating to stop any residual bounce
       lastMovementSpeed.current = 0;
       
-      // During eating, no movement
+      // === SURFACE ALIGNMENT MAINTENANCE DURING EATING ===
+      // Prevent orientation drift while eating by maintaining surface-relative alignment
+      
+      const surfaceNormal = currentPosition.clone().normalize();
+      const currentRotation = body.rotation();
+      const currentQuaternion = new THREE.Quaternion(
+        currentRotation.x, 
+        currentRotation.y, 
+        currentRotation.z, 
+        currentRotation.w
+      );
+      
+      // Calculate what the correct surface-aligned orientation should be
+      // Use a default forward direction (deer facing "north" relative to surface)
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const localForward = worldUp.clone()
+        .cross(surfaceNormal)
+        .normalize();
+      
+      // Handle edge case where surface normal is parallel to world up
+      if (localForward.length() < 0.1) {
+        localForward.set(1, 0, 0)
+          .cross(surfaceNormal)
+          .normalize();
+      }
+      
+      // Calculate target surface-aligned rotation using existing utilities
+      const targetQuaternion = calculateTargetRotation(
+        currentPosition,
+        localForward, // Default forward direction for eating deer
+        surfaceNormal
+      );
+      
+      // Check how far we've drifted from proper surface alignment
+      const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
+      const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
+      
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD) {
+        // Gradually correct orientation drift during eating
+        // Use slower correction speed to avoid disturbing the eating animation
+        const EATING_CORRECTION_SPEED = 0.3; // Even slower than idle to be gentle
+        const correctedQuaternion = calculateSmoothedRotation(
+          currentQuaternion,
+          targetQuaternion,
+          delta * EATING_CORRECTION_SPEED
+        );
+        
+        // Apply the corrected orientation
+        queueDeerTransformUpdate(objectId, () => {
+          body.setRotation(correctedQuaternion, true);
+        }, 'low'); // Low priority since this is just orientation maintenance
+        
+        // Debug logging (can be removed later)
+        if (orientationDifference > 0.2) { // Only log significant corrections
+          console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+        }
+      }
+      
+      // During eating, no movement but orientation is maintained
       return;
     }
     
