@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Canvas } from "~/components/editor/Canvas";
 import { Toolbar } from "~/components/ui/Toolbar";
 import { Instructions } from "~/components/ui/Instructions";
-import { WorldTitleCanvas } from "~/components/three/WorldTitleCanvas";
 import { useWorldPersistence } from "~/lib/hooks/useWorldPersistence";
+import { Button } from "~/components/ui/button";
+import { Sparkles } from "lucide-react";
 
 export default function Home() {
   // Enable auto-save and auto-restore
@@ -23,23 +24,38 @@ export default function Home() {
       {/* Landing page text overlay */}
       {showOverlay && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
           onClick={() => setShowOverlay(false)}
         >
-                  <div className="container flex flex-col items-center justify-center gap-8 px-4 py-16 text-center text-white">
-          {/* 3D Title */}
-          <div className="w-full h-32 sm:h-48 mb-4">
-            <WorldTitleCanvas />
+          <div className="container flex flex-col items-center justify-center gap-8 px-4 py-16 text-center">
+            {/* Title */}
+            <div className="w-full h-32 sm:h-48 mb-4 flex items-center justify-center">
+              <h1 
+                className="text-[12rem] sm:text-9xl md:text-[12rem] font-regular text-white text-center leading-none"
+                style={{ fontFamily: 'Modak, cursive' }}
+              >
+                Peter&apos;s World
+              </h1>
+            </div>
+            
+            {/* Call to Action */}
+            <div className="text-center space-y-10">
+              <p className="text-4xl text-white font-light max-w-2xl"
+              style={{ fontFamily: 'Modak, cursive' }}
+              >
+                Welcome to my world <br /> Make it your own
+              </p>
+              
+              <Button 
+                size="lg" 
+                className="mt-6 px-10 py-4 bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 transition-all duration-300"
+                onClick={() => setShowOverlay(false)}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Start Building Now
+              </Button>
+            </div>
           </div>
-          
-          <p className="max-w-2xl text-center text-xl">
-            Welcome to my world <br /> Make it your own
-          </p>
-          
-          <div className="text-lg opacity-80">
-            Click anywhere to start building
-          </div>
-        </div>
         </div>
       )}
       

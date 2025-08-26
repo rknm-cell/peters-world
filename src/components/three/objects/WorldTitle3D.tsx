@@ -20,8 +20,8 @@ export function WorldTitle3D({
       {/* Simple white text */}
       <Center>
         <Text3D
-          font="/fonts/impact.typeface.json"
-          size={0.6}
+          font="/fonts/modak.typeface.json"
+          size={0.5}
           height={0.05}
           curveSegments={16}
           bevelEnabled={false}
