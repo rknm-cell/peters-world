@@ -271,10 +271,10 @@ export function Toolbar() {
               onClick={handleTerraformTools}
               className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
                 isTerraforming
-                  ? "bg-green-500 text-white"
+                  ? "bg-green-500 text-white shadow-lg shadow-green-500/25"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
-              title="Terraform Tools"// Debug styling to make it visible
+              title={isTerraforming ? "🏔️ Terraform Active - Click to configure" : "🏔️ Terraform Tools"}
             >
               <svg
                 width="18"
@@ -292,8 +292,8 @@ export function Toolbar() {
               onClick={handleToggleDeleteMode}
               className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
                 isDeleting
-                  ? "bg-red-500 text-white"
-                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+                  ? "bg-orange-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-orange-500/20 hover:text-orange-300"
               }`}
               title={isDeleting ? "Exit Delete Mode" : "Delete Objects"}
             >
@@ -339,7 +339,7 @@ export function Toolbar() {
 
             {/* Delete mode indicator */}
             {isDeleting && (
-              <div className="flex items-center rounded-lg bg-red-500/20 px-2 py-1 text-xs sm:text-sm text-red-300">
+              <div className="flex items-center rounded-lg bg-orange-500/20 px-2 py-1 text-xs sm:text-sm text-orange-300">
                 <span className="mr-1 hidden sm:inline">Delete Mode:</span>
                 <span className="font-medium">Click objects to delete</span>
               </div>
@@ -353,8 +353,8 @@ export function Toolbar() {
               </div>
             )}
 
-            {/* Debug tools toggle - hidden on mobile by default */}
-            <div className="hidden sm:block h-8 w-px bg-white/20" />
+            {/* Debug tools toggle - DISABLED */}
+            {/* <div className="hidden sm:block h-8 w-px bg-white/20" />
             
             <button
               onClick={() => setShowDebugTools(!showDebugTools)}
@@ -374,13 +374,13 @@ export function Toolbar() {
               >
                 <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
               </svg>
-            </button>
+            </button> */}
 
             {/* Separator */}
             <div className="hidden sm:block h-8 w-px bg-white/20" />
 
-            {/* Save button */}
-            <button
+            {/* Save button - DISABLED */}
+            {/* <button
               onClick={handleSaveWorld}
               disabled={objects.length === 0 || createWorld.isPending}
               className="rounded-lg bg-green-500/20 p-2 sm:p-3 text-green-400 transition-all duration-200 hover:bg-green-500/30 hover:text-green-300 disabled:cursor-not-allowed disabled:opacity-50"
@@ -395,10 +395,10 @@ export function Toolbar() {
               >
                 <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" />
               </svg>
-            </button>
+            </button> */}
 
-            {/* Screenshot button */}
-            <button
+            {/* Screenshot button - DISABLED */}
+            {/* <button
               onClick={handleScreenshot}
               className="rounded-lg bg-purple-500/20 p-2 sm:p-3 text-purple-400 transition-all duration-200 hover:bg-purple-500/30 hover:text-purple-300"
               title="Screenshot"
@@ -412,10 +412,10 @@ export function Toolbar() {
               >
                 <path d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z" />
               </svg>
-            </button>
+            </button> */}
 
-            {/* Share button */}
-            <button
+            {/* Share button - DISABLED */}
+            {/* <button
               onClick={handleShare}
               disabled={objects.length === 0 || createWorld.isPending || createShare.isPending}
               className="rounded-lg bg-blue-500/20 p-2 sm:p-3 text-blue-400 transition-all duration-200 hover:bg-blue-500/30 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
@@ -430,17 +430,17 @@ export function Toolbar() {
               >
                 <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.61 20.92,19C20.92,17.39 19.61,16.08 18,16.08M18,4A1,1 0 0,1 19,5A1,1 0 0,1 18,6A1,1 0 0,1 17,5A1,1 0 0,1 18,4M6,13A1,1 0 0,1 5,12A1,1 0 0,1 6,11A1,1 0 0,1 7,12A1,1 0 0,1 6,13M18,20C17.45,20 17,19.55 17,19C17,18.45 17.45,18 18,18C18.55,18 19,18.45 19,19C19,19.55 18.55,20 18,20Z" />
               </svg>
-            </button>
+            </button> */}
 
             {/* Separator */}
             <div className="hidden sm:block h-8 w-px bg-white/20" />
 
-            {/* Delete button */}
+            {/* Delete World button */}
             <button
               onClick={handleDeleteWorld}
               disabled={objects.length === 0 && terrainVertices.length === 0 && !hasAutoSave}
-              className="rounded-lg bg-red-500/20 p-2 sm:p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Delete World"
+              className="rounded-lg bg-red-600/30 p-2 sm:p-3 text-red-300 transition-all duration-200 hover:bg-red-600/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50 border border-red-500/30"
+              title="⚠️ Delete Entire World"
             >
               <svg
                 width="18"
@@ -449,7 +449,7 @@ export function Toolbar() {
                 fill="currentColor"
                 className="sm:w-5 sm:h-5"
               >
-                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z" />
               </svg>
             </button>
           </div>
@@ -639,9 +639,25 @@ export function Toolbar() {
           
           {/* Menu Content */}
           <div className="fixed left-4 top-20 z-50 w-64 rounded-lg border border-white/20 bg-black/90 backdrop-blur-sm max-w-[calc(100vw-2rem)]">
+            {/* Header with Exit Button */}
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-sm font-medium text-white/80">🏔️ Terraform Tools</div>
+              <button
+                onClick={() => {
+                  setTerraformMode("none");
+                  setIsTerraforming(false);
+                  setShowTerraformMenu(false);
+                }}
+                className="rounded-lg bg-gray-500/20 px-2 py-1 text-xs text-gray-300 transition-all duration-200 hover:bg-gray-500/30 hover:text-gray-200"
+                title="Exit terraform mode"
+              >
+                Exit
+              </button>
+            </div>
+            
             {/* Tool Selection */}
             <div className="p-3">
-              <div className="text-sm font-medium text-white/80 mb-3">Select Terraform Tool:</div>
+              <div className="text-xs text-white/60 mb-3">Choose a tool to modify terrain:</div>
               <div className="space-y-2">
                 {terraformTools.map((tool) => {
                   const getActiveColors = (color: string) => {

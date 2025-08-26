@@ -102,6 +102,7 @@ interface WorldState {
   setPlacementDebugShowComparison: (show: boolean) => void;
   exitPlacementMode: () => void;
   exitDeleteMode: () => void;
+  clearAllModes: () => void;
   
   // Tree lifecycle actions
   advanceTreeLifecycle: (id: string) => void;
@@ -268,7 +269,17 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   setPlacing: (placing: boolean) => {
     logger.debug(`📍 isPlacing changed: ${placing}`);
-    set({ isPlacing: placing });
+    if (placing) {
+      // When entering placement mode, clear other modes
+      set({ 
+        isPlacing: placing, 
+        isDeleting: false, 
+        isTerraforming: false,
+        terraformMode: "none"
+      });
+    } else {
+      set({ isPlacing: placing });
+    }
   },
 
   exitPlacementMode: () => {
@@ -286,6 +297,17 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   exitDeleteMode: () => {
     set({ isDeleting: false });
+  },
+
+  // Helper function to clear all interaction modes
+  clearAllModes: () => {
+    set({ 
+      isPlacing: false, 
+      isDeleting: false, 
+      isTerraforming: false,
+      terraformMode: "none",
+      selectedObjectType: null
+    });
   },
 
   updateObject: (id: string, updates: Partial<PlacedObject>) => {
@@ -339,7 +361,17 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Terrain actions
   setTerraformMode: (mode: TerraformMode) => {
     logger.debug(`🔧 terraformMode changed: ${mode}`);
-    set({ terraformMode: mode });
+    if (mode !== "none") {
+      // When entering terraform mode, clear other modes
+      set({ 
+        terraformMode: mode, 
+        isPlacing: false, 
+        selectedObjectType: null,
+        isDeleting: false
+      });
+    } else {
+      set({ terraformMode: mode });
+    }
   },
   
   setBrushSize: (size: number) => {
@@ -351,7 +383,17 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
   
   setIsTerraforming: (isTerraforming: boolean) => {
-    set({ isTerraforming });
+    if (isTerraforming) {
+      // When entering terraform mode, clear other modes
+      set({ 
+        isTerraforming, 
+        isPlacing: false, 
+        selectedObjectType: null,
+        isDeleting: false
+      });
+    } else {
+      set({ isTerraforming });
+    }
   },
   
   updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => {

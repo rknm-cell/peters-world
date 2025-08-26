@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Tiny World - Create Your Own Micro World",
   description:
     "Build and explore tiny worlds with our interactive 3D world builder",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/globe.png" }],
 };
 
 export default function RootLayout({

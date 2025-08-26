@@ -53,6 +53,7 @@ export function PlacementSystem({
   const mouse = useRef(new Vector2());
   const [placementPreview, setPlacementPreview] =
     useState<PlacementInfo | null>(null);
+  const placementPreviewRef = useRef<PlacementInfo | null>(null);
     
   // Use refs for values that don't need to trigger callback recreation
   const objectsRef = useRef(objects);
@@ -71,6 +72,11 @@ export function PlacementSystem({
   useEffect(() => {
     selectedObjectTypeRef.current = selectedObjectType;
   }, [selectedObjectType]);
+
+  // Update placement preview ref when state changes
+  useEffect(() => {
+    placementPreviewRef.current = placementPreview;
+  }, [placementPreview]);
 
   // Handle click/tap events for placement and selection
   const handlePointerDown = useCallback(
@@ -178,8 +184,12 @@ export function PlacementSystem({
   // Handle hover for placement preview
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
+      // Early return if not in placement mode
       if (!isPlacing || !selectedObjectType) {
-        setPlacementPreview(null);
+        // Only update state if we currently have a preview to clear
+        if (placementPreviewRef.current !== null) {
+          setPlacementPreview(null);
+        }
         return;
       }
 
@@ -208,9 +218,20 @@ export function PlacementSystem({
             objects,
           );
 
-          setPlacementPreview(placementInfo);
+          // Only update if the placement info has actually changed
+          const currentPreview = placementPreviewRef.current;
+          if (!currentPreview || 
+              currentPreview.position.x !== placementInfo.position.x ||
+              currentPreview.position.y !== placementInfo.position.y ||
+              currentPreview.position.z !== placementInfo.position.z ||
+              currentPreview.canPlace !== placementInfo.canPlace) {
+            setPlacementPreview(placementInfo);
+          }
         } else {
-          setPlacementPreview(null);
+          // Only update if we currently have a preview
+          if (placementPreviewRef.current !== null) {
+            setPlacementPreview(null);
+          }
         }
       }
     },
@@ -219,8 +240,8 @@ export function PlacementSystem({
       gl.domElement,
       globeRef,
       isPlacing,
-      objects,
       selectedObjectType,
+      objects,
     ],
   );
 
@@ -236,7 +257,7 @@ export function PlacementSystem({
   useEffect(() => {
     handlePointerMoveRef.current = handlePointerMove;
     handlePointerDownRef.current = handlePointerDown;
-  });
+  }, [handlePointerMove, handlePointerDown]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -247,10 +268,10 @@ export function PlacementSystem({
     canvas.addEventListener("pointerdown", downHandler);
     canvas.addEventListener("pointermove", moveHandler);
 
-    // Add keyboard event listener for Escape key to exit placement mode
+    // Add keyboard event listener for Escape key to exit any mode
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isPlacing) {
-        useWorldStore.setState({ isPlacing: false, selectedObjectType: null });
+      if (event.key === "Escape") {
+        useWorldStore.getState().clearAllModes();
       }
     };
 
@@ -261,7 +282,7 @@ export function PlacementSystem({
       canvas.removeEventListener("pointermove", moveHandler);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gl.domElement, isPlacing]);
+  }, [gl.domElement]);
 
   return (
     <>
@@ -320,7 +341,11 @@ export function PlacementSystem({
               <Deer
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
                 scale={[1, 1, 1]}
                 selected={false}
                 objectId="preview"
@@ -331,7 +356,11 @@ export function PlacementSystem({
               <Wolf
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
                 scale={[1, 1, 1]}
                 selected={false}
                 objectId="preview"
@@ -342,7 +371,11 @@ export function PlacementSystem({
               <Deer
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
                 scale={[1, 1, 1]}
                 selected={false}
                 objectId="preview"
