@@ -4,33 +4,25 @@ import { useRef, useEffect, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import * as THREE from "three";
-import { useWorldStore } from "~/lib/store";
+import { useTimeOfDay } from "~/lib/store";
 import { LIGHTING_PRESETS } from "~/lib/constants";
 import { CameraController } from "./CameraController";
 import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";
 import { InputManager } from "./InputManager";
 import { Sun } from '~/components/three/objects/Sun';
-import { SurfaceNormalDebug } from '~/components/three/effects/SurfaceNormalDebug';
-import { PlacementOrientationDebug } from '~/components/three/effects/PlacementOrientationDebug';
 import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
 import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
 import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
 
 import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
 import { GravityController } from '~/components/three/physics/GravityController';
-import { PhysicsDebug } from '~/components/three/physics/PhysicsDebug';
 import { PhysicsStatusLogger } from '~/components/three/physics/PhysicsStatusLogger';
-import { AnimalOrientationTest } from '~/components/debug/AnimalOrientationTest';
-import { IdleOrientationTest } from '~/components/debug/IdleOrientationTest';
-import { TerrainCollisionTest } from '~/components/debug/TerrainCollisionTest';
-import { CollisionDebugVisualization } from '~/components/debug/CollisionMeshDebug';
-import { DeerPathfindingDebug } from '~/components/debug/DeerPathfindingDebug';
 
 
 export function Scene() {
   const { scene, gl } = useThree();
-  const { timeOfDay, showDebugNormals, showPlacementOrientationDebug, placementDebugShowComparison } = useWorldStore();
+  const timeOfDay = useTimeOfDay();
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const globeRef = useRef<THREE.Mesh>(null);
   const rotationGroupRef = useRef<THREE.Group>(null);

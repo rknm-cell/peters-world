@@ -136,6 +136,7 @@ interface WorldState {
   setBrushStrength: (strength: number) => void;
   setIsTerraforming: (isTerraforming: boolean) => void;
   updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
+  updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
   setTerrainVertices: (vertices: TerrainVertex[]) => void;
   updateTerrainOctree: () => void;
   resetTerrain: () => void;
@@ -156,6 +157,7 @@ interface WorldState {
 
 }
 
+// Selective selectors for performance optimization
 export const useWorldStore = create<WorldState>((set, _get) => ({
   objects: [],
   selectedObject: null,
@@ -233,7 +235,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     }
 
     set((state) => ({
-      objects: [...state.objects, newObject],
+      objects: state.objects.concat([newObject]),
       selectedObject: id,
       // Keep isPlacing as true so user can continue placing more objects
       isPlacing: state.isPlacing,
@@ -402,6 +404,20 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         i === index ? { ...vertex, ...updates } : vertex
       ),
     }));
+  },
+  
+  // Batch update multiple terrain vertices at once to prevent update depth exceeded
+  updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => {
+    set((state) => {
+      const newVertices = [...state.terrainVertices];
+      updates.forEach(({ index, updates: vertexUpdates }) => {
+        const vertex = newVertices[index];
+        if (index >= 0 && index < newVertices.length && vertex) {
+          newVertices[index] = { ...vertex, ...vertexUpdates };
+        }
+      });
+      return { terrainVertices: newVertices };
+    });
   },
   
   setTerrainVertices: (vertices: TerrainVertex[]) => {
@@ -974,7 +990,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       if (newTrees.length > 0) {
         // Add spawned trees directly without affecting placement state
-        const updatedObjects = [...state.objects, ...newTrees];
+        // Use more efficient array concatenation for better performance
+        const updatedObjects = state.objects.concat(newTrees);
         
         console.log(`🌲 Total trees now: ${updatedObjects.filter(obj => obj.treeLifecycle).length}`);
         console.log("🎮 Post-spawn state (returning):", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
@@ -1114,7 +1131,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       if (newGrass.length > 0) {
         return { 
-          objects: [...state.objects, ...newGrass],
+          objects: state.objects.concat(newGrass),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
@@ -1267,7 +1284,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       if (newDeer.length > 0) {
         return { 
-          objects: [...state.objects, ...newDeer],
+          objects: state.objects.concat(newDeer),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
@@ -1455,7 +1472,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       if (newWolves.length > 0) {
         return { 
-          objects: [...state.objects, ...newWolves],
+          objects: state.objects.concat(newWolves),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
@@ -1577,3 +1594,42 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
 
 }));
+
+// Performance-optimized individual selectors
+export const useIsPlacing = () => useWorldStore(state => state.isPlacing);
+export const useIsDeleting = () => useWorldStore(state => state.isDeleting);
+export const useSelectedObjectType = () => useWorldStore(state => state.selectedObjectType);
+export const useTerraformMode = () => useWorldStore(state => state.terraformMode);
+export const useBrushSize = () => useWorldStore(state => state.brushSize);
+export const useBrushStrength = () => useWorldStore(state => state.brushStrength);
+export const useIsTerraforming = () => useWorldStore(state => state.isTerraforming);
+export const useObjectsCount = () => useWorldStore(state => state.objects.length);
+export const useTerrainVerticesCount = () => useWorldStore(state => state.terrainVertices.length);
+
+// Action selectors (these are stable function references, so they won't cause rerenders)
+export const useExitPlacementMode = () => useWorldStore(state => state.exitPlacementMode);
+export const useExitDeleteMode = () => useWorldStore(state => state.exitDeleteMode);
+export const useSetDeleting = () => useWorldStore(state => state.setDeleting);
+export const useSetTerraformMode = () => useWorldStore(state => state.setTerraformMode);
+export const useSetBrushSize = () => useWorldStore(state => state.setBrushSize);
+export const useSetBrushStrength = () => useWorldStore(state => state.setBrushStrength);
+export const useSetIsTerraforming = () => useWorldStore(state => state.setIsTerraforming);
+export const useResetTerrain = () => useWorldStore(state => state.resetTerrain);
+export const useSetPlacing = () => useWorldStore(state => state.setPlacing);
+export const useSetSelectedObjectType = () => useWorldStore(state => state.setSelectedObjectType);
+export const useResetWorld = () => useWorldStore(state => state.resetWorld);
+
+// Scene state
+export const useTimeOfDay = () => useWorldStore(state => state.timeOfDay);
+
+// World objects
+export const useWorldObjectsList = () => useWorldStore(state => state.objects);
+export const useSelectedObject = () => useWorldStore(state => state.selectedObject);
+
+// Terrain operations  
+export const useUpdateTerrainVerticesBatch = () => useWorldStore((state) => state.updateTerrainVerticesBatch);
+export const useTerrainVertices = () => useWorldStore(state => state.terrainVertices);
+
+// Other operations
+export const useObjects = () => useWorldStore(state => state.objects);
+export const useRemoveObject = () => useWorldStore(state => state.removeObject);

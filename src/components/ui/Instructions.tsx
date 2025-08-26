@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useWorldStore } from "~/lib/store";
 
 export function Instructions() {
   const [isVisible, setIsVisible] = useState(true);
-  const isPlacing = useWorldStore((state) => state.isPlacing);
 
   if (!isVisible) {
     return (

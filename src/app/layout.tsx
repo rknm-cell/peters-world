@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { ReactScanProvider } from "~/components/ReactScanProvider";
 
 export const metadata: Metadata = {
   title: "Tiny World - Create Your Own Micro World",
@@ -17,7 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          {children}
+          <ReactScanProvider />
+        </TRPCReactProvider>
       </body>
     </html>
   );
