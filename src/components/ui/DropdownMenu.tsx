@@ -21,7 +21,7 @@ export function DropdownMenu({ isOpen, onClose, position }: DropdownMenuProps) {
     { name: "structures", icon: "🏠", items: OBJECT_TYPES.structures },
     { name: "decorations", icon: "🌸", items: OBJECT_TYPES.decorations },
     { name: "grass", icon: "🌿", items: OBJECT_TYPES.grass },
-    { name: "animals", icon: "🦌", items: OBJECT_TYPES.animals },
+    { name: "animals", icon: "🐾", items: OBJECT_TYPES.animals },
   ];
 
   const handleCategorySelect = (category: string) => {
