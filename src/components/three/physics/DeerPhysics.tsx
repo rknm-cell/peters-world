@@ -62,6 +62,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
   const [isEating, setIsEating] = useState(false);
   const [eatingStartTime, setEatingStartTime] = useState(0);
   const [eatingGrassId, setEatingGrassId] = useState<string | null>(null);
+  const [eatingOrientation, setEatingOrientation] = useState<THREE.Quaternion | null>(null);
   const lastUpdateTime = useRef(0);
   
   // Bounce animation state
@@ -316,6 +317,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         // Stop eating and return to normal behavior
         setIsEating(false);
         setEatingGrassId(null);
+        setEatingOrientation(null);
         setTarget(null); // Force new target generation
       }
       
@@ -342,7 +344,74 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       // Reset movement speed when eating to stop any residual bounce
       lastMovementSpeed.current = 0;
       
-      // During eating, no movement
+      // === SURFACE ALIGNMENT MAINTENANCE DURING EATING ===
+      // Prevent orientation drift while eating by maintaining the captured eating orientation
+      
+      const surfaceNormal = currentPosition.clone().normalize();
+      const currentRotation = body.rotation();
+      const currentQuaternion = new THREE.Quaternion(
+        currentRotation.x, 
+        currentRotation.y, 
+        currentRotation.z, 
+        currentRotation.w
+      );
+      
+      // Use the captured orientation from when eating started, or fallback to default
+      let targetQuaternion: THREE.Quaternion;
+      
+      if (eatingOrientation) {
+        // Maintain the exact orientation the deer had when it started eating
+        targetQuaternion = eatingOrientation.clone();
+      } else {
+        // Fallback: Calculate what the correct surface-aligned orientation should be
+        // Use a default forward direction (deer facing "north" relative to surface)
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        const localForward = worldUp.clone()
+          .cross(surfaceNormal)
+          .normalize();
+        
+        // Handle edge case where surface normal is parallel to world up
+        if (localForward.length() < 0.1) {
+          localForward.set(1, 0, 0)
+            .cross(surfaceNormal)
+            .normalize();
+        }
+        
+        // Calculate target surface-aligned rotation using existing utilities
+        targetQuaternion = calculateTargetRotation(
+          currentPosition,
+          localForward, // Default forward direction for eating deer
+          surfaceNormal
+        );
+      }
+      
+      // Check how far we've drifted from proper surface alignment
+      const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
+      const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
+      
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD) {
+        // Gradually correct orientation drift during eating
+        // Use slower correction speed to avoid disturbing the eating animation
+        const EATING_CORRECTION_SPEED = 0.3; // Even slower than idle to be gentle
+        const correctedQuaternion = calculateSmoothedRotation(
+          currentQuaternion,
+          targetQuaternion,
+          delta * EATING_CORRECTION_SPEED
+        );
+        
+        // Apply the corrected orientation
+        queueDeerTransformUpdate(objectId, () => {
+          body.setRotation(correctedQuaternion, true);
+        }, 'low'); // Low priority since this is just orientation maintenance
+        
+        // Debug logging (can be removed later)
+        if (orientationDifference > 0.2) { // Only log significant corrections
+          const orientationType = eatingOrientation ? "captured" : "default";
+          console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+        }
+      }
+      
+      // During eating, no movement but orientation is maintained
       return;
     }
     
@@ -355,9 +424,19 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       
       // If close enough to grass, start eating
       if (distanceToGrass <= GRASS_APPROACH_DISTANCE) {
+        // Capture current orientation to maintain during eating
+        const currentRotation = body.rotation();
+        const capturedOrientation = new THREE.Quaternion(
+          currentRotation.x,
+          currentRotation.y,
+          currentRotation.z,
+          currentRotation.w
+        );
+        
         setIsEating(true);
         setEatingStartTime(currentTime);
         setEatingGrassId(nearbyGrass.id);
+        setEatingOrientation(capturedOrientation);
         setTarget(null);
         setIsIdle(false);
         console.log(`🦌 Deer ${objectId}: Starting to eat grass`);
@@ -687,12 +766,12 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
         />
         
         {/* Eating indicator */}
-        {isEating && (
+        {/* {isEating && (
           <mesh position={[0, 1.2, 0]}>
             <sphereGeometry args={[0.08, 8, 8]} />
             <meshBasicMaterial color="green" />
           </mesh>
-        )}
+        )} */}
       </group>
 
     </RigidBody>
