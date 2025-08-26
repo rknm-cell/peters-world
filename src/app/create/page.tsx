@@ -2,7 +2,6 @@
 
 import { Canvas } from "~/components/editor/Canvas";
 import { Toolbar } from "~/components/ui/Toolbar";
-import { TerraformToolbar } from "~/components/ui/TerraformToolbar";
 import { Instructions } from "~/components/ui/Instructions";
 // import { PerformanceDebug } from "~/components/ui/PerformanceDebug";
 // import { MeshDebugPanel } from "~/components/ui/MeshDebugPanel";
@@ -22,7 +21,6 @@ export default function CreatePage() {
     <div className="relative h-screen w-screen bg-gray-900">
       <Canvas />
       <Toolbar />
-      <TerraformToolbar />
       <Instructions />
       {/* <PerformanceDebug /> */}
       {/* <MeshDebugPanel /> */}
