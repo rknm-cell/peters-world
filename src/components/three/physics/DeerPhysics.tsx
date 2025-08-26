@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { useRef, useState, useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
-import { useWorldStore } from '~/lib/store';
+import { useWorldStore, useIsUserInteracting } from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
@@ -29,7 +29,7 @@ interface DeerPhysicsProps {
   objectId: string;
   position: [number, number, number];
   type: string;
-  selected?: boolean;
+  // Removed selected prop - will get it from store internally
 }
 
 // Character controller interface for proper typing
@@ -45,11 +45,16 @@ interface CharacterController {
  * DeerPhysics - Physics-enabled deer with realistic movement and surface adhesion
  * Uses Rapier physics for natural movement, collision detection, and surface following
  */
-export function DeerPhysics({ objectId, position, type, selected = false }: DeerPhysicsProps) {
+function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const isUserInteracting = useIsUserInteracting();
+  const { invalidate } = useThree(); // For manual render triggering with frameloop="demand"
+  
+  // Selection is handled externally - deer don't need to know about selection state
+  // This prevents re-renders when selection changes elsewhere in the app
   
   // Render queue for batching updates and preventing multiple simultaneous re-renders
-  const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue();
+  const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue(isUserInteracting);
   
   // Ensure deer starts on globe surface (globe radius is 6.0)
   const initialPosition = new THREE.Vector3(...position);
@@ -273,7 +278,8 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
       const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
       
-      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD) {
+      // Skip orientation corrections during user interactions to prevent jittering
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD && !isUserInteracting) {
         // Gradually correct orientation drift during idle
         // Use slower correction speed to avoid jittery movement
         const IDLE_CORRECTION_SPEED = 0.5; // Slower than normal movement rotation
@@ -389,7 +395,8 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
       const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
       
-      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD) {
+      // Skip orientation corrections during user interactions to prevent jittering
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD && !isUserInteracting) {
         // Gradually correct orientation drift during eating
         // Use slower correction speed to avoid disturbing the eating animation
         const EATING_CORRECTION_SPEED = 0.3; // Even slower than idle to be gentle
@@ -605,6 +612,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
       targetPosition.add(bounceOffset);
       
       // Queue the transform update to prevent multiple simultaneous updates
+      // Use direct mutation for physics updates (R3F best practice 2024)
       queueDeerTransformUpdate(objectId, () => {
         // For kinematic bodies, directly set the new position (single source of truth)
         body.setTranslation(targetPosition, true);
@@ -757,7 +765,7 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
           type={type}
           position={[0, 0, 0]}
           scale={[1, 1, 1]}
-          selected={selected}
+          selected={false}
           objectId={objectId}
           preview={false}
           canPlace={true}
@@ -777,3 +785,17 @@ export function DeerPhysics({ objectId, position, type, selected = false }: Deer
     </RigidBody>
   );
 }
+
+// Temporarily disable memoization to test if it's interfering with animations
+export const DeerPhysics = DeerPhysicsComponent;
+
+// TODO: Re-implement smart memoization that doesn't interfere with useFrame
+// export const DeerPhysics = React.memo(DeerPhysicsComponent, (prevProps, nextProps) => {
+//   return (
+//     prevProps.objectId === nextProps.objectId &&
+//     prevProps.type === nextProps.type &&
+//     prevProps.position[0] === nextProps.position[0] &&
+//     prevProps.position[1] === nextProps.position[1] &&
+//     prevProps.position[2] === nextProps.position[2]
+//   );
+// });

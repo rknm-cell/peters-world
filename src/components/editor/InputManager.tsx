@@ -212,8 +212,9 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     const objectsWithIds: THREE.Object3D[] = [];
     
     // Traverse the entire scene to find objects with objectId
+    // Exclude physics-controlled objects to prevent interference
     scene.traverse((child) => {
-      if (child.userData?.objectId) {
+      if (child.userData?.objectId && !child.userData?.isPhysicsControlled) {
         objectsWithIds.push(child);
         console.log(`🔍 Found object in scene: ${child.userData.objectId}, type: ${child.type}`);
       }

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useThree, useFrame } from "@react-three/fiber";
-import { useWorldStore } from "~/lib/store";
+import { useThree } from "@react-three/fiber";
+import { useWorldStore, useSetUserInteracting } from "~/lib/store";
 import { OBJECT_TYPES } from "~/lib/constants";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
@@ -44,13 +44,11 @@ function isStructureType(objectType: string): objectType is StructureType {
 interface PlacementSystemProps {
   globeRef: React.RefObject<THREE.Mesh | null>;
   rotationGroupRef?: React.RefObject<THREE.Group | null>;
-  children: React.ReactNode;
 }
 
 export function PlacementSystem({
   globeRef,
   rotationGroupRef: _rotationGroupRef,
-  children,
 }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
   const {
@@ -61,12 +59,16 @@ export function PlacementSystem({
     selectObject,
     removeObject,
   } = useWorldStore();
+  const setUserInteracting = useSetUserInteracting();
 
   const raycaster = useRef(new Raycaster());
   const mouse = useRef(new Vector2());
   const [placementPreview, setPlacementPreview] =
     useState<PlacementInfo | null>(null);
   const placementPreviewRef = useRef<PlacementInfo | null>(null);
+  const lastClickTimeRef = useRef(0);
+  const lastSelectionRef = useRef<string | null>(null);
+  const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
   // Use refs for values that don't need to trigger callback recreation
   const objectsRef = useRef(objects);
@@ -91,15 +93,50 @@ export function PlacementSystem({
     placementPreviewRef.current = placementPreview;
   }, [placementPreview]);
 
+  // Debounced selection to prevent rapid re-renders
+  const debouncedSelectObject = useCallback((objectId: string | null) => {
+    // Clear any existing timeout
+    if (selectionTimeoutRef.current) {
+      clearTimeout(selectionTimeoutRef.current);
+    }
+    
+    // Only update if selection actually changed
+    if (lastSelectionRef.current !== objectId) {
+      // Debounce selection updates to reduce re-renders during rapid clicking
+      selectionTimeoutRef.current = setTimeout(() => {
+        selectObject(objectId);
+        lastSelectionRef.current = objectId;
+      }, 16); // One frame delay (~60fps)
+    }
+  }, [selectObject]);
+
   // Handle click/tap events for placement and selection
+  // Using event delegation pattern (R3F best practice 2024)
   const handlePointerDown = useCallback(
     (event: PointerEvent) => {
+      // Debounce rapid clicks to prevent jitter
+      const now = performance.now();
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+      const MIN_CLICK_INTERVAL = 50; // 50ms minimum between clicks
+      
+      if (timeSinceLastClick < MIN_CLICK_INTERVAL) {
+        console.log(`🖱️ Click debounced (${timeSinceLastClick.toFixed(1)}ms since last click)`);
+        return;
+      }
+      lastClickTimeRef.current = now;
+      
+      // Only signal user interaction when actually performing actions that affect physics
+      // This prevents unnecessary deer twitching on simple scene clicks
+      let shouldSignalUserInteraction = false;
+      
       // Only prevent default if we're in placement mode or interacting with objects
       // This allows OrbitControls to work when not placing
       const shouldPreventDefault = isPlacingRef.current || event.detail === 2; // placement mode or double-click
       
       if (shouldPreventDefault) {
         event.preventDefault();
+        event.stopPropagation(); // Prevent other handlers from processing this event
+        shouldSignalUserInteraction = true; // Only signal interaction when preventing default
       }
 
       // Calculate mouse position in normalized device coordinates
@@ -151,13 +188,20 @@ export function PlacementSystem({
                 });
               }
             }
+            
+            // Placing objects affects physics, so signal user interaction
+            shouldSignalUserInteraction = true;
           }
         }
       }
 
       // Check for intersections with existing objects
+      // Exclude physics-controlled objects to prevent interference
       const sceneObjects = scene.children.filter(
-        (child) => child.userData.isPlacedObject && child instanceof Mesh,
+        (child) => 
+          child.userData.isPlacedObject && 
+          child instanceof Mesh &&
+          !child.userData.isPhysicsControlled, // Exclude physics-controlled objects
       );
 
       if (sceneObjects.length > 0) {
@@ -171,16 +215,25 @@ export function PlacementSystem({
           ) {
             const objectId: string = intersectedObject.userData.objectId;
             if (event.detail === 2) {
-              // Double click
+              // Double click - removing objects affects physics
               removeObject(objectId);
+              shouldSignalUserInteraction = true;
             } else {
-              selectObject(objectId);
+              // Single click - use debounced selection to prevent rapid re-renders
+              debouncedSelectObject(objectId);
             }
           }
         }
       } else {
-        // Click on empty space - deselect
-        selectObject(null);
+        // Click on empty space - use debounced deselection
+        debouncedSelectObject(null);
+      }
+      
+      // Only signal user interaction when actually performing physics-affecting actions
+      if (shouldSignalUserInteraction) {
+        setUserInteracting(true);
+        // End user interaction after processing
+        setTimeout(() => setUserInteracting(false), 100);
       }
     },
     [
@@ -188,9 +241,10 @@ export function PlacementSystem({
       gl.domElement,
       globeRef,
       addObject,
-      selectObject,
+      debouncedSelectObject,
       removeObject,
       scene.children,
+      setUserInteracting,
     ],
   );
 
@@ -258,10 +312,7 @@ export function PlacementSystem({
     ],
   );
 
-  // Set up event listeners
-  useFrame(() => {
-    // This runs every frame - we can add any per-frame logic here
-  });
+  // Removed empty useFrame loop to prevent unnecessary re-renders
 
   // Add event listeners - use refs to avoid dependency issues
   const handlePointerMoveRef = useRef(handlePointerMove);
@@ -272,14 +323,24 @@ export function PlacementSystem({
     handlePointerDownRef.current = handlePointerDown;
   }, [handlePointerMove, handlePointerDown]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const canvas = gl.domElement;
 
     const moveHandler = (e: PointerEvent) => handlePointerMoveRef.current(e);
     const downHandler = (e: PointerEvent) => handlePointerDownRef.current(e);
 
-    canvas.addEventListener("pointerdown", downHandler);
-    canvas.addEventListener("pointermove", moveHandler);
+    // Add event listeners with priority handling (capture phase for placement system)
+    canvas.addEventListener("pointerdown", downHandler, { capture: true });
+    canvas.addEventListener("pointermove", moveHandler, { passive: true });
 
     // Add keyboard event listener for Escape key to exit any mode
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -291,7 +352,7 @@ export function PlacementSystem({
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      canvas.removeEventListener("pointerdown", downHandler);
+      canvas.removeEventListener("pointerdown", downHandler, { capture: true });
       canvas.removeEventListener("pointermove", moveHandler);
       document.removeEventListener("keydown", handleKeyDown);
     };
@@ -299,8 +360,6 @@ export function PlacementSystem({
 
   return (
     <>
-      {children}
-
       {/* Placement preview */}
       {isPlacing && placementPreview && selectedObjectType && (
         <group

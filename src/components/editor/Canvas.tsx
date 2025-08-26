@@ -12,6 +12,7 @@ export function Canvas({ className = "" }: CanvasProps) {
   return (
     <div className={`relative h-full w-full ${className}`}>
       <R3FCanvas
+        // Using default frameloop for animations, focus on preventing re-renders instead
         camera={{
           position: [0, 0, 20], // Position camera directly in front of globe
           fov: 50,

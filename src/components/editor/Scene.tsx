@@ -14,6 +14,7 @@ import { Sun } from '~/components/three/objects/Sun';
 import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
 import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
 import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
+import { SelectionIndicator } from '~/components/three/effects/SelectionIndicator';
 
 import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
 import { GravityController } from '~/components/three/physics/GravityController';
@@ -88,20 +89,21 @@ export function Scene() {
         
         {/* Rotation group that contains all rotatable content */}
         <group ref={rotationGroupRef}>
-          {/* Placement System wraps all interactive objects */}
+          {/* Physics-enabled globe with precise collision detection */}
+          <GlobePhysics 
+            ref={globeRef} 
+            onTerrainMeshReady={setTerrainMesh}
+          />
+
+          {/* All placed objects - includes physics-based deer */}
+          {/* MOVED OUTSIDE PlacementSystem to prevent re-render cascading */}
+          <WorldObjects />
+          
+          {/* Placement System handles interactions but doesn't wrap objects */}
           <PlacementSystem
             globeRef={globeRef}
             rotationGroupRef={rotationGroupRef}
-          >
-            {/* Physics-enabled globe with precise collision detection */}
-            <GlobePhysics 
-              ref={globeRef} 
-              onTerrainMeshReady={setTerrainMesh}
-            />
-
-            {/* All placed objects - includes physics-based deer */}
-            <WorldObjects />
-          </PlacementSystem>
+          />
         </group>
       </Physics>
       
@@ -134,6 +136,9 @@ export function Scene() {
       
       {/* Deer spawning manager - handles automatic deer spawning and despawning */}
       <DeerSpawningManager />
+      
+      {/* Selection indicator for physics objects - doesn't cause physics re-renders */}
+      <SelectionIndicator />
       
       {/* Debug components for animal orientation testing */}
       {/* <AnimalOrientationTest /> */}

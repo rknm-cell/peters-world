@@ -108,7 +108,6 @@ export const WorldObjects = React.memo(function WorldObjects() {
             objectId={obj.id}
             type={obj.type}
             position={obj.position}
-            selected={isSelected}
           />
         );
       } else if (obj.type === "animals/wolf") {
@@ -119,7 +118,6 @@ export const WorldObjects = React.memo(function WorldObjects() {
             objectId={obj.id}
             type={obj.type}
             position={obj.position}
-            selected={isSelected}
           />
         );
       }
@@ -131,7 +129,6 @@ export const WorldObjects = React.memo(function WorldObjects() {
           objectId={obj.id}
           type={obj.type}
           position={obj.position}
-          selected={isSelected}
         />
       );
     }

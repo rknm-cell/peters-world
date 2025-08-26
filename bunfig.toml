@@ -1,6 +1,1 @@
-[test]
-# Test configuration for Bun
-preload = ["./src/test-setup.ts"]
 
-[test.env]
-NODE_ENV = "test"
