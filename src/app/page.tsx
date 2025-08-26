@@ -1,53 +1,55 @@
-import Link from "next/link";
+"use client";
 
-import { FeaturedWorlds } from "~/app/_components/featured-worlds";
-import { HydrateClient } from "~/trpc/server";
+import { useState } from "react";
+import { Canvas } from "~/components/editor/Canvas";
+import { Toolbar } from "~/components/ui/Toolbar";
+import { Instructions } from "~/components/ui/Instructions";
+import { useWorldPersistence } from "~/lib/hooks/useWorldPersistence";
 
 export default function Home() {
+  // Enable auto-save and auto-restore
+  const { hasRestoredWorld } = useWorldPersistence();
+  
+  // State to control overlay visibility
+  const [showOverlay, setShowOverlay] = useState(true);
+
   return (
-    <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Tiny <span className="text-[hsl(280,100%,70%)]">World</span> Builder
-          </h1>
-          <p className="max-w-2xl text-center text-xl">
-            Create beautiful 3D dioramas with our intuitive world builder.
-            Design floating islands, place objects, and share your creations
-            with the community.
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 transition-colors hover:bg-white/20"
-              href="/create"
-            >
-              <h3 className="text-2xl font-bold">Create World →</h3>
-              <div className="text-lg">
-                Start building your own tiny world with our 3D editor. Place
-                trees, structures, and decorations on floating islands.
-              </div>
-            </Link>
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 transition-colors hover:bg-white/20"
-              href="/gallery"
-            >
-              <h3 className="text-2xl font-bold">Browse Gallery →</h3>
-              <div className="text-lg">
-                Explore amazing worlds created by the community. Get inspired
-                and discover new building techniques.
-              </div>
-            </Link>
-          </div>
-
-          <div className="w-full max-w-4xl">
-            <h2 className="mb-8 text-center text-2xl font-bold">
-              Featured Worlds
-            </h2>
-            <FeaturedWorlds />
+    <div className="relative h-screen w-screen bg-gray-900">
+      <Canvas />
+      <Toolbar />
+      <Instructions />
+      
+      {/* Landing page text overlay */}
+      {showOverlay && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer"
+          onClick={() => setShowOverlay(false)}
+        >
+          <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 text-center text-white">
+            <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
+              Peter&apos;s <span className="text-[hsl(280,100%,70%)]">World</span>
+            </h1>
+            <p className="max-w-2xl text-center text-xl">
+              Create beautiful 3D dioramas with our intuitive world builder.
+              Design floating islands, place objects, and share your creations
+              with the community.
+            </p>
+            
+            <div className="text-lg opacity-80">
+              Click anywhere to start building
+            </div>
           </div>
         </div>
-      </main>
-    </HydrateClient>
+      )}
+      
+      {/* Show restoration indicator - only on client to avoid hydration issues */}
+      {typeof window !== "undefined" && hasRestoredWorld && (
+        <div className="fixed bottom-4 left-20 z-40 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 backdrop-blur-sm">
+          <p className="text-sm text-green-400">
+            ✅ World restored from auto-save
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
