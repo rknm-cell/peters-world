@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Canvas } from "~/components/editor/Canvas";
 import { Toolbar } from "~/components/ui/Toolbar";
 import { Instructions } from "~/components/ui/Instructions";
+import { WorldTitleCanvas } from "~/components/three/WorldTitleCanvas";
 import { useWorldPersistence } from "~/lib/hooks/useWorldPersistence";
 
 export default function Home() {
@@ -25,20 +26,20 @@ export default function Home() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer"
           onClick={() => setShowOverlay(false)}
         >
-          <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 text-center text-white">
-            <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-              Peter&apos;s <span className="text-[hsl(280,100%,70%)]">World</span>
-            </h1>
-            <p className="max-w-2xl text-center text-xl">
-              Create beautiful 3D dioramas with our intuitive world builder.
-              Design floating islands, place objects, and share your creations
-              with the community.
-            </p>
-            
-            <div className="text-lg opacity-80">
-              Click anywhere to start building
-            </div>
+                  <div className="container flex flex-col items-center justify-center gap-8 px-4 py-16 text-center text-white">
+          {/* 3D Title */}
+          <div className="w-full h-32 sm:h-48 mb-4">
+            <WorldTitleCanvas />
           </div>
+          
+          <p className="max-w-2xl text-center text-xl">
+            Welcome to my world <br /> Make it your own
+          </p>
+          
+          <div className="text-lg opacity-80">
+            Click anywhere to start building
+          </div>
+        </div>
         </div>
       )}
       
