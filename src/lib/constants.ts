@@ -335,11 +335,11 @@ export const MODEL_SCALING = {
     // Animals  
     animals: {
       deer: 0.8,
-      wolf: 0.7,
+      wolf: 0.5,
       crab: 0.2,
-      "sheep-white": 0.6,
-      "bear_brown": 0.9,
-      cow: 1.1,
+      "sheep-white": 0.5,
+      "bear_brown": 0.6,
+      cow: 0.5,
       hen: 0.3,
       horse: 1.0,
       penguin: 0.4,

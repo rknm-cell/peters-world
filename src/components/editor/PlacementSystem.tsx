@@ -36,8 +36,9 @@ function isDecorationType(objectType: string): boolean {
 }
 
 // Type guard function to check if an object type is a structure
-function isStructureType(objectType: string): boolean {
-  return OBJECT_TYPES.structures.includes(objectType as any);
+type StructureType = typeof OBJECT_TYPES.structures[number];
+function isStructureType(objectType: string): objectType is StructureType {
+  return (OBJECT_TYPES.structures as readonly string[]).includes(objectType);
 }
 
 interface PlacementSystemProps {
