@@ -171,12 +171,19 @@ export function useRenderQueue(config: Partial<RenderQueueConfig> = {}) {
  * Specialized hook for deer updates
  * Provides deer-specific update batching and throttling
  */
-export function useDeerRenderQueue() {
-  const renderQueue = useRenderQueue({
-    maxUpdatesPerFrame: 2, // Limit deer updates per frame
-    batchInterval: 33.33, // ~30 FPS for deer updates (smoother than 60)
-    maxQueueTime: 200, // Allow longer queue time for deer
-  });
+export function useDeerRenderQueue(isUserInteracting?: boolean) {
+  // Adjust performance based on user interaction state
+  const config = isUserInteracting ? {
+    maxUpdatesPerFrame: 1, // Reduce updates during interactions to prevent jitter
+    batchInterval: 50, // Slower updates during interaction (20 FPS)
+    maxQueueTime: 500, // Allow longer queue time during interactions
+  } : {
+    maxUpdatesPerFrame: 2, // Normal updates when idle
+    batchInterval: 33.33, // ~30 FPS for deer updates
+    maxQueueTime: 200, // Normal queue time
+  };
+  
+  const renderQueue = useRenderQueue(config);
   
   /**
    * Queue a deer position update

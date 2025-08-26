@@ -78,6 +78,10 @@ interface WorldState {
   brushSize: number;
   brushStrength: number;
   isTerraforming: boolean;
+  
+  // Click interaction state to pause physics corrections
+  isUserInteracting: boolean;
+  interactionTimeout: NodeJS.Timeout | null;
 
   // Debounced grass spawning to prevent rapid successive calls
   _grassSpawningTimeout: NodeJS.Timeout | null;
@@ -139,6 +143,10 @@ interface WorldState {
   setBrushSize: (size: number) => void;
   setBrushStrength: (strength: number) => void;
   setIsTerraforming: (isTerraforming: boolean) => void;
+  
+  // Interaction state actions
+  setUserInteracting: (interacting: boolean) => void;
+  
   updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
   updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
   updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
@@ -190,6 +198,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   brushSize: 0.5,
   brushStrength: 0.1,
   isTerraforming: false,
+  
+  // Click interaction state
+  isUserInteracting: false,
+  interactionTimeout: null as NodeJS.Timeout | null,
 
   // Debounced grass spawning to prevent rapid successive calls
   _grassSpawningTimeout: null as NodeJS.Timeout | null,
@@ -404,6 +416,27 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       });
     } else {
       set({ isTerraforming });
+    }
+  },
+  
+  // Set user interaction state with automatic timeout
+  setUserInteracting: (interacting: boolean) => {
+    const state = _get();
+    
+    // Clear existing timeout
+    if (state.interactionTimeout) {
+      clearTimeout(state.interactionTimeout);
+    }
+    
+    if (interacting) {
+      set({ isUserInteracting: true, interactionTimeout: null });
+    } else {
+      // Set a short delay before clearing interaction state
+      const timeout = setTimeout(() => {
+        set({ isUserInteracting: false, interactionTimeout: null });
+      }, 500); // 500ms delay to prevent flicker
+      
+      set({ interactionTimeout: timeout });
     }
   },
   
@@ -1643,6 +1676,7 @@ export const useTerraformMode = () => useWorldStore(state => state.terraformMode
 export const useBrushSize = () => useWorldStore(state => state.brushSize);
 export const useBrushStrength = () => useWorldStore(state => state.brushStrength);
 export const useIsTerraforming = () => useWorldStore(state => state.isTerraforming);
+export const useIsUserInteracting = () => useWorldStore(state => state.isUserInteracting);
 export const useObjectsCount = () => useWorldStore(state => state.objects.length);
 export const useTerrainVerticesCount = () => useWorldStore(state => state.terrainVertices.length);
 
@@ -1654,6 +1688,7 @@ export const useSetTerraformMode = () => useWorldStore(state => state.setTerrafo
 export const useSetBrushSize = () => useWorldStore(state => state.setBrushSize);
 export const useSetBrushStrength = () => useWorldStore(state => state.setBrushStrength);
 export const useSetIsTerraforming = () => useWorldStore(state => state.setIsTerraforming);
+export const useSetUserInteracting = () => useWorldStore(state => state.setUserInteracting);
 export const useResetTerrain = () => useWorldStore(state => state.resetTerrain);
 export const useSetPlacing = () => useWorldStore(state => state.setPlacing);
 export const useSetSelectedObjectType = () => useWorldStore(state => state.setSelectedObjectType);

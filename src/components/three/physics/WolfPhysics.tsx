@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
@@ -16,7 +16,7 @@ interface WolfPhysicsProps {
   objectId: string;
   position: [number, number, number];
   type: string;
-  selected?: boolean;
+  // Removed selected prop - selection handled externally to prevent re-renders
 }
 
 // Character controller interface for proper typing
@@ -32,7 +32,7 @@ interface CharacterController {
  * WolfPhysics - Physics-enabled wolf with realistic movement, surface adhesion, and deer-chasing behavior
  * Uses Rapier physics for natural movement, collision detection, and hunting behavior
  */
-export function WolfPhysics({ objectId, position, type, selected = false }: WolfPhysicsProps) {
+function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   
   // Render queue for batching updates and preventing multiple simultaneous re-renders
@@ -457,7 +457,7 @@ export function WolfPhysics({ objectId, position, type, selected = false }: Wolf
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
           scale={[1, 1, 1]}
-          selected={selected}
+          selected={false}
           objectId={objectId}
           preview={false}
           canPlace={true}
@@ -476,3 +476,6 @@ export function WolfPhysics({ objectId, position, type, selected = false }: Wolf
     </RigidBody>
   );
 }
+
+// Temporarily disable memoization to test if it's interfering with animations  
+export const WolfPhysics = WolfPhysicsComponent;
