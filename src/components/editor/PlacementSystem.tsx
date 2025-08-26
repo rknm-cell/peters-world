@@ -9,6 +9,13 @@ import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Deer } from "~/components/three/objects/Deer";
 import { Wolf } from "~/components/three/objects/Wolf";
+import { Sheep } from "~/components/three/objects/Sheep";
+import { Bear } from "~/components/three/objects/Bear";
+import { Cow } from "~/components/three/objects/Cow";
+import { Hen } from "~/components/three/objects/Hen";
+import { Horse } from "~/components/three/objects/Horse";
+import { Penguin } from "~/components/three/objects/Penguin";
+import { Pig } from "~/components/three/objects/Pig";
 import { Grass } from "~/components/three/objects/Grass";
 import type * as THREE from "three";
 import { Raycaster, Vector2, Mesh } from "three";
@@ -29,8 +36,9 @@ function isDecorationType(objectType: string): boolean {
 }
 
 // Type guard function to check if an object type is a structure
-function isStructureType(objectType: string): boolean {
-  return OBJECT_TYPES.structures.includes(objectType as any);
+type StructureType = typeof OBJECT_TYPES.structures[number];
+function isStructureType(objectType: string): objectType is StructureType {
+  return (OBJECT_TYPES.structures as readonly string[]).includes(objectType);
 }
 
 interface PlacementSystemProps {
@@ -359,6 +367,111 @@ export function PlacementSystem({
               />
             ) : selectedObjectType === "animals/wolf" ? (
               <Wolf
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/sheep-white" ? (
+              <Sheep
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/bear_brown" ? (
+              <Bear
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/cow" ? (
+              <Cow
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/hen" ? (
+              <Hen
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/horse" ? (
+              <Horse
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/penguin" ? (
+              <Penguin
+                type={selectedObjectType}
+                position={[0, 0, 0]}
+                rotation={[
+                  placementPreview.rotation.x,
+                  placementPreview.rotation.y,
+                  placementPreview.rotation.z
+                ]}
+                scale={[1, 1, 1]}
+                selected={false}
+                objectId="preview"
+                preview={true}
+                canPlace={placementPreview.canPlace}
+              />
+            ) : selectedObjectType === "animals/pig" ? (
+              <Pig
                 type={selectedObjectType}
                 position={[0, 0, 0]}
                 rotation={[
