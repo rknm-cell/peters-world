@@ -12,15 +12,18 @@ interface InputManagerProps {
 }
 
 export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRef: _rotationGroupRef }: InputManagerProps) {
-  const { gl, camera } = useThree();
+  const { gl, camera, scene } = useThree();
   const {
     isPlacing,
+    isDeleting,
     isTerraforming,
     terraformMode,
     brushSize,
     brushStrength,
     terrainVertices,
     updateTerrainVertex,
+    objects,
+    removeObject,
   } = useWorldStore();
 
   // Shared interaction state
@@ -33,9 +36,10 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   // Determine current interaction mode
   const getInteractionMode = useCallback(() => {
     if (isPlacing) return 'placing';
+    if (isDeleting) return 'deleting';
     if (isTerraforming && terraformMode !== 'none') return 'terraforming';
     return 'idle';
-  }, [isPlacing, isTerraforming, terraformMode]);
+  }, [isPlacing, isDeleting, isTerraforming, terraformMode]);
 
   // Terraforming action handler
   const handleTerraformAction = useCallback((_event: PointerEvent) => {
@@ -144,6 +148,73 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
     }
   }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVertex]);
 
+  // Delete action handler
+  const handleDeleteAction = useCallback((event: PointerEvent) => {
+    if (!objects.length) {
+      console.log("🗑️ No objects to delete");
+      return;
+    }
+
+    console.log("🗑️ Delete action triggered, checking for objects...");
+
+    // Raycast to find object intersections
+    raycasterRef.current.setFromCamera(mouseRef.current, camera);
+    
+    // Get all objects with userData.objectId from the scene
+    const objectsWithIds: THREE.Object3D[] = [];
+    
+    // Traverse the entire scene to find objects with objectId
+    scene.traverse((child) => {
+      if (child.userData?.objectId) {
+        objectsWithIds.push(child);
+        console.log(`🔍 Found object in scene: ${child.userData.objectId}, type: ${child.type}`);
+      }
+    });
+
+    console.log(`🔍 Found ${objectsWithIds.length} objects in scene with IDs`);
+    console.log(`🔍 Store has ${objects.length} objects`);
+
+    if (objectsWithIds.length === 0) {
+      console.log("❌ No objects with IDs found in scene");
+      return;
+    }
+
+    // Raycast against all objects (recursive = true to check children)
+    const intersects = raycasterRef.current.intersectObjects(objectsWithIds, true);
+    
+    console.log(`🎯 Raycast found ${intersects.length} intersections`);
+    
+    if (intersects.length > 0) {
+      // Find the closest intersected object
+      const intersectedObject = intersects[0];
+      if (!intersectedObject) return;
+      
+      console.log(`🎯 Intersected object:`, intersectedObject.object);
+      
+      let objectId = intersectedObject.object.userData?.objectId as string | undefined;
+      
+      // If the intersected object doesn't have an objectId, traverse up the hierarchy
+      if (!objectId) {
+        let parent = intersectedObject.object.parent;
+        while (parent && !objectId) {
+          objectId = parent.userData?.objectId as string | undefined;
+          parent = parent.parent;
+        }
+      }
+      
+      if (objectId && typeof objectId === 'string') {
+        console.log(`🗑️ Deleting object: ${objectId}`);
+        removeObject(objectId);
+        event.preventDefault();
+        event.stopPropagation();
+      } else {
+        console.log("❌ No objectId found on intersected object or its parents");
+      }
+    } else {
+      console.log("❌ No intersections found");
+    }
+  }, [objects, removeObject, camera, scene]);
+
   // Unified pointer down handler
   const handlePointerDown = useCallback((event: PointerEvent) => {
     const mode = getInteractionMode();
@@ -173,11 +244,25 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         handleTerraformAction(event);
         break;
         
+      case 'deleting':
+        const deleteCanvas = gl.domElement;
+        const deleteRect = deleteCanvas.getBoundingClientRect();
+        
+        // Update mouse position for deleting
+        mouseRef.current.x = ((event.clientX - deleteRect.left) / deleteRect.width) * 2 - 1;
+        mouseRef.current.y = -((event.clientY - deleteRect.top) / deleteRect.height) * 2 + 1;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        deleteCanvas.style.cursor = "crosshair";
+        handleDeleteAction(event);
+        break;
+        
       case 'idle':
         // Do nothing - let OrbitControls handle all events
         return;
     }
-  }, [getInteractionMode, gl.domElement, handleTerraformAction]);
+  }, [getInteractionMode, gl.domElement, handleTerraformAction, handleDeleteAction]);
 
   // Unified pointer move handler
   const handlePointerMove = useCallback((event: PointerEvent) => {
@@ -229,6 +314,10 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         break;
       case 'terraforming':
         canvas.style.cursor = "crosshair";
+        canvas.style.touchAction = "none";
+        break;
+      case 'deleting':
+        canvas.style.cursor = "pointer";
         canvas.style.touchAction = "none";
         break;
       case 'idle':

@@ -13,9 +13,12 @@ import { hasStoredWorld, clearStoredWorld } from "~/lib/utils/world-persistence"
 export function Toolbar() {
   const { 
     isPlacing, 
+    isDeleting,
     objects, 
     selectedObjectType, 
     exitPlacementMode,
+    exitDeleteMode,
+    setDeleting,
     showDebugNormals,
     setShowDebugNormals,
     showWireframe,
@@ -155,6 +158,14 @@ export function Toolbar() {
     }
   };
 
+  const handleToggleDeleteMode = () => {
+    if (isDeleting) {
+      exitDeleteMode();
+    } else {
+      setDeleting(true);
+    }
+  };
+
   return (
     <>
       {/* Main toolbar */}
@@ -182,6 +193,27 @@ export function Toolbar() {
               </svg>
             </button>
 
+            {/* Delete object button */}
+            <button
+              onClick={handleToggleDeleteMode}
+              className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
+                isDeleting
+                  ? "bg-red-500 text-white"
+                  : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
+              }`}
+              title={isDeleting ? "Exit Delete Mode" : "Delete Objects"}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="sm:w-5 sm:h-5"
+              >
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+              </svg>
+            </button>
+
             {/* Cancel placement */}
             {isPlacing && (
               <button
@@ -206,6 +238,14 @@ export function Toolbar() {
               <div className="flex items-center rounded-lg bg-blue-500/20 px-2 py-1 text-xs sm:text-sm text-blue-300">
                 <span className="mr-1 hidden sm:inline">Placing:</span>
                 <span className="capitalize font-medium">{selectedObjectType}</span>
+              </div>
+            )}
+
+            {/* Delete mode indicator */}
+            {isDeleting && (
+              <div className="flex items-center rounded-lg bg-red-500/20 px-2 py-1 text-xs sm:text-sm text-red-300">
+                <span className="mr-1 hidden sm:inline">Delete Mode:</span>
+                <span className="font-medium">Click objects to delete</span>
               </div>
             )}
 

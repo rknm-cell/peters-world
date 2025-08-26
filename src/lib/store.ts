@@ -57,6 +57,7 @@ interface WorldState {
   selectedObjectType: string | null;
   timeOfDay: TimeOfDay;
   isPlacing: boolean;
+  isDeleting: boolean;
   showDebugNormals: boolean;
   showWireframe: boolean;
   showForestDebug: boolean;
@@ -87,6 +88,7 @@ interface WorldState {
   selectObject: (id: string | null) => void;
   updateTimeOfDay: (time: TimeOfDay) => void;
   setPlacing: (placing: boolean) => void;
+  setDeleting: (deleting: boolean) => void;
   updateObject: (id: string, updates: Partial<PlacedObject>) => void;
   setSelectedObjectType: (type: string | null) => void;
   setShowDebugNormals: (show: boolean) => void;
@@ -99,6 +101,7 @@ interface WorldState {
   setPlacementDebugUseMeshNormals: (use: boolean) => void;
   setPlacementDebugShowComparison: (show: boolean) => void;
   exitPlacementMode: () => void;
+  exitDeleteMode: () => void;
   
   // Tree lifecycle actions
   advanceTreeLifecycle: (id: string) => void;
@@ -158,6 +161,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   selectedObjectType: null,
   timeOfDay: "day",
   isPlacing: false,
+  isDeleting: false,
   showDebugNormals: false,
   showWireframe: false,
   showForestDebug: false,
@@ -269,6 +273,19 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   exitPlacementMode: () => {
     set({ isPlacing: false, selectedObjectType: null });
+  },
+
+  setDeleting: (deleting: boolean) => {
+    logger.debug(`🗑️ isDeleting changed: ${deleting}`);
+    set({ isDeleting: deleting });
+    // Exit placement mode when entering delete mode
+    if (deleting) {
+      set({ isPlacing: false, selectedObjectType: null, isTerraforming: false });
+    }
+  },
+
+  exitDeleteMode: () => {
+    set({ isDeleting: false });
   },
 
   updateObject: (id: string, updates: Partial<PlacedObject>) => {
@@ -1489,6 +1506,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       selectedObject: null,
       selectedObjectType: null,
       isPlacing: false,
+      isDeleting: false,
       isTerraforming: false,
     });
   },
