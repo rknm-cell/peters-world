@@ -1,3 +1,4 @@
+import React from "react";
 import { create } from "zustand";
 import type { Vector3 } from "three";
 import * as THREE from "three";
@@ -51,13 +52,61 @@ export interface TerrainVertex {
 export type TimeOfDay = "day" | "sunset" | "night";
 export type TerraformMode = "raise" | "lower" | "water" | "smooth" | "none";
 
-interface WorldState {
+// Separate store slices for better performance
+interface ObjectSlice {
   objects: PlacedObject[];
+  objectsByCategory: Map<string, PlacedObject[]>; // NEW: Categorized objects for stable references
   selectedObject: string | null;
   selectedObjectType: string | null;
-  timeOfDay: TimeOfDay;
   isPlacing: boolean;
   isDeleting: boolean;
+  
+  // Actions
+  addObject: (type: string, position: Vector3, rotation?: [number, number, number], scale?: [number, number, number]) => void;
+  removeObject: (id: string) => void;
+  selectObject: (id: string | null) => void;
+  updateObject: (id: string, updates: Partial<PlacedObject>) => void;
+  setPlacing: (placing: boolean) => void;
+  setDeleting: (deleting: boolean) => void;
+  setSelectedObjectType: (type: string | null) => void;
+  exitPlacementMode: () => void;
+  exitDeleteMode: () => void;
+  clearAllModes: () => void;
+  // NEW: Efficient object management
+  updateObjectsByCategory: () => void;
+}
+
+interface TerrainSlice {
+  terrainVertices: TerrainVertex[];
+  terrainOctree: TerrainOctree | null;
+  terraformMode: TerraformMode;
+  brushSize: number;
+  brushStrength: number;
+  isTerraforming: boolean;
+  
+  // Actions
+  setTerraformMode: (mode: TerraformMode) => void;
+  setBrushSize: (size: number) => void;
+  setBrushStrength: (strength: number) => void;
+  setIsTerraforming: (isTerraforming: boolean) => void;
+  updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
+  updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
+  updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
+  setTerrainVertices: (vertices: TerrainVertex[]) => void;
+  updateTerrainOctree: () => void;
+  resetTerrain: () => void;
+}
+
+interface EnvironmentSlice {
+  timeOfDay: TimeOfDay;
+  globeRef: THREE.Mesh | null;
+  
+  // Actions
+  updateTimeOfDay: (time: TimeOfDay) => void;
+  setGlobeRef: (globe: THREE.Mesh | null) => void;
+}
+
+interface DebugSlice {
   showDebugNormals: boolean;
   showWireframe: boolean;
   showForestDebug: boolean;
@@ -68,37 +117,7 @@ interface WorldState {
   placementDebugUseMeshNormals: boolean;
   placementDebugShowComparison: boolean;
   
-  // Globe reference for spawning
-  globeRef: THREE.Mesh | null;
-  
-  // Terrain state
-  terrainVertices: TerrainVertex[];
-  terrainOctree: TerrainOctree | null;
-  terraformMode: TerraformMode;
-  brushSize: number;
-  brushStrength: number;
-  isTerraforming: boolean;
-  
-  // Click interaction state to pause physics corrections
-  isUserInteracting: boolean;
-  interactionTimeout: NodeJS.Timeout | null;
-
-  // Debounced grass spawning to prevent rapid successive calls
-  _grassSpawningTimeout: NodeJS.Timeout | null;
-  
-  // Throttled terrain updates to prevent update depth exceeded
-  _terrainUpdateThrottle: NodeJS.Timeout | null;
-  _lastTerrainUpdate: number;
-
   // Actions
-  addObject: (type: string, position: Vector3) => void;
-  removeObject: (id: string) => void;
-  selectObject: (id: string | null) => void;
-  updateTimeOfDay: (time: TimeOfDay) => void;
-  setPlacing: (placing: boolean) => void;
-  setDeleting: (deleting: boolean) => void;
-  updateObject: (id: string, updates: Partial<PlacedObject>) => void;
-  setSelectedObjectType: (type: string | null) => void;
   setShowDebugNormals: (show: boolean) => void;
   setShowWireframe: (show: boolean) => void;
   setShowForestDebug: (show: boolean) => void;
@@ -108,16 +127,22 @@ interface WorldState {
   setShowPlacementOrientationDebug: (show: boolean) => void;
   setPlacementDebugUseMeshNormals: (use: boolean) => void;
   setPlacementDebugShowComparison: (show: boolean) => void;
-  exitPlacementMode: () => void;
-  exitDeleteMode: () => void;
-  clearAllModes: () => void;
+}
+
+interface InteractionSlice {
+  isUserInteracting: boolean;
+  interactionTimeout: NodeJS.Timeout | null;
   
+  // Actions
+  setUserInteracting: (interacting: boolean) => void;
+}
+
+interface LifecycleSlice {
   // Tree lifecycle actions
   advanceTreeLifecycle: (id: string) => void;
   updateTreeStage: (id: string, stage: TreeLifecycleStage) => void;
   tickTreeLifecycles: () => void;
   attemptTreeSpawning: () => void;
-  setGlobeRef: (globe: THREE.Mesh | null) => void;
   
   // Grass spawning actions
   attemptGrassSpawning: () => void;
@@ -137,22 +162,15 @@ interface WorldState {
   // Forest detection actions
   detectForests: () => void;
   updateTreeForestStatus: (id: string, isPartOfForest: boolean, forestId?: string) => void;
+}
+
+interface WorldState extends ObjectSlice, TerrainSlice, EnvironmentSlice, DebugSlice, InteractionSlice, LifecycleSlice {
+  // Debounced grass spawning to prevent rapid successive calls
+  _grassSpawningTimeout: NodeJS.Timeout | null;
   
-  // Terrain actions
-  setTerraformMode: (mode: TerraformMode) => void;
-  setBrushSize: (size: number) => void;
-  setBrushStrength: (strength: number) => void;
-  setIsTerraforming: (isTerraforming: boolean) => void;
-  
-  // Interaction state actions
-  setUserInteracting: (interacting: boolean) => void;
-  
-  updateTerrainVertex: (index: number, updates: Partial<TerrainVertex>) => void;
-  updateTerrainVerticesBatch: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
-  updateTerrainVerticesBatchThrottled: (updates: Array<{ index: number; updates: Partial<TerrainVertex> }>) => void;
-  setTerrainVertices: (vertices: TerrainVertex[]) => void;
-  updateTerrainOctree: () => void;
-  resetTerrain: () => void;
+  // Throttled terrain updates to prevent update depth exceeded
+  _terrainUpdateThrottle: NodeJS.Timeout | null;
+  _lastTerrainUpdate: number;
 
   // World loading/saving actions
   loadWorld: (worldData: {
@@ -166,13 +184,34 @@ interface WorldState {
   resetWorld: () => void;
   autoSaveWorld: () => void;
   restoreWorldFromStorage: () => boolean;
-
-
 }
+
+// Helper function to categorize objects efficiently
+const categorizeObjects = (objects: PlacedObject[]) => {
+  const animals: PlacedObject[] = [];
+  const trees: PlacedObject[] = [];
+  const grass: PlacedObject[] = [];
+  const others: PlacedObject[] = [];
+  
+  objects.forEach(obj => {
+    if (obj.type.includes('animals')) {
+      animals.push(obj);
+    } else if (obj.type.includes('tree') || obj.type.includes('dead_tree')) {
+      trees.push(obj);
+    } else if (obj.type.includes('grass')) {
+      grass.push(obj);
+    } else {
+      others.push(obj);
+    }
+  });
+  
+  return { animals, trees, grass, others };
+};
 
 // Selective selectors for performance optimization
 export const useWorldStore = create<WorldState>((set, _get) => ({
   objects: [],
+  objectsByCategory: new Map(), // NEW: Initialize empty map
   selectedObject: null,
   selectedObjectType: null,
   timeOfDay: "day",
@@ -227,14 +266,14 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     set({ _grassSpawningTimeout: timeoutId });
   },
 
-  addObject: (type: string, position: Vector3) => {
+  addObject: (type: string, position: Vector3, rotation?: [number, number, number], scale?: [number, number, number]) => {
     const id = Math.random().toString(36).substring(7);
     const newObject: PlacedObject = {
       id,
       type,
       position: [position.x, position.y, position.z],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+      rotation: rotation ?? [0, 0, 0],
+      scale: scale ?? [1, 1, 1],
     };
 
     // Initialize tree lifecycle if it's a tree
@@ -263,6 +302,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       isPlacing: state.isPlacing,
     }));
 
+    // Update categorized objects immediately
+    _get().updateObjectsByCategory();
+
     // Run forest detection after adding a tree (with slight delay to avoid race conditions)
     if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type) || type === "tree") {
       setTimeout(() => _get().detectForests(), 100);
@@ -281,6 +323,23 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     if (objectBeingRemoved?.treeLifecycle) {
       setTimeout(() => _get().detectForests(), 100);
     }
+    
+    // Update categorized objects
+    _get().updateObjectsByCategory();
+  },
+
+  updateObjectsByCategory: () => {
+    const state = _get();
+    const categorized = categorizeObjects(state.objects);
+    
+    set({
+      objectsByCategory: new Map([
+        ['animals', categorized.animals],
+        ['trees', categorized.trees],
+        ['grass', categorized.grass],
+        ['others', categorized.others]
+      ])
+    });
   },
 
   selectObject: (id: string | null) => {
@@ -1074,11 +1133,16 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         setTimeout(() => _get().detectForests(), 200);
         
         // Return ONLY the objects array, don't change any UI state - preserve existing state
-        return { 
+        const result = { 
           objects: updatedObjects,
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
+        
+        // Update categorized objects after spawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
 
       console.log("❌ No new trees spawned this cycle");
@@ -1204,11 +1268,16 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       }
       
       if (newGrass.length > 0) {
-        return { 
+        const result = { 
           objects: state.objects.concat(newGrass),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
+        
+        // Update categorized objects after spawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
       
       return state;
@@ -1357,11 +1426,16 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       }
       
       if (newDeer.length > 0) {
-        return { 
+        const result = { 
           objects: state.objects.concat(newDeer),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
+        
+        // Update categorized objects after spawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
       
       return state;
@@ -1388,10 +1462,15 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
       if (deerToRemove.length > 0) {
         console.log(`🦌 Deer despawned: ${deerToRemove.length} deer`);
-        return {
+        const result = {
           ...state,
           objects: state.objects.filter(obj => !deerToRemove.includes(obj.id))
         };
+        
+        // Update categorized objects after despawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
       
       return state;
@@ -1545,11 +1624,16 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       }
       
       if (newWolves.length > 0) {
-        return { 
+        const result = { 
           objects: state.objects.concat(newWolves),
           isPlacing: state.isPlacing,
           terraformMode: state.terraformMode
         };
+        
+        // Update categorized objects after spawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
       
       return state;
@@ -1576,10 +1660,15 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
       if (wolvesToRemove.length > 0) {
         console.log(`🐺 Wolves despawned: ${wolvesToRemove.length} wolves`);
-        return {
+        const result = {
           ...state,
           objects: state.objects.filter(obj => !wolvesToRemove.includes(obj.id))
         };
+        
+        // Update categorized objects after despawning to prevent unnecessary re-renders
+        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        
+        return result;
       }
       
       return state;
@@ -1619,6 +1708,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       isTerraforming: false,
     });
     
+    // Update categorized objects after loading
+    _get().updateObjectsByCategory();
+    
     // Update terrain octree after loading
     _get().updateTerrainOctree();
     
@@ -1642,6 +1734,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       isDeleting: false,
       isTerraforming: false,
     });
+    
+    // Update categorized objects after reset
+    _get().updateObjectsByCategory();
   },
 
   // Auto-save current world state to localStorage
@@ -1669,6 +1764,11 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
 }));
 
+// Initialize categorized objects after store creation
+setTimeout(() => {
+  useWorldStore.getState().updateObjectsByCategory();
+}, 0);
+
 // Performance-optimized individual selectors
 export const useIsPlacing = () => useWorldStore(state => state.isPlacing);
 export const useIsDeleting = () => useWorldStore(state => state.isDeleting);
@@ -1695,11 +1795,240 @@ export const useSetPlacing = () => useWorldStore(state => state.setPlacing);
 export const useSetSelectedObjectType = () => useWorldStore(state => state.setSelectedObjectType);
 export const useResetWorld = () => useWorldStore(state => state.resetWorld);
 
+// NEW: Action selectors for object management
+export const useAddObject = () => useWorldStore(state => state.addObject);
+export const useSelectObject = () => useWorldStore(state => state.selectObject);
+export const useUpdateObject = () => useWorldStore(state => state.updateObject);
+export const useClearAllModes = () => useWorldStore(state => state.clearAllModes);
+
+// NEW: Ultra-optimized animal-specific hook that prevents re-renders from non-animal changes
+export const useAnimalObjectsOnly = () => {
+  // Only subscribe to the animals category, completely isolated from other object changes
+  return useWorldStore(state => state.objectsByCategory.get('animals') ?? []);
+};
+
+// NEW: Ultra-optimized tree-specific hook that prevents re-renders from non-tree changes
+export const useTreeObjectsOnly = () => {
+  // Only subscribe to the trees category, completely isolated from other object changes
+  return useWorldStore(state => state.objectsByCategory.get('trees') ?? []);
+};
+
+// NEW: Ultra-optimized grass-specific hook that prevents re-renders from non-grass changes
+export const useGrassObjectsOnly = () => {
+  // Only subscribe to the grass category, completely isolated from other object changes
+  return useWorldStore(state => state.objectsByCategory.get('grass') ?? []);
+};
+
+// NEW: Selective subscription hooks to prevent unnecessary re-renders
+// These hooks only subscribe to specific parts of the store
+
+// For placement system - only subscribe to placement-related state
+export const usePlacementState = () => {
+  const isPlacing = useWorldStore(state => state.isPlacing);
+  const selectedObjectType = useWorldStore(state => state.selectedObjectType);
+  const selectedObject = useWorldStore(state => state.selectedObject);
+  
+  return React.useMemo(() => ({
+    isPlacing,
+    selectedObjectType,
+    selectedObject,
+  }), [isPlacing, selectedObjectType, selectedObject]);
+};
+
+// For terrain system - only subscribe to terrain-related state
+export const useTerrainState = () => {
+  const terraformMode = useWorldStore(state => state.terraformMode);
+  const brushSize = useWorldStore(state => state.brushSize);
+  const brushStrength = useWorldStore(state => state.brushStrength);
+  const isTerraforming = useWorldStore(state => state.isTerraforming);
+  
+  return React.useMemo(() => ({
+    terraformMode,
+    brushSize,
+    brushStrength,
+    isTerraforming,
+  }), [terraformMode, brushSize, brushStrength, isTerraforming]);
+};
+
+// For debug system - only subscribe to debug-related state
+export const useDebugState = () => {
+  const showDebugNormals = useWorldStore(state => state.showDebugNormals);
+  const showWireframe = useWorldStore(state => state.showWireframe);
+  const showForestDebug = useWorldStore(state => state.showForestDebug);
+  const showLifecycleDebug = useWorldStore(state => state.showLifecycleDebug);
+  const showMeshDebug = useWorldStore(state => state.showMeshDebug);
+  const meshDebugMode = useWorldStore(state => state.meshDebugMode);
+  const showPlacementOrientationDebug = useWorldStore(state => state.showPlacementOrientationDebug);
+  const placementDebugUseMeshNormals = useWorldStore(state => state.placementDebugUseMeshNormals);
+  const placementDebugShowComparison = useWorldStore(state => state.placementDebugShowComparison);
+  
+  return React.useMemo(() => ({
+    showDebugNormals,
+    showWireframe,
+    showForestDebug,
+    showLifecycleDebug,
+    showMeshDebug,
+    meshDebugMode,
+    showPlacementOrientationDebug,
+    placementDebugUseMeshNormals,
+    placementDebugShowComparison,
+  }), [
+    showDebugNormals,
+    showWireframe,
+    showForestDebug,
+    showLifecycleDebug,
+    showMeshDebug,
+    meshDebugMode,
+    showPlacementOrientationDebug,
+    placementDebugUseMeshNormals,
+    placementDebugShowComparison,
+  ]);
+};
+
+// For environment system - only subscribe to environment-related state
+export const useEnvironmentState = () => {
+  const timeOfDay = useWorldStore(state => state.timeOfDay);
+  const globeRef = useWorldStore(state => state.globeRef);
+  
+  return React.useMemo(() => ({
+    timeOfDay,
+    globeRef,
+  }), [timeOfDay, globeRef]);
+};
+
+// For interaction system - only subscribe to interaction-related state
+export const useInteractionState = () => {
+  const isUserInteracting = useWorldStore(state => state.isUserInteracting);
+  
+  return React.useMemo(() => ({
+    isUserInteracting,
+  }), [isUserInteracting]);
+};
+
+// Optimized selectors for animal components - prevent rerenders from irrelevant state changes
+export const useIsUserInteractingOptimized = () => {
+  // Use a more selective subscription that doesn't cause rerenders for every interaction
+  return useWorldStore(state => state.isUserInteracting);
+};
+
+// NEW: Selective object subscription hooks for animal physics components
+// These prevent animals from re-rendering when non-animal objects are placed
+
+// For animals - only subscribe to animal-relevant objects and their own selection state
+export const useAnimalObjects = () => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => 
+    objects.filter(obj => obj.type.includes('animals')),
+    [objects]
+  );
+};
+
+// For specific animal types - subscribe only to objects of that type
+export const useAnimalTypeObjects = (animalType: string) => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => 
+    objects.filter(obj => obj.type === animalType),
+    [objects, animalType]
+  );
+};
+
+// For animal selection - only subscribe to selection changes for animals
+export const useAnimalSelection = () => {
+  const objects = useWorldStore(state => state.objects);
+  const selectedObject = useWorldStore(state => state.selectedObject);
+  
+  return React.useMemo(() => {
+    if (!selectedObject) return null;
+    
+    const selectedObj = objects.find(obj => obj.id === selectedObject);
+    return selectedObj?.type.includes('animals') ? selectedObject : null;
+  }, [objects, selectedObject]);
+};
+
+// For grass objects - only subscribe to grass objects (animals need this for pathfinding)
+export const useGrassObjects = () => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => 
+    objects.filter(obj => obj.type.includes('grass')),
+    [objects]
+  );
+};
+
+// For tree objects - only subscribe to tree objects (animals might need this for pathfinding)
+export const useTreeObjects = () => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => 
+    objects.filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree')),
+    [objects]
+  );
+};
+
+// Optimized selector for objects list that animals care about (grass, other animals)
+// Use useMemo to cache the filtered result
+export const useAnimalRelevantObjects = () => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => {
+    return objects.filter((obj: PlacedObject) => 
+      obj.type.includes('grass') || obj.type.includes('animals')
+    );
+  }, [objects]);
+};
+
+// NEW: Backward compatibility hook that filters objects by type
+// This prevents animals from re-rendering when non-animal objects are placed
+export const useWorldObjectsList = (filterType?: string) => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => {
+    if (!filterType) return objects;
+    return objects.filter(obj => obj.type.includes(filterType));
+  }, [objects, filterType]);
+};
+
+// NEW: Stable object reference hooks that prevent unnecessary re-renders
+// These hooks use a stable reference pattern to avoid re-renders when objects are modified
+
+export const useStableObjectsByCategory = () => {
+  // Subscribe directly to the categorized objects map instead of the full objects array
+  const objectsByCategory = useWorldStore(state => state.objectsByCategory);
+  
+  return React.useMemo(() => {
+    return {
+      animals: objectsByCategory.get('animals') ?? [],
+      trees: objectsByCategory.get('trees') ?? [],
+      grass: objectsByCategory.get('grass') ?? [],
+      others: objectsByCategory.get('others') ?? []
+    };
+  }, [objectsByCategory]);
+};
+
+// Hook that only triggers when object counts change (not when properties change)
+export const useObjectCounts = () => {
+  return useWorldStore(state => ({
+    animalCount: state.objects.filter(obj => obj.type.includes('animals')).length,
+    treeCount: state.objects.filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree')).length,
+    grassCount: state.objects.filter(obj => obj.type.includes('grass')).length,
+    otherCount: state.objects.filter(obj => 
+      !obj.type.includes('animals') && 
+      !obj.type.includes('tree') && 
+      !obj.type.includes('dead_tree') && 
+      !obj.type.includes('grass')
+    ).length,
+  }));
+};
+
+// Stable action selector for removeObject (won't cause rerenders)
+export const useRemoveObject = () => useWorldStore(state => state.removeObject);
+
 // Scene state
 export const useTimeOfDay = () => useWorldStore(state => state.timeOfDay);
 
-// World objects
-export const useWorldObjectsList = () => useWorldStore(state => state.objects);
+// World objects - DEPRECATED: Use specific hooks instead to prevent unnecessary re-renders
 export const useSelectedObject = () => useWorldStore(state => state.selectedObject);
 
 // Terrain operations  
@@ -1709,4 +2038,3 @@ export const useTerrainVertices = () => useWorldStore(state => state.terrainVert
 
 // Other operations
 export const useObjects = () => useWorldStore(state => state.objects);
-export const useRemoveObject = () => useWorldStore(state => state.removeObject);

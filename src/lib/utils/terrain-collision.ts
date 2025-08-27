@@ -446,9 +446,10 @@ export class TerrainCollisionDetector {
     toPosition: THREE.Vector3,
     objects: PlacedObject[]
   ): { isBuildingBlocked: boolean; blockedByBuilding?: string; adjustedPosition?: THREE.Vector3 } {
-    // Filter for structure objects only
+    // Filter for structure objects only - include all building types
     const structures = objects.filter(obj => 
-      obj.type === 'house' || obj.type === 'tower' || obj.type === 'bridge'
+      obj.type === 'house' || obj.type === 'tower' || obj.type === 'bridge' ||
+      obj.type === 'building-cabin-small' || obj.type === 'building-cabin-big'
     );
 
     // If no structures, no collision possible

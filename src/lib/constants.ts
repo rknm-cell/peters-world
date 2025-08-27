@@ -388,3 +388,29 @@ export const MODEL_SCALING = {
   minScaleFactor: 0.05,
   maxScaleFactor: 10.0,
 } as const;
+
+// Collision Groups for Physics System
+// Using bitwise flags for efficient collision filtering
+export const COLLISION_GROUPS = {
+  // Terrain and static objects
+  TERRAIN: 0x00010001,        // Group 1, interacts with group 1
+  STATIC_OBJECTS: 0x00010002, // Group 2, interacts with group 1
+  
+  // Dynamic objects
+  ANIMALS: 0x00010004,        // Group 3, interacts with groups 1, 2
+  STRUCTURES: 0x00010008,     // Group 4, interacts with groups 1, 2, 3
+  
+  // Special groups
+  WATER: 0x00010010,          // Group 5, interacts with groups 1, 3, 4
+  DECORATIONS: 0x00010020,    // Group 6, interacts with group 1
+} as const;
+
+// Collision interaction matrix
+export const COLLISION_INTERACTIONS = {
+  TERRAIN: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
+  STATIC_OBJECTS: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
+  ANIMALS: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES | COLLISION_GROUPS.WATER,
+  STRUCTURES: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES | COLLISION_GROUPS.WATER,
+  WATER: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
+  DECORATIONS: COLLISION_GROUPS.TERRAIN,
+} as const;

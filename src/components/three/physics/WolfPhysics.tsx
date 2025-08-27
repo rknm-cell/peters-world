@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Wolf } from '~/components/three/objects/Wolf';
-import { useWorldStore, useIsUserInteracting } from '~/lib/store';
+import { useWorldStore, useIsUserInteractingOptimized, useRemoveObject, useGrassObjectsOnly, useTreeObjectsOnly, useAnimalObjectsOnly } from '~/lib/store';
 import { WOLF_CONFIG } from '~/lib/constants';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 import { enhancedPathfinder } from '~/lib/utils/enhanced-pathfinding';
 import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
+import { COLLISION_GROUPS, COLLISION_INTERACTIONS } from '~/lib/constants';
 
 // Type for debug window functions
 interface DebugWindow extends Window {
@@ -48,8 +49,30 @@ interface CharacterController {
  */
 function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const isUserInteracting = useIsUserInteracting();
-  const { invalidate } = useThree(); // For manual render triggering with frameloop="demand"
+  
+  // Use optimized hooks to prevent unnecessary rerenders
+  const isUserInteracting = useIsUserInteractingOptimized();
+  
+  // Use stable action selectors that won't cause rerenders
+  const removeObject = useRemoveObject();
+  
+  // Use ultra-optimized category-specific hooks to prevent rerenders from irrelevant object changes
+  const grassObjects = useGrassObjectsOnly();
+  const treeObjects = useTreeObjectsOnly();
+  const otherAnimals = useAnimalObjectsOnly();
+  
+  // Filter out this animal from the other animals list to prevent self-reference
+  const otherAnimalsFiltered = React.useMemo(() => 
+    otherAnimals.filter(animal => animal.id !== objectId), 
+    [otherAnimals, objectId]
+  );
+  
+  // Combine relevant objects for pathfinding and behavior
+  const relevantObjects = React.useMemo(() => [
+    ...grassObjects,
+    ...treeObjects,
+    ...otherAnimalsFiltered
+  ], [grassObjects, treeObjects, otherAnimalsFiltered]);
   
   // Selection is handled externally - wolves don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -150,8 +173,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   
   // Function to find nearby deer for hunting
   const findNearbyDeer = (wolfPosition: THREE.Vector3) => {
-    const store = useWorldStore.getState();
-    const deerObjects = store.objects.filter(obj => obj.type === 'animals/deer');
+    const deerObjects = otherAnimalsFiltered.filter(obj => obj.type === 'animals/deer');
     
     let closestDeer = null;
     let closestDistance: number = DEER_DETECTION_RADIUS;
@@ -725,12 +747,14 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       colliders={false}
       userData={{ isWolf: true, objectId, isMoving: !isIdle && target !== null, isHunting: isHunting }}
     >
-      {/* Capsule collider for character controller - slightly larger than deer */}
+      {/* Capsule collider for character controller */}
       <CapsuleCollider 
-        args={[0.25, 0.45]} // Slightly larger than deer
-        position={[0, 0.25, 0]} // Lower position for better surface adherence
+        args={[0.25, 0.5]} // Slightly larger than deer for wolf
+        position={[0, 0.25, 0]} // Center the collider vertically
         friction={1.0} // Good friction for walking
         restitution={0.0} // No bounce
+        collisionGroups={COLLISION_GROUPS.ANIMALS}
+        solverGroups={COLLISION_INTERACTIONS.ANIMALS}
       />
       
       {/* Visual wolf model - inherits rotation from RigidBody */}

@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { useWorldObjectsList } from "~/lib/store";
+import type { PlacedObject } from "~/lib/store";
+import { 
+  useStableObjectsByCategory, 
+  useAnimalObjectsOnly, 
+  useTreeObjectsOnly, 
+  useGrassObjectsOnly 
+} from "~/lib/store";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
@@ -9,7 +15,6 @@ import { Grass } from "~/components/three/objects/Grass";
 import { DeerPhysics } from "~/components/three/physics/DeerPhysics";
 import { WolfPhysics } from "~/components/three/physics/WolfPhysics";
 import { OBJECT_TYPES, TREE_LIFECYCLE, GRASS_MODELS, ANIMAL_MODELS, type DECORATION_MODELS } from "~/lib/constants";
-import type { PlacedObject } from "~/lib/store";
 
 // Define proper types for object categories - now includes all lifecycle stages
 type TreeType = 
@@ -61,7 +66,16 @@ function isAnimalType(type: string): type is AnimalType {
 }
 
 export const WorldObjects = React.memo(function WorldObjects() {
-  const objects = useWorldObjectsList();
+  // Use ultra-optimized category-specific hooks to prevent unnecessary re-renders
+  // These hooks only re-render when objects in their specific category change
+  const animals = useAnimalObjectsOnly();
+  const trees = useTreeObjectsOnly();
+  const grass = useGrassObjectsOnly();
+  
+  // For other objects, we can use the stable hook since they're less critical
+  const { others } = useStableObjectsByCategory();
+  
+
 
   const renderObject = React.useCallback((obj: PlacedObject) => {
     const props = {
@@ -134,5 +148,13 @@ export const WorldObjects = React.memo(function WorldObjects() {
     return <Tree key={obj.id} type="tree" {...props} />;
   }, []); // Remove selectedObject dependency to prevent recreating the callback
 
-  return <>{objects.map(renderObject)}</>;
+  // Combine all categorized objects for rendering
+  const allObjectsToRender = [
+    ...animals,
+    ...trees, 
+    ...grass,
+    ...others
+  ];
+
+  return <>{allObjectsToRender.map(renderObject)}</>;
 });
