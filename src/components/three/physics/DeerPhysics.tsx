@@ -1,12 +1,18 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
-import { useWorldStore, useIsUserInteractingOptimized, useAnimalRelevantObjects, useRemoveObject } from '~/lib/store';
+import { 
+  useIsUserInteractingOptimized, 
+  useRemoveObject, 
+  useGrassObjectsOnly,
+  useTreeObjectsOnly,
+  useAnimalObjectsOnly
+} from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
@@ -54,8 +60,23 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   // Use stable action selectors that won't cause rerenders
   const removeObject = useRemoveObject();
   
-  // Cache animal-relevant objects to prevent rerenders from irrelevant object changes
-  const animalRelevantObjects = useAnimalRelevantObjects();
+  // Use ultra-optimized category-specific hooks to prevent rerenders from irrelevant object changes
+  const grassObjects = useGrassObjectsOnly();
+  const treeObjects = useTreeObjectsOnly();
+  const otherAnimals = useAnimalObjectsOnly();
+  
+  // Filter out this animal from the other animals list to prevent self-reference
+  const otherAnimalsFiltered = React.useMemo(() => 
+    otherAnimals.filter(animal => animal.id !== objectId), 
+    [otherAnimals, objectId]
+  );
+  
+  // Combine relevant objects for pathfinding and behavior
+  const relevantObjects = React.useMemo(() => [
+    ...grassObjects,
+    ...treeObjects,
+    ...otherAnimalsFiltered
+  ], [grassObjects, treeObjects, otherAnimalsFiltered]);
   
   // Selection is handled externally - deer don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -154,7 +175,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   
   // Function to find nearby grass - use cached animal-relevant objects to prevent rerenders
   const findNearbyGrass = (deerPosition: THREE.Vector3) => {
-    const grassObjects = animalRelevantObjects.filter(obj => obj.type.toLowerCase().includes('grass'));
+    const grassObjects = relevantObjects.filter(obj => obj.type.toLowerCase().includes('grass'));
     
     let closestGrass = null;
     let closestDistance = GRASS_DETECTION_RADIUS;

@@ -1,8 +1,18 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useThree } from "@react-three/fiber";
-import { useWorldStore, useSetUserInteracting } from "~/lib/store";
+import { Raycaster, Vector2, Mesh } from "three";
+import { 
+  usePlacementState,
+  useObjects,
+  useAddObject,
+  useSelectObject,
+  useRemoveObject,
+  useSetUserInteracting,
+  useUpdateObject,
+  useClearAllModes
+} from "~/lib/store";
 import { OBJECT_TYPES } from "~/lib/constants";
 import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
@@ -18,7 +28,6 @@ import { Penguin } from "~/components/three/objects/Penguin";
 import { Pig } from "~/components/three/objects/Pig";
 import { Grass } from "~/components/three/objects/Grass";
 import type * as THREE from "three";
-import { Raycaster, Vector2, Mesh } from "three";
 import {
   calculatePlacement,
   getDetailedIntersection,
@@ -51,14 +60,15 @@ export function PlacementSystem({
   rotationGroupRef: _rotationGroupRef,
 }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
-  const {
-    isPlacing,
-    selectedObjectType,
-    objects,
-    addObject,
-    selectObject,
-    removeObject,
-  } = useWorldStore();
+  
+  // Use selective subscription hooks to prevent unnecessary re-renders
+  const { isPlacing, selectedObjectType } = usePlacementState();
+  const objects = useObjects();
+  const addObject = useAddObject();
+  const selectObject = useSelectObject();
+  const removeObject = useRemoveObject();
+  const updateObject = useUpdateObject();
+  const clearAllModes = useClearAllModes();
   const setUserInteracting = useSetUserInteracting();
 
   const raycaster = useRef(new Raycaster());
@@ -171,23 +181,17 @@ export function PlacementSystem({
 
           const selectedType = selectedObjectTypeRef.current;
           if (placementInfo.canPlace && selectedType) {
-            // Use the local coordinates for placement
-            addObject(selectedType, placementInfo.position);
-
-            // Update the last placed object with the exact rotation from the preview
-            const newObjects = useWorldStore.getState().objects;
-            if (newObjects.length > 0) {
-              const lastObject = newObjects[newObjects.length - 1];
-              if (lastObject) {
-                useWorldStore.getState().updateObject(lastObject.id, {
-                  rotation: [
-                    placementInfo.rotation.x,
-                    placementInfo.rotation.y,
-                    placementInfo.rotation.z,
-                  ] as [number, number, number],
-                });
-              }
-            }
+            // Use the local coordinates for placement with proper rotation and scale
+            addObject(
+              selectedType, 
+              placementInfo.position,
+              [
+                placementInfo.rotation.x,
+                placementInfo.rotation.y,
+                placementInfo.rotation.z,
+              ] as [number, number, number],
+              [1, 1, 1] as [number, number, number]
+            );
             
             // Placing objects affects physics, so signal user interaction
             shouldSignalUserInteraction = true;
@@ -243,6 +247,7 @@ export function PlacementSystem({
       addObject,
       debouncedSelectObject,
       removeObject,
+      objects,
       scene.children,
       setUserInteracting,
     ],
@@ -345,7 +350,7 @@ export function PlacementSystem({
     // Add keyboard event listener for Escape key to exit any mode
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        useWorldStore.getState().clearAllModes();
+        clearAllModes();
       }
     };
 
@@ -356,7 +361,7 @@ export function PlacementSystem({
       canvas.removeEventListener("pointermove", moveHandler);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gl.domElement]);
+  }, [gl.domElement, clearAllModes]);
 
   return (
     <>

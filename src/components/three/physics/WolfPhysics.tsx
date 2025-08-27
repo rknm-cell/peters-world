@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Wolf } from '~/components/three/objects/Wolf';
-import { useWorldStore, useIsUserInteractingOptimized, useAnimalRelevantObjects } from '~/lib/store';
+import { useWorldStore, useIsUserInteractingOptimized, useRemoveObject, useGrassObjectsOnly, useTreeObjectsOnly, useAnimalObjectsOnly } from '~/lib/store';
 import { WOLF_CONFIG } from '~/lib/constants';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
@@ -52,8 +52,26 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   // Use optimized hooks to prevent unnecessary rerenders
   const isUserInteracting = useIsUserInteractingOptimized();
   
-  // Cache animal-relevant objects to prevent rerenders from irrelevant object changes
-  const animalRelevantObjects = useAnimalRelevantObjects();
+  // Use stable action selectors that won't cause rerenders
+  const removeObject = useRemoveObject();
+  
+  // Use ultra-optimized category-specific hooks to prevent rerenders from irrelevant object changes
+  const grassObjects = useGrassObjectsOnly();
+  const treeObjects = useTreeObjectsOnly();
+  const otherAnimals = useAnimalObjectsOnly();
+  
+  // Filter out this animal from the other animals list to prevent self-reference
+  const otherAnimalsFiltered = React.useMemo(() => 
+    otherAnimals.filter(animal => animal.id !== objectId), 
+    [otherAnimals, objectId]
+  );
+  
+  // Combine relevant objects for pathfinding and behavior
+  const relevantObjects = React.useMemo(() => [
+    ...grassObjects,
+    ...treeObjects,
+    ...otherAnimalsFiltered
+  ], [grassObjects, treeObjects, otherAnimalsFiltered]);
   
   // Selection is handled externally - wolves don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -154,7 +172,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   
   // Function to find nearby deer for hunting
   const findNearbyDeer = (wolfPosition: THREE.Vector3) => {
-    const deerObjects = animalRelevantObjects.filter(obj => obj.type === 'animals/deer');
+    const deerObjects = otherAnimalsFiltered.filter(obj => obj.type === 'animals/deer');
     
     let closestDeer = null;
     let closestDistance: number = DEER_DETECTION_RADIUS;
