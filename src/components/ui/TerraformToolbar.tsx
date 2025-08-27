@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWorldStore } from "~/lib/store";
 import type { TerraformMode } from "~/lib/store";
 
@@ -24,18 +24,27 @@ export function TerraformToolbar() {
     setShowMeshDebug,
   } = useWorldStore();
 
+  // Auto-open menu when terraforming becomes active
+  React.useEffect(() => {
+    if (isTerraforming && !showMenu) {
+      setShowMenu(true);
+    }
+  }, [isTerraforming, showMenu]);
+
   const handleToolSelect = (mode: TerraformMode) => {
     if (terraformMode === mode) {
       setTerraformMode("none");
       setIsTerraforming(false);
+      setShowMenu(false); // Close menu when deactivating tool
     } else {
       setTerraformMode(mode);
       setIsTerraforming(true);
       // Ensure placement mode is off to avoid input conflicts
       setPlacing(false);
       setSelectedObjectType(null);
+      // Keep menu open when activating terraforming tool
+      setShowMenu(true);
     }
-    setShowMenu(false); // Close dropdown after selection
   };
 
   const handleToggleMenu = () => {
@@ -130,6 +139,11 @@ export function TerraformToolbar() {
           {isTerraforming && (
             <div className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
           )}
+          
+          {/* Persistent mode indicator */}
+          {isTerraforming && showMenu && (
+            <div className="h-2 w-2 rounded-full bg-green-400" title="Toolbar stays open while terraforming" />
+          )}
 
           {/* Dropdown arrow */}
           <svg
@@ -146,14 +160,47 @@ export function TerraformToolbar() {
         {/* Dropdown Menu */}
         {showMenu && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop - only close if not terraforming */}
             <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMenu(false)}
+              className={`fixed inset-0 z-40 ${
+                isTerraforming 
+                  ? "cursor-not-allowed" 
+                  : "cursor-pointer"
+              }`}
+              onClick={() => {
+                // Only close menu if not actively terraforming
+                if (!isTerraforming) {
+                  setShowMenu(false);
+                }
+              }}
+              title={
+                isTerraforming 
+                  ? "Toolbar locked open while terraforming - use close button to close" 
+                  : "Click outside to close toolbar"
+              }
             />
 
             {/* Menu Content */}
-            <div className="absolute left-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-white/20 bg-black/90 backdrop-blur-sm">
+            <div 
+              className="absolute left-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-white/20 bg-black/90 backdrop-blur-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with close button */}
+              <div className="flex items-center justify-between border-b border-white/20 p-3">
+                <div className="text-sm font-medium text-white/80">
+                  Terraforming Tools
+                </div>
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="rounded p-1 text-white/60 hover:bg-white/20 hover:text-white transition-all duration-200"
+                  title="Close toolbar"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                  </svg>
+                </button>
+              </div>
+              
               {/* Tool Selection */}
               <div className="p-3">
                 <div className="mb-3 text-sm font-medium text-white/80">

@@ -134,8 +134,22 @@ function ObjectItem({
     switch (category) {
       case "trees":
         return "🌲";
-      case "decorations":
-        return "🌸";
+      case "decorations": {
+        // Use specific emojis for different decoration types
+        if (objectType === "carnations") return "🌺";
+        if (objectType === "flower-red") return "🌹";
+        if (objectType === "roses") return "🥀";
+        if (objectType === "mushroom-boletus") return "🍄";
+        if (objectType === "mushroom-toadstool") return "🍄";
+        if (objectType === "mushroom-toadstool-green") return "🍄";
+        if (objectType === "stone-diamond-brown") return "💎";
+        if (objectType === "stone-flat-brown") return "🪨";
+        if (objectType === "stone-oval-brown") return "🪨";
+        if (objectType === "stone-pointy-brown") return "⛰️";
+        if (objectType === "stone-round-brown") return "⚫";
+        if (objectType === "stone-small-brown") return "🪨";
+        return "🌸"; // fallback
+      }
       case "structures": {
         // Use specific emojis for different building types
         if (objectType === "house") return "🏠";
@@ -158,8 +172,15 @@ function ObjectItem({
         if (objectType === "animals/pig") return "🐷";
         return "🦌"; // fallback
       }
-      case "grass":
-        return "🌿";
+      case "grass": {
+        // Use specific emojis for different grass types
+        if (objectType === "grass/grass") return "🌱";
+        if (objectType === "grass/grass-basic") return "🌿";
+        if (objectType === "grass/grass-clumb") return "🍀";
+        if (objectType === "grass/grass-long") return "🌾";
+        if (objectType === "grass/grass-tall") return "🌾";
+        return "🌿"; // fallback
+      }
       default:
         return "📦";
     }

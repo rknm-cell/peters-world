@@ -10,7 +10,7 @@ import { Sparkles } from "lucide-react";
 
 export default function Home() {
   // Enable auto-save and auto-restore
-  const { hasRestoredWorld } = useWorldPersistence();
+  const { hasRestoredWorld, loadedDefaultWorld } = useWorldPersistence();
 
   // State to control overlay visibility
   const [showOverlay, setShowOverlay] = useState(true);

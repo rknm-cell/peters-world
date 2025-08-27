@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useWorldStore } from "../store";
 import { hasStoredWorld } from "../utils/world-persistence";
+import { shouldLoadDefaultWorld, getDefaultWorld } from "../utils/default-world";
 
 /**
  * Hook to handle automatic world persistence
@@ -19,12 +20,13 @@ export function useWorldPersistence() {
 
   const hasRestoredRef = useRef(false);
   const lastSaveDataRef = useRef<string>("");
+  const loadedDefaultRef = useRef(false);
 
-  // Auto-restore world on initial load (client-side only)
+    // Auto-restore world on initial load (client-side only)
   useEffect(() => {
     // Only run on client-side to avoid hydration issues
     if (typeof window === "undefined") return;
-
+    
     if (!hasRestoredRef.current) {
       const hasData = hasStoredWorld();
       if (hasData) {
@@ -34,7 +36,15 @@ export function useWorldPersistence() {
           console.log("✅ World restored successfully");
         }
       } else {
-        console.log("📭 No saved world found, starting fresh");
+        console.log("📭 No saved world found, loading default world...");
+        // Load default world for new users
+        if (shouldLoadDefaultWorld()) {
+          const defaultWorld = getDefaultWorld();
+          const { loadWorld } = useWorldStore.getState();
+          loadWorld(defaultWorld);
+          loadedDefaultRef.current = true;
+          console.log("🌟 Default world loaded successfully");
+        }
       }
       hasRestoredRef.current = true;
     }
@@ -89,5 +99,6 @@ export function useWorldPersistence() {
 
   return {
     hasRestoredWorld: hasRestoredRef.current,
+    loadedDefaultWorld: loadedDefaultRef.current,
   };
 }

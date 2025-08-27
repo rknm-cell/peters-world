@@ -12,10 +12,11 @@ import { Instructions } from "~/components/ui/Instructions";
 // import { TerrainHeightMapDebug } from "~/components/debug/TerrainHeightMap";
 // import { TerrainNormalMapDebug } from "~/components/debug/TerrainNormalMap";
 import { useWorldPersistence } from "~/lib/hooks/useWorldPersistence";
+import { DefaultWorldCapture } from "~/components/ui/DefaultWorldCapture";
 
 export default function CreatePage() {
   // Enable auto-save and auto-restore
-  const { hasRestoredWorld } = useWorldPersistence();
+  const { hasRestoredWorld, loadedDefaultWorld } = useWorldPersistence();
 
   return (
     <div className="relative h-screen w-screen bg-gray-900">
@@ -27,15 +28,27 @@ export default function CreatePage() {
       {/* <PlacementDebugPanel /> */}
       {/* <CollisionDebugPanel /> */}
       {/* <PathfindingDebugPanel /> */}
-      {/* <CollisionValidationTest /> */}
+            {/* <CollisionValidationTest /> */}
       {/* <TerrainHeightMapDebug /> */}
       {/* <TerrainNormalMapDebug /> */}
-
+      
+      {/* Development utility to capture current world as default */}
+      <DefaultWorldCapture />
+      
       {/* Show restoration indicator - only on client to avoid hydration issues */}
       {typeof window !== "undefined" && hasRestoredWorld && (
         <div className="fixed bottom-4 left-20 z-40 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 backdrop-blur-sm">
           <p className="text-sm text-green-400">
             ✅ World restored from auto-save
+          </p>
+        </div>
+      )}
+      
+      {/* Show default world indicator - only on client to avoid hydration issues */}
+      {typeof window !== "undefined" && loadedDefaultWorld && (
+        <div className="fixed bottom-4 left-20 z-40 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 backdrop-blur-sm">
+          <p className="text-sm text-blue-400">
+            🌟 Welcome! Default world loaded
           </p>
         </div>
       )}
