@@ -47,7 +47,7 @@ class DebouncedUpdateManager {
 
     const now = performance.now();
     const timeSinceLastBatch = now - this.lastBatchTime;
-    
+
     if (timeSinceLastBatch >= this.batchInterval) {
       // Process immediately if enough time has passed
       this.processPendingUpdates();
@@ -93,9 +93,14 @@ class DebouncedUpdateManager {
     return {
       pendingCount: this.pendingUpdates.size,
       isProcessing: this.isProcessing,
-      oldestUpdate: this.pendingUpdates.size > 0 
-        ? Math.min(...Array.from(this.pendingUpdates.values()).map(u => performance.now() - u.timestamp))
-        : 0,
+      oldestUpdate:
+        this.pendingUpdates.size > 0
+          ? Math.min(
+              ...Array.from(this.pendingUpdates.values()).map(
+                (u) => performance.now() - u.timestamp,
+              ),
+            )
+          : 0,
     };
   }
 }

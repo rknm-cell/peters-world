@@ -1,12 +1,12 @@
 "use client";
 
-import { forwardRef, useRef, useEffect, useCallback } from 'react';
-import { RigidBody, useRapier } from '@react-three/rapier';
-import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
-import { Globe } from '~/components/editor/Globe';
-import { useWorldStore } from '~/lib/store';
-import { COLLISION_GROUPS } from '~/lib/constants';
-import type { Mesh } from 'three';
+import { forwardRef, useRef, useEffect, useCallback } from "react";
+import { RigidBody, useRapier } from "@react-three/rapier";
+import type { RapierRigidBody, RapierCollider } from "@react-three/rapier";
+import { Globe } from "~/components/editor/Globe";
+import { useWorldStore } from "~/lib/store";
+import { COLLISION_GROUPS } from "~/lib/constants";
+import type { Mesh } from "three";
 
 // Global reference to the terrain collider for debug visualization
 // Global reference to terrain collider for external access
@@ -36,19 +36,19 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
     const terrainMeshRef = useRef<Mesh | null>(null);
     const colliderRef = useRef<RapierCollider | null>(null);
     const { terrainVertices } = useWorldStore();
-    const lastUpdateHash = useRef<string>('');
+    const lastUpdateHash = useRef<string>("");
 
     /**
      * Creates a hash of terrain vertices to detect changes
      */
     const getTerrainHash = useCallback(() => {
-      if (!terrainVertices || terrainVertices.length === 0) return '';
-      
+      if (!terrainVertices || terrainVertices.length === 0) return "";
+
       // Sample vertices to create a hash (checking all would be too expensive)
       const sampleSize = Math.min(100, terrainVertices.length);
       const step = Math.floor(terrainVertices.length / sampleSize);
-      let hash = '';
-      
+      let hash = "";
+
       for (let i = 0; i < terrainVertices.length; i += step) {
         const vertex = terrainVertices[i];
         if (vertex) {
@@ -56,7 +56,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
           hash += `${vertex.height.toFixed(2)},${vertex.waterLevel.toFixed(2)};`;
         }
       }
-      
+
       return hash;
     }, [terrainVertices]);
 
@@ -64,18 +64,23 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
      * Updates the physics collider when terrain changes
      */
     const updateCollider = useCallback(() => {
-      if (!rigidBodyRef.current || !terrainMeshRef.current || !world || !rapier) {
-        console.log('⚠️ Cannot update collider: missing dependencies');
+      if (
+        !rigidBodyRef.current ||
+        !terrainMeshRef.current ||
+        !world ||
+        !rapier
+      ) {
+        console.log("⚠️ Cannot update collider: missing dependencies");
         return;
       }
 
       const geometry = terrainMeshRef.current.geometry;
       if (!geometry) {
-        console.log('⚠️ Cannot update collider: no geometry');
+        console.log("⚠️ Cannot update collider: no geometry");
         return;
       }
 
-      console.log('🔄 Updating terrain physics collider...');
+      console.log("🔄 Updating terrain physics collider...");
 
       try {
         // Remove old collider if it exists
@@ -87,7 +92,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
         // Get the updated vertex positions
         const positions = geometry.attributes.position;
         if (!positions) {
-          console.error('⚠️ No position attribute in geometry');
+          console.error("⚠️ No position attribute in geometry");
           return;
         }
 
@@ -116,64 +121,72 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
         // Create new trimesh collider
         const colliderDesc = rapier.ColliderDesc.trimesh(vertices, indices);
         colliderDesc.setCollisionGroups(COLLISION_GROUPS.TERRAIN); // Use terrain collision group
-        
+
         // Create and attach the new collider
-        const newCollider = world.createCollider(colliderDesc, rigidBodyRef.current);
+        const newCollider = world.createCollider(
+          colliderDesc,
+          rigidBodyRef.current,
+        );
         colliderRef.current = newCollider;
-        
+
         // Store global reference for debug visualization
         globalTerrainCollider = {
           collider: newCollider,
           vertices: vertices,
           indices: indices,
           vertexCount: positions.count,
-          triangleCount: indices.length / 3
+          triangleCount: indices.length / 3,
         };
 
-        console.log('✅ Terrain collider updated successfully', {
+        console.log("✅ Terrain collider updated successfully", {
           vertexCount: positions.count,
-          triangleCount: indices.length / 3
+          triangleCount: indices.length / 3,
         });
-
       } catch (error) {
-        console.error('❌ Failed to update terrain collider:', error);
+        console.error("❌ Failed to update terrain collider:", error);
       }
     }, [world, rapier]);
 
     /**
      * Handle terrain mesh ready callback
      */
-    const handleTerrainMeshReady = useCallback((mesh: Mesh) => {
-      console.log('🌍 Terrain mesh ready for physics', {
-        isTerrainMesh: (mesh?.userData as { isTerrainMesh?: boolean })?.isTerrainMesh,
-        meshType: mesh?.constructor?.name,
-        hasGeometry: !!mesh?.geometry
-      });
-      
-      // Store the actual terrain mesh (from TerrainSystem)
-      terrainMeshRef.current = mesh;
-      
-      // Call the parent callback
-      if (onTerrainMeshReady) {
-        onTerrainMeshReady(mesh);
-      }
+    const handleTerrainMeshReady = useCallback(
+      (mesh: Mesh) => {
+        console.log("🌍 Terrain mesh ready for physics", {
+          isTerrainMesh: (mesh?.userData as { isTerrainMesh?: boolean })
+            ?.isTerrainMesh,
+          meshType: mesh?.constructor?.name,
+          hasGeometry: !!mesh?.geometry,
+        });
 
-      // Initial collider update with slight delay to ensure mesh is ready
-      setTimeout(() => updateCollider(), 500);
-    }, [onTerrainMeshReady, updateCollider]);
+        // Store the actual terrain mesh (from TerrainSystem)
+        terrainMeshRef.current = mesh;
+
+        // Call the parent callback
+        if (onTerrainMeshReady) {
+          onTerrainMeshReady(mesh);
+        }
+
+        // Initial collider update with slight delay to ensure mesh is ready
+        setTimeout(() => updateCollider(), 500);
+      },
+      [onTerrainMeshReady, updateCollider],
+    );
 
     /**
      * Monitor terrain changes and update collider when needed
      */
     useEffect(() => {
       if (!terrainMeshRef.current) return;
-      
+
       const currentHash = getTerrainHash();
-      
-      if (currentHash !== lastUpdateHash.current && currentHash !== '') {
-        console.log('🔍 Terrain change detected, scheduling collider update...');
+
+      if (currentHash !== lastUpdateHash.current && currentHash !== "") {
+        console.log(
+          "🔍 Terrain change detected, scheduling collider update...",
+        );
         lastUpdateHash.current = currentHash;
-        
+
         // Debounce the update to avoid too frequent updates during terraforming
         const timeoutId = setTimeout(() => {
           updateCollider();
@@ -188,24 +201,21 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
      */
     const handleRigidBodyRef = useCallback((rb: RapierRigidBody | null) => {
       rigidBodyRef.current = rb;
-      
+
       if (rb) {
-        console.log('📍 Globe rigid body initialized');
+        console.log("📍 Globe rigid body initialized");
       }
     }, []);
 
     return (
-      <RigidBody 
+      <RigidBody
         ref={handleRigidBodyRef}
         type="fixed" // Globe doesn't move
         colliders={false} // We'll create custom collider
         userData={{ isGlobe: true }}
       >
-        <Globe 
-          ref={ref}
-          onTerrainMeshReady={handleTerrainMeshReady}
-        />
+        <Globe ref={ref} onTerrainMeshReady={handleTerrainMeshReady} />
       </RigidBody>
     );
-  }
+  },
 );

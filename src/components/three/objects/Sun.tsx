@@ -1,38 +1,35 @@
-'use client';
+"use client";
 
-import { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
-import { LIGHTING_PRESETS } from '~/lib/constants';
+import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { useWorldStore } from "~/lib/store";
+import { LIGHTING_PRESETS } from "~/lib/constants";
 
 interface SunProps {
   size?: number;
   glowIntensity?: number;
 }
 
-export function Sun({ 
-  size = 1.0, 
-  glowIntensity = 1.0
-}: SunProps) {
+export function Sun({ size = 1.0, glowIntensity = 1.0 }: SunProps) {
   const groupRef = useRef<THREE.Group>(null);
   const sunMeshRef = useRef<THREE.Mesh>(null);
   const glowMeshRef = useRef<THREE.Mesh>(null);
   const directionalLightRef = useRef<THREE.DirectionalLight>(null);
-  
+
   const timeOfDay = useWorldStore((state) => state.timeOfDay);
 
   // Create sun materials
   const materials = useMemo(() => {
     return {
       sun: new THREE.MeshBasicMaterial({
-        color: '#FFFFFF', // Bright white
+        color: "#FFFFFF", // Bright white
         transparent: true,
         opacity: 0.95,
         fog: false, // Sun is unaffected by fog
       }),
       glow: new THREE.MeshBasicMaterial({
-        color: '#FFD700', // Golden yellow accent
+        color: "#FFD700", // Golden yellow accent
         transparent: true,
         opacity: 0.4 * glowIntensity,
         fog: false, // Glow is unaffected by fog
@@ -66,15 +63,15 @@ export function Sun({
       // Rotate the sun around the globe at a constant speed
       const rotationSpeed = 0.075; // Adjust this value to control rotation speed (0.1 = slow, 0.3 = fast)
       const time = state.clock.elapsedTime;
-      
+
       // Calculate the sun's position in a circular orbit
       const orbitRadius = 20; // Distance from the center of the globe
       const x = Math.cos(time * rotationSpeed) * orbitRadius;
       const z = Math.sin(time * rotationSpeed) * orbitRadius;
       const y = 10; // Keep the sun elevated
-      
+
       groupRef.current.position.set(x, y, z);
-      
+
       // Make the sun always face the center of the globe
       groupRef.current.lookAt(0, 0, 0);
     }
@@ -102,13 +99,13 @@ export function Sun({
         material={materials.glow}
         scale={[1, 1, 1]}
       />
-      
+
       {/* Main sun sphere */}
       <mesh
         ref={sunMeshRef}
         geometry={geometries.sun}
         material={materials.sun}
-        scale={[.7, .7, .7]}
+        scale={[0.7, 0.7, 0.7]}
       />
 
       {/* Sun rays effect */}
@@ -119,14 +116,14 @@ export function Sun({
             position={[
               Math.cos((i * Math.PI * 2) / 8) * (size * 1.8),
               Math.sin((i * Math.PI * 2) / 8) * (size * 1.8),
-              0
+              0,
             ]}
           >
             <boxGeometry args={[0.1, 0.1, 0.8]} />
-            <meshBasicMaterial 
-              color="#FFD700" 
-              transparent 
-              opacity={1} 
+            <meshBasicMaterial
+              color="#FFD700"
+              transparent
+              opacity={1}
               fog={false} // Sun rays are unaffected by fog
             />
           </mesh>

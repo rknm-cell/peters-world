@@ -48,5 +48,8 @@ export interface PhysicsBody {
   linvel: () => { x: number; y: number; z: number };
   mass: () => number;
   bodyType: () => number;
-  addForce: (force: { x: number; y: number; z: number }, wake?: boolean) => void;
+  addForce: (
+    force: { x: number; y: number; z: number },
+    wake?: boolean,
+  ) => void;
 }

@@ -75,48 +75,64 @@ export const TREE_LIFECYCLE = {
   // Youth stages using bush models
   youth: {
     small: "bush/bush-small",
-    medium: "bush/bush-medium", 
+    medium: "bush/bush-medium",
     mediumHigh: "bush/bush-medium-high",
-    big: "bush/bush-big"
+    big: "bush/bush-big",
   },
   // Adult stages - existing tree models
   adult: [
-    "tree", "tree-baobab", "tree-beech", "tree-birch",
-    "tree-elipse", "tree-lime", "tree-maple", 
-    "tree-oak", "tree-round", "tree-tall"
+    "tree",
+    "tree-baobab",
+    "tree-beech",
+    "tree-birch",
+    "tree-elipse",
+    "tree-lime",
+    "tree-maple",
+    "tree-oak",
+    "tree-round",
+    "tree-tall",
   ],
   // Death stages
   death: {
-    standing: ["dead_tree/tree-dead-1", "dead_tree/tree-dead-2", "dead_tree/tree-dead-3", "dead_tree/tree-dead-4"],
+    standing: [
+      "dead_tree/tree-dead-1",
+      "dead_tree/tree-dead-2",
+      "dead_tree/tree-dead-3",
+      "dead_tree/tree-dead-4",
+    ],
     broken: "dead_tree/tree-dead-broken",
     logs: ["dead_tree/tree-dead-log-a", "dead_tree/tree-dead-log-b"],
-    smallLogs: ["dead_tree/tree-dead-log-small-a", "dead_tree/tree-dead-log-small-b"]
-  }
+    smallLogs: [
+      "dead_tree/tree-dead-log-small-a",
+      "dead_tree/tree-dead-log-small-b",
+    ],
+  },
 } as const;
 
 // Tree lifecycle configuration
 export const TREE_LIFECYCLE_CONFIG = {
   // Time in seconds for each stage
   stageDurations: {
-    youthSmall: 30,      // 30 seconds
-    youthMedium: 25,     // 25 seconds
+    youthSmall: 30, // 30 seconds
+    youthMedium: 25, // 25 seconds
     youthMediumHigh: 20, // 20 seconds
-    youthBig: 15,        // 15 seconds
-    adult: 60,           // 1 minute - check for death every minute
-    deadStanding: 60,    // 1 minute
-    broken: 60,          // 1 minute
-    logs: Infinity,      // Logs stay forever (final stage)
+    youthBig: 15, // 15 seconds
+    adult: 60, // 1 minute - check for death every minute
+    deadStanding: 60, // 1 minute
+    broken: 60, // 1 minute
+    logs: Infinity, // Logs stay forever (final stage)
   },
   // Probability of dying - 1% chance per minute for adult trees
   deathProbability: {
-    youthSmall: 0.05,     // 5% chance of dying (youth stages keep original rates)
-    youthMedium: 0.03,    // 3% chance
+    youthSmall: 0.05, // 5% chance of dying (youth stages keep original rates)
+    youthMedium: 0.03, // 3% chance
     youthMediumHigh: 0.02, // 2% chance
-    youthBig: 0.01,       // 1% chance
-    adult: 0.01,          // 1% chance per minute for adult trees
+    youthBig: 0.01, // 1% chance
+    adult: 0.01, // 1% chance per minute for adult trees
   },
-  // Check interval in milliseconds (1 minute)
-  checkInterval: 60000, // 60 seconds = 1 minute
+  // Check interval in milliseconds (3 minutes for performance)
+  // PERFORMANCE FIX: Reduced from 60s to 180s to prevent frequent scene rerenders
+  checkInterval: 180000, // 180 seconds = 3 minutes
   // Tree spawning configuration
   spawning: {
     spawnProbability: 0.04, // 4% chance per check cycle
@@ -144,15 +160,15 @@ export const FOREST_CONFIG = {
 export const GRASS_MODELS = [
   "grass/grass",
   "grass/grass-basic",
-  "grass/grass-clumb", 
+  "grass/grass-clumb",
   "grass/grass-long",
-  "grass/grass-tall"
+  "grass/grass-tall",
 ] as const;
 
 // Animal models for random spawning
 export const ANIMAL_MODELS = [
   "animals/deer",
-  "animals/wolf",
+  // "animals/wolf", // DISABLED - Wolf placement disabled
   "animals/crab",
   "animals/sheep-white",
   "animals/bear_brown",
@@ -160,7 +176,7 @@ export const ANIMAL_MODELS = [
   "animals/hen",
   "animals/horse",
   "animals/penguin",
-  "animals/pig"
+  "animals/pig",
 ] as const;
 
 // Deer spawning configuration
@@ -175,7 +191,7 @@ export const DEER_CONFIG = {
   // Terrain conditions for deer spawning - made more lenient
   heightRange: {
     min: -0.5, // Can spawn in slight depressions (same as grass)
-    max: 1.2,  // Can spawn on moderate hills
+    max: 1.2, // Can spawn on moderate hills
   },
   waterLevelMax: 0.02, // Allow spawning in slightly damp areas (more lenient than before)
   // Deer behavior settings
@@ -211,7 +227,7 @@ export const WOLF_CONFIG = {
   // Terrain conditions for wolf spawning - similar to deer but more restrictive
   heightRange: {
     min: -0.3, // Can spawn in slight depressions
-    max: 1.5,  // Can spawn on higher terrain than deer
+    max: 1.5, // Can spawn on higher terrain than deer
   },
   waterLevelMax: 0.01, // Don't spawn in water areas
   // Wolf behavior settings
@@ -254,7 +270,7 @@ export const GRASS_CONFIG = {
   // Terrain conditions for grass spawning
   heightRange: {
     min: -0.5, // Can spawn in slight depressions
-    max: 1.0,  // But not on high mountains (brown/gray terrain)
+    max: 1.0, // But not on high mountains (brown/gray terrain)
   },
   waterLevelMax: 0.01, // Don't spawn in water
 } as const;
@@ -263,7 +279,7 @@ export const GRASS_CONFIG = {
 export const DECORATION_MODELS = [
   // Flowers
   "carnations",
-  "flower-red", 
+  "flower-red",
   "roses",
   // Mushrooms
   "mushroom-boletus",
@@ -272,29 +288,29 @@ export const DECORATION_MODELS = [
   // Brown stones
   "stone-diamond-brown",
   "stone-flat-brown",
-  "stone-oval-brown", 
+  "stone-oval-brown",
   "stone-pointy-brown",
   "stone-round-brown",
-  "stone-small-brown"
+  "stone-small-brown",
 ] as const;
 
 // Map simplified names to actual file paths
 export const DECORATION_MODEL_PATHS = {
   // Flowers
-  "carnations": "decorations/carnations",
+  carnations: "decorations/carnations",
   "flower-red": "decorations/flower-red",
-  "roses": "decorations/roses",
-  // Mushrooms  
+  roses: "decorations/roses",
+  // Mushrooms
   "mushroom-boletus": "decorations/mushroom-boletus",
   "mushroom-toadstool": "decorations/mushroom-toadstool",
   "mushroom-toadstool-green": "decorations/mushroom-toadstool-green",
   // Brown stones
   "stone-diamond-brown": "brown_stone/stone-diamond_brown",
-  "stone-flat-brown": "brown_stone/stone-flat_brown", 
+  "stone-flat-brown": "brown_stone/stone-flat_brown",
   "stone-oval-brown": "brown_stone/stone-oval_brown",
   "stone-pointy-brown": "brown_stone/stone-pointy_brown",
   "stone-round-brown": "brown_stone/stone-round_brown",
-  "stone-small-brown": "brown_stone/stone-small_brown"
+  "stone-small-brown": "brown_stone/stone-small_brown",
 } as const;
 
 // Object types available for placement
@@ -302,14 +318,14 @@ export const OBJECT_TYPES = {
   trees: [
     "tree", // Generic tree
     "tree-baobab",
-    "tree-beech", 
+    "tree-beech",
     "tree-birch",
     "tree-elipse",
     "tree-lime",
     "tree-maple",
     "tree-oak",
     "tree-round",
-    "tree-tall"
+    "tree-tall",
   ],
   structures: ["house", "tower", "building-cabin-small", "building-cabin-big"],
   decorations: DECORATION_MODELS,
@@ -325,20 +341,20 @@ export const MODEL_SCALING = {
     trees: {
       adult: 1.2,
       "youth-small": 0.3,
-      "youth-medium": 0.6, 
+      "youth-medium": 0.6,
       "youth-medium-high": 0.9,
       "youth-big": 1.1,
       "dead-standing": 1.0,
       broken: 0.2,
       logs: 0.15,
     },
-    // Animals  
+    // Animals
     animals: {
       deer: 0.8,
       wolf: 0.5,
       crab: 0.2,
       "sheep-white": 0.5,
-      "bear_brown": 0.6,
+      bear_brown: 0.6,
       cow: 0.5,
       hen: 0.3,
       horse: 0.8,
@@ -379,8 +395,8 @@ export const MODEL_SCALING = {
       house: 1.5,
       tower: 2.0,
       "building-cabin-small": 0.5, // Scale to match tree height
-      "building-cabin-big": 0.5,   // Scale to be slightly larger than trees
-    }
+      "building-cabin-big": 0.5, // Scale to be slightly larger than trees
+    },
   },
   // Global scale factor applied to all models (for easy adjustment)
   globalScaleFactor: 1.0,
@@ -393,24 +409,45 @@ export const MODEL_SCALING = {
 // Using bitwise flags for efficient collision filtering
 export const COLLISION_GROUPS = {
   // Terrain and static objects
-  TERRAIN: 0x00010001,        // Group 1, interacts with group 1
+  TERRAIN: 0x00010001, // Group 1, interacts with group 1
   STATIC_OBJECTS: 0x00010002, // Group 2, interacts with group 1
-  
+
   // Dynamic objects
-  ANIMALS: 0x00010004,        // Group 3, interacts with groups 1, 2
-  STRUCTURES: 0x00010008,     // Group 4, interacts with groups 1, 2, 3
-  
+  ANIMALS: 0x00010004, // Group 3, interacts with groups 1, 2
+  STRUCTURES: 0x00010008, // Group 4, interacts with groups 1, 2, 3
+
   // Special groups
-  WATER: 0x00010010,          // Group 5, interacts with groups 1, 3, 4
-  DECORATIONS: 0x00010020,    // Group 6, interacts with group 1
+  WATER: 0x00010010, // Group 5, interacts with groups 1, 3, 4
+  DECORATIONS: 0x00010020, // Group 6, interacts with group 1
 } as const;
 
 // Collision interaction matrix
 export const COLLISION_INTERACTIONS = {
-  TERRAIN: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
-  STATIC_OBJECTS: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
-  ANIMALS: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES | COLLISION_GROUPS.WATER,
-  STRUCTURES: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.STATIC_OBJECTS | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES | COLLISION_GROUPS.WATER,
-  WATER: COLLISION_GROUPS.TERRAIN | COLLISION_GROUPS.ANIMALS | COLLISION_GROUPS.STRUCTURES,
+  TERRAIN:
+    COLLISION_GROUPS.TERRAIN |
+    COLLISION_GROUPS.STATIC_OBJECTS |
+    COLLISION_GROUPS.ANIMALS |
+    COLLISION_GROUPS.STRUCTURES,
+  STATIC_OBJECTS:
+    COLLISION_GROUPS.TERRAIN |
+    COLLISION_GROUPS.STATIC_OBJECTS |
+    COLLISION_GROUPS.ANIMALS |
+    COLLISION_GROUPS.STRUCTURES,
+  ANIMALS:
+    COLLISION_GROUPS.TERRAIN |
+    COLLISION_GROUPS.STATIC_OBJECTS |
+    COLLISION_GROUPS.ANIMALS |
+    COLLISION_GROUPS.STRUCTURES |
+    COLLISION_GROUPS.WATER,
+  STRUCTURES:
+    COLLISION_GROUPS.TERRAIN |
+    COLLISION_GROUPS.STATIC_OBJECTS |
+    COLLISION_GROUPS.ANIMALS |
+    COLLISION_GROUPS.STRUCTURES |
+    COLLISION_GROUPS.WATER,
+  WATER:
+    COLLISION_GROUPS.TERRAIN |
+    COLLISION_GROUPS.ANIMALS |
+    COLLISION_GROUPS.STRUCTURES,
   DECORATIONS: COLLISION_GROUPS.TERRAIN,
 } as const;

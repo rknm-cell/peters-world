@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { useSelectedObject } from '~/lib/store';
-import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { useSelectedObject } from "~/lib/store";
+import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 // Grass types are defined in constants.ts and used dynamically
 
@@ -43,19 +43,19 @@ export function Grass({
     if (isLoading || !gltfScene) {
       console.log(`Grass ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfScene
+        hasScene: !!gltfScene,
       });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
-      
+
       // Apply standardized scaling using the new utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: 'grass',
+        objectType: "grass",
         modelType: type,
-        preview
+        preview,
       });
 
       // Enable shadows and apply preview styling
@@ -63,7 +63,7 @@ export function Grass({
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
+
           if (preview) {
             // Preview styling - make it more transparent and colored
             if (child.material) {
@@ -83,7 +83,7 @@ export function Grass({
       console.log(`Grass ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
         scaleFactor,
-        'grass positioned by PlacementSystem': true
+        "grass positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -97,7 +97,10 @@ export function Grass({
   useFrame((state) => {
     if (groupRef.current && selected) {
       groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    } else if (groupRef.current && Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01) {
+    } else if (
+      groupRef.current &&
+      Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01
+    ) {
       // Only update rotation if there's a significant difference to reduce flickering
       groupRef.current.rotation.y = rotation[1];
     }
@@ -113,20 +116,20 @@ export function Grass({
         scale={scale}
         userData={{ isPlacedObject: false, objectId, isGrass: true }} // Grass shouldn't be interactive for camera controls
       >
-        <mesh 
-          position={[0, 0.02, 0]} 
-          castShadow 
+        <mesh
+          position={[0, 0.02, 0]}
+          castShadow
           receiveShadow
           raycast={() => null} // Make grass transparent to raycasting for camera controls
         >
           <coneGeometry args={[0.01, 0.06, 4]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#228B22"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
           />
         </mesh>
-        
+
         {/* Selection indicator */}
         {selected && !preview && (
           <mesh position={[0, 0.05, 0]}>
@@ -146,11 +149,11 @@ export function Grass({
       scale={scale}
       userData={{ isPlacedObject: false, objectId, isGrass: true }} // Grass shouldn't be interactive for camera controls
     >
-      <primitive 
-        object={grassModel} 
+      <primitive
+        object={grassModel}
         raycast={() => null} // Make grass transparent to raycasting for camera controls
       />
-      
+
       {/* Selection indicator */}
       {selected && !preview && (
         <mesh position={[0, 0.05, 0]}>

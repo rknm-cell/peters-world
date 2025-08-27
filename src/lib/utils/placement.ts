@@ -7,18 +7,18 @@ import * as THREE from "three";
 function getArrowHelperRotation(direction: THREE.Vector3): THREE.Euler {
   // Create a temporary ArrowHelper to extract its rotation logic
   const tempArrowHelper = new THREE.ArrowHelper(
-    direction,                    // Direction vector
-    new THREE.Vector3(0, 0, 0),  // Origin (doesn't affect rotation)
-    1,                           // Length (doesn't affect rotation)
-    0x000000                     // Color (doesn't affect rotation)
+    direction, // Direction vector
+    new THREE.Vector3(0, 0, 0), // Origin (doesn't affect rotation)
+    1, // Length (doesn't affect rotation)
+    0x000000, // Color (doesn't affect rotation)
   );
-  
+
   // Extract the rotation - this is ArrowHelper's exact orientation calculation
   const rotation = tempArrowHelper.rotation.clone();
-  
+
   // Clean up temporary object to prevent memory leaks
   tempArrowHelper.dispose();
-  
+
   return rotation;
 }
 
@@ -182,7 +182,7 @@ export interface PlacementInfo {
 /**
  * Calculate the optimal placement position and rotation for an object
  * based on surface intersection and object metadata
- * 
+ *
  * CRITICAL: Uses ArrowHelper.rotation to extract IDENTICAL orientation logic
  * as the debug arrows, ensuring perfect synchronization between debug visualization
  * and actual object placement.
@@ -209,29 +209,30 @@ export function calculatePlacement(
 
   // Calculate the final position using mathematical approach
   const finalPosition = mathSurfacePoint.clone();
-  
+
   // Move along mathematical normal by the bottom offset (negative = embed into surface)
-  finalPosition.add(
-    mathNormal.clone().multiplyScalar(metadata.bottomOffset),
-  );
+  finalPosition.add(mathNormal.clone().multiplyScalar(metadata.bottomOffset));
 
   // All objects (including animals) use identical orientation logic for consistency
   // Use ArrowHelper's internal logic to determine orientation
   // This ensures IDENTICAL orientation to what debug arrows show
   const rotation = getArrowHelperRotation(mathNormal);
-  
+
   // Apply slope reduction for natural appearance (optional)
   // Gradually reduce extreme rotations while keeping the ArrowHelper base orientation
-  const rotationMagnitude = Math.sqrt(rotation.x * rotation.x + rotation.z * rotation.z);
-  if (rotationMagnitude > Math.PI / 2.2) { // If rotation is more than ~82 degrees
-    const reductionFactor = Math.max(0.3, (Math.PI / 2.2) / rotationMagnitude);
+  const rotationMagnitude = Math.sqrt(
+    rotation.x * rotation.x + rotation.z * rotation.z,
+  );
+  if (rotationMagnitude > Math.PI / 2.2) {
+    // If rotation is more than ~82 degrees
+    const reductionFactor = Math.max(0.3, Math.PI / 2.2 / rotationMagnitude);
     rotation.x *= reductionFactor;
     rotation.z *= reductionFactor;
   }
-  
+
   // Rotate animals 90 degrees for proper orientation
   if (objectType.startsWith("animals/")) {
-    rotation.x += Math.PI / 2 ; // Add 90 degrees (π/2 radians) to Y rotation
+    rotation.x += Math.PI / 2; // Add 90 degrees (π/2 radians) to Y rotation
   }
 
   // Check for collisions with existing objects using bounding box
@@ -319,11 +320,11 @@ export function getDetailedIntersection(
   if (mesh.matrixWorld) {
     // Ensure the mesh's world matrix is up to date
     mesh.updateMatrixWorld(true);
-    
+
     const normalMatrix = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
     normal.applyMatrix3(normalMatrix).normalize();
   }
-  
+
   // Ensure the normal points outward from the globe center
   // For a sphere, the normal should point away from the center (0,0,0)
   const centerToPoint = intersection.point.clone().normalize();

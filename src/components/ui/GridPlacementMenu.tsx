@@ -13,12 +13,23 @@ import { Wolf } from "~/components/three/objects/Wolf";
 import { Grass } from "~/components/three/objects/Grass";
 
 // Type definitions for the object types
-type TreeType = 
-  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch"
-  | "tree-elipse" | "tree-lime" | "tree-maple" 
-  | "tree-oak" | "tree-round" | "tree-tall";
+type TreeType =
+  | "tree"
+  | "tree-baobab"
+  | "tree-beech"
+  | "tree-birch"
+  | "tree-elipse"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-tall";
 
-type StructureType = "house" | "tower" | "building-cabin-small" | "building-cabin-big";
+type StructureType =
+  | "house"
+  | "tower"
+  | "building-cabin-small"
+  | "building-cabin-big";
 
 interface GridPlacementMenuProps {
   isOpen: boolean;
@@ -29,20 +40,27 @@ interface GridPlacementMenuProps {
 // Helper function to format display names
 function formatDisplayName(objectType: string): string {
   return objectType
-    .replace(/^(tree-|grass\/|animals\/|decorations\/)/g, '')
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, l => l.toUpperCase());
+    .replace(/^(tree-|grass\/|animals\/|decorations\/)/g, "")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
-
 // Shared 3D preview component that shows one object at a time
-function SharedObjectPreview({ objectType, category }: { objectType: string | null; category: string }) {
-    if (!objectType) {
+function SharedObjectPreview({
+  objectType,
+  category,
+}: {
+  objectType: string | null;
+  category: string;
+}) {
+  if (!objectType) {
     return (
-    <div className="w-full h-32 sm:h-48 rounded-lg bg-black/20 flex items-center justify-center">
-      <span className="text-white/40 text-sm">Click an object to preview</span>
-    </div>
-  );
+      <div className="flex h-32 w-full items-center justify-center rounded-lg bg-black/20 sm:h-48">
+        <span className="text-sm text-white/40">
+          Click an object to preview
+        </span>
+      </div>
+    );
   }
 
   const renderObject = () => {
@@ -80,18 +98,16 @@ function SharedObjectPreview({ objectType, category }: { objectType: string | nu
   };
 
   return (
-    <div className="w-full h-32 sm:h-48 rounded-lg overflow-hidden bg-black/20">
-      <Canvas 
+    <div className="h-32 w-full overflow-hidden rounded-lg bg-black/20 sm:h-48">
+      <Canvas
         gl={{ alpha: true, antialias: true }}
         camera={{ position: [2, 2, 2], fov: 50 }}
-        className="w-full h-full"
+        className="h-full w-full"
       >
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 2, 2]} intensity={0.8} />
-        <Suspense fallback={null}>
-          {renderObject()}
-        </Suspense>
-        <OrbitControls 
+        <Suspense fallback={null}>{renderObject()}</Suspense>
+        <OrbitControls
           enableZoom={false}
           enablePan={false}
           autoRotate
@@ -103,16 +119,23 @@ function SharedObjectPreview({ objectType, category }: { objectType: string | nu
 }
 
 // Simple object item component that shows preview on click
-function ObjectItem({ objectType, category, onClick, isSelected }: { 
-  objectType: string; 
-  category: string; 
+function ObjectItem({
+  objectType,
+  category,
+  onClick,
+  isSelected,
+}: {
+  objectType: string;
+  category: string;
   onClick: (objectType: string) => void;
   isSelected: boolean;
 }) {
   const getCategoryIcon = () => {
     switch (category) {
-      case "trees": return "🌲";
-      case "decorations": return "🌸";
+      case "trees":
+        return "🌲";
+      case "decorations":
+        return "🌸";
       case "structures": {
         // Use specific emojis for different building types
         if (objectType === "house") return "🏠";
@@ -135,34 +158,40 @@ function ObjectItem({ objectType, category, onClick, isSelected }: {
         if (objectType === "animals/pig") return "🐷";
         return "🦌"; // fallback
       }
-      case "grass": return "🌿";
-      default: return "📦";
+      case "grass":
+        return "🌿";
+      default:
+        return "📦";
     }
   };
 
   return (
     <button
       onClick={() => onClick(objectType)}
-      className={`group relative rounded-lg p-2 sm:p-4 border transition-all duration-200 min-h-[60px] sm:min-h-[80px] flex flex-col items-center justify-center ${
-        isSelected 
-          ? 'bg-blue-500/30 border-blue-400 text-white' 
-          : 'bg-white/5 border-white/10 hover:border-blue-400/50 hover:bg-white/10'
+      className={`group relative flex min-h-[60px] flex-col items-center justify-center rounded-lg border p-2 transition-all duration-200 sm:min-h-[80px] sm:p-4 ${
+        isSelected
+          ? "border-blue-400 bg-blue-500/30 text-white"
+          : "border-white/10 bg-white/5 hover:border-blue-400/50 hover:bg-white/10"
       }`}
     >
       {/* Category icon */}
-      <div className="text-lg sm:text-2xl mb-1 sm:mb-2">
+      <div className="mb-1 text-lg sm:mb-2 sm:text-2xl">
         {getCategoryIcon()}
       </div>
-      
+
       {/* Object name */}
-      <div className="text-xs font-medium text-white/80 group-hover:text-white text-center leading-tight">
+      <div className="text-center text-xs font-medium leading-tight text-white/80 group-hover:text-white">
         {formatDisplayName(objectType)}
       </div>
     </button>
   );
 }
 
-export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMenuProps) {
+export function GridPlacementMenu({
+  isOpen,
+  onClose,
+  position,
+}: GridPlacementMenuProps) {
   const { setPlacing, setSelectedObjectType } = useWorldStore();
   const [selectedCategory, setSelectedCategory] = useState<string>("trees");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -182,7 +211,7 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
     { name: "animals", icon: "🐾", items: OBJECT_TYPES.animals },
   ];
 
-  const currentCategory = categories.find(c => c.name === selectedCategory);
+  const currentCategory = categories.find((c) => c.name === selectedCategory);
 
   const handleObjectClick = (objectType: string) => {
     setSelectedItem(objectType);
@@ -197,32 +226,46 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
       {/* Main grid menu */}
       <div
-        className="absolute bg-black/90 border border-white/20 rounded-lg backdrop-blur-sm p-4 sm:p-6 shadow-2xl flex flex-col"
+        className="absolute flex flex-col rounded-lg border border-white/20 bg-black/90 p-4 shadow-2xl backdrop-blur-sm sm:p-6"
         style={{
-          left: Math.max(20, Math.min(position.x - menuWidth / 2, window.innerWidth - menuWidth - 20)),
-          top: Math.max(40, Math.min(position.y + 10, window.innerHeight - menuHeight - 40)),
+          left: Math.max(
+            20,
+            Math.min(
+              position.x - menuWidth / 2,
+              window.innerWidth - menuWidth - 20,
+            ),
+          ),
+          top: Math.max(
+            40,
+            Math.min(position.y + 10, window.innerHeight - menuHeight - 40),
+          ),
           width: menuWidth,
           height: menuHeight,
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 flex-shrink-0">
-          <h2 className="text-base sm:text-lg font-semibold text-white">Choose Object</h2>
+        <div className="mb-4 flex flex-shrink-0 items-center justify-between">
+          <h2 className="text-base font-semibold text-white sm:text-lg">
+            Choose Object
+          </h2>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white p-1 rounded"
+            className="rounded p-1 text-white/60 hover:text-white"
           >
             ✕
           </button>
         </div>
 
         {/* Category tabs */}
-        <div className="mb-4 bg-white/5 rounded-lg p-1 flex-shrink-0 overflow-hidden">
-          <div className="flex gap-1 overflow-x-auto custom-scrollbar">
+        <div className="mb-4 flex-shrink-0 overflow-hidden rounded-lg bg-white/5 p-1">
+          <div className="custom-scrollbar flex gap-1 overflow-x-auto">
             {categories.map((category) => (
               <button
                 key={category.name}
@@ -230,14 +273,16 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
                   setSelectedCategory(category.name);
                   setSelectedItem(null);
                 }}
-                className={`flex items-center justify-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 min-w-0 ${
+                className={`flex min-w-0 flex-shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium transition-all sm:gap-2 sm:px-3 sm:text-sm ${
                   selectedCategory === category.name
                     ? "bg-blue-500 text-white"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <span className="text-base sm:text-lg">{category.icon}</span>
-                <span className="hidden sm:inline capitalize text-xs sm:text-sm">{category.name}</span>
+                <span className="hidden text-xs capitalize sm:inline sm:text-sm">
+                  {category.name}
+                </span>
               </button>
             ))}
           </div>
@@ -246,14 +291,14 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         {/* Shared 3D Preview */}
         <div className="mb-4 flex-shrink-0">
           <div className="relative">
-            <SharedObjectPreview 
-              objectType={selectedItem} 
-              category={selectedCategory} 
+            <SharedObjectPreview
+              objectType={selectedItem}
+              category={selectedCategory}
             />
             {selectedItem && (
               <button
                 onClick={handlePlaceObject}
-                className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 transform rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
               >
                 Place Object
               </button>
@@ -262,16 +307,19 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Objects grid */}
-        <div className="flex-1 overflow-hidden min-h-0">
-          <div 
-            className="h-full overflow-y-auto pr-2 -mr-2 custom-scrollbar" 
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <div
+            className="custom-scrollbar -mr-2 h-full overflow-y-auto pr-2"
             style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1)',
-              maxHeight: '100%',
+              scrollbarWidth: "thin",
+              scrollbarColor:
+                "rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1)",
+              maxHeight: "100%",
             }}
           >
-            <div className={`grid gap-2 pb-2 ${gridCols === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+            <div
+              className={`grid gap-2 pb-2 ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}
+            >
               {currentCategory?.items.map((objectType) => (
                 <ObjectItem
                   key={objectType}
@@ -286,10 +334,10 @@ export function GridPlacementMenu({ isOpen, onClose, position }: GridPlacementMe
         </div>
 
         {/* Instructions */}
-        <div className="pt-4 border-t border-white/10 flex-shrink-0">
-          <p className="text-xs text-white/60 text-center">
-            {selectedItem 
-              ? "Click 'Place Object' to start placing in your world" 
+        <div className="flex-shrink-0 border-t border-white/10 pt-4">
+          <p className="text-center text-xs text-white/60">
+            {selectedItem
+              ? "Click 'Place Object' to start placing in your world"
               : "Click an object to preview, then click 'Place Object' to add it"}
           </p>
         </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { useWorldStore, useSelectedObject } from '~/lib/store';
-import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
+import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { useWorldStore, useSelectedObject } from "~/lib/store";
+import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 interface WolfProps {
   type: string;
@@ -32,7 +32,7 @@ export function Wolf({
 }: WolfProps) {
   const groupRef = useRef<THREE.Group>(null);
   const selectedObject = useSelectedObject();
-  const selected = (!preview && objectId) ? selectedObject === objectId : false;
+  const selected = !preview && objectId ? selectedObject === objectId : false;
 
   // Load the GLTF model
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
@@ -45,21 +45,21 @@ export function Wolf({
     if (isLoading || !gltfScene) {
       console.log(`Wolf ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfScene
+        hasScene: !!gltfScene,
       });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
-      
+
       // Apply standardized scaling using the new utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: 'animal',
+        objectType: "animal",
         modelType: type,
-        preview
+        preview,
       });
-      
+
       // Reset position to origin - let PlacementSystem handle positioning
       clonedScene.position.set(0, 0, 0);
 
@@ -68,10 +68,12 @@ export function Wolf({
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
+
           // Store original material for dynamic switching
           if (child.material) {
-            child.userData.originalMaterial = (child.material as THREE.Material).clone();
+            child.userData.originalMaterial = (
+              child.material as THREE.Material
+            ).clone();
           }
         }
       });
@@ -79,7 +81,7 @@ export function Wolf({
       console.log(`Wolf ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
         scaleFactor,
-        'wolf positioned by PlacementSystem': true
+        "wolf positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -94,7 +96,9 @@ export function Wolf({
     if (wolfModel && preview) {
       wolfModel.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh && child.userData.originalMaterial) {
-          const previewMaterial = (child.userData.originalMaterial as THREE.MeshStandardMaterial).clone();
+          const previewMaterial = (
+            child.userData.originalMaterial as THREE.MeshStandardMaterial
+          ).clone();
           previewMaterial.transparent = true;
           previewMaterial.opacity = 0.6;
           previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
@@ -114,7 +118,7 @@ export function Wolf({
   // CRITICAL FIX: Use stable refs to avoid store access in useFrame
   const currentPositionRef = useRef(position);
   const currentRotationRef = useRef(rotation);
-  
+
   // Update refs when props change (outside of useFrame)
   useEffect(() => {
     currentPositionRef.current = position;
@@ -137,7 +141,8 @@ export function Wolf({
 
     // Selected state animation (override rotation temporarily)
     if (selected) {
-      groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      groupRef.current.rotation.y +=
+        Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
@@ -149,21 +154,21 @@ export function Wolf({
         position={position}
         rotation={rotation}
         scale={scale}
-        userData={{ 
+        userData={{
           isPlacedObject: !preview && !isPhysicsControlled, // Physics wolf excluded from placement raycasting
           objectId,
-          isPhysicsControlled 
+          isPhysicsControlled,
         }}
       >
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.4, 0.9, 0.7]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#404040"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
           />
         </mesh>
-        
+
         {/* Selection indicator */}
         {selected && !preview && (
           <mesh position={[0, 0.9, 0]}>
@@ -179,16 +184,16 @@ export function Wolf({
     <group
       ref={groupRef}
       position={position}
-      rotation={rotation}  
+      rotation={rotation}
       scale={scale}
-      userData={{ 
+      userData={{
         isPlacedObject: !preview && !isPhysicsControlled, // Physics wolf excluded from placement raycasting
         objectId,
-        isPhysicsControlled 
+        isPhysicsControlled,
       }}
     >
       <primitive object={wolfModel} />
-      
+
       {/* Selection indicator */}
       {selected && !preview && (
         <mesh position={[0, 0.9, 0]}>

@@ -7,7 +7,7 @@ export enum DebugLevel {
   OFF = 0,
   BASIC = 1,
   DETAILED = 2,
-  VERBOSE = 3
+  VERBOSE = 3,
 }
 
 export interface DebugConfig {
@@ -29,7 +29,7 @@ class DebugControlsManager {
       enableConsoleLogging: false,
       enableVisualDebug: false,
       throttleMs: 100, // 100ms throttle for debug updates
-      maxDebugObjects: 100
+      maxDebugObjects: 100,
     };
 
     // Load from localStorage if available
@@ -59,7 +59,9 @@ class DebugControlsManager {
   }
 
   shouldShowVisualDebug(): boolean {
-    return this.config.enableVisualDebug && this.config.level >= DebugLevel.BASIC;
+    return (
+      this.config.enableVisualDebug && this.config.level >= DebugLevel.BASIC
+    );
   }
 
   shouldLog(level: DebugLevel = DebugLevel.BASIC): boolean {
@@ -82,9 +84,9 @@ class DebugControlsManager {
   }
 
   private loadConfig(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem('debug-config');
+        const saved = localStorage.getItem("debug-config");
         if (saved) {
           const parsed = JSON.parse(saved) as Partial<DebugConfig>;
           this.config = { ...this.config, ...parsed };
@@ -96,9 +98,9 @@ class DebugControlsManager {
   }
 
   private saveConfig(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        localStorage.setItem('debug-config', JSON.stringify(this.config));
+        localStorage.setItem("debug-config", JSON.stringify(this.config));
       } catch {
         // Ignore localStorage errors
       }
@@ -111,8 +113,13 @@ export const debugControls = DebugControlsManager.getInstance();
 
 // Convenience functions
 export const isDebugEnabled = () => debugControls.isDebugEnabled();
-export const shouldShowVisualDebug = () => debugControls.shouldShowVisualDebug();
-export const shouldLog = (level: DebugLevel = DebugLevel.BASIC) => debugControls.shouldLog(level);
-export const conditionalLog = (level: DebugLevel, message: string, ...args: unknown[]) => 
-  debugControls.conditionalLog(level, message, ...args);
+export const shouldShowVisualDebug = () =>
+  debugControls.shouldShowVisualDebug();
+export const shouldLog = (level: DebugLevel = DebugLevel.BASIC) =>
+  debugControls.shouldLog(level);
+export const conditionalLog = (
+  level: DebugLevel,
+  message: string,
+  ...args: unknown[]
+) => debugControls.conditionalLog(level, message, ...args);
 export const shouldThrottle = () => debugControls.shouldThrottle();

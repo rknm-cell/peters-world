@@ -40,21 +40,23 @@ export function DropdownMenu({ isOpen, onClose, position }: DropdownMenuProps) {
       <div
         className="absolute"
         style={{
-          left: position.x  ,
+          left: position.x,
           top: position.y + 10,
           width: 200,
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Background container */}
-        <div className="rounded-lg border border-white/20 bg-black/80 backdrop-blur-sm p-2">
+        <div className="rounded-lg border border-white/20 bg-black/80 p-2 backdrop-blur-sm">
           {/* Category buttons */}
           <div className="space-y-2">
             {categories.map((category) => (
               <div key={category.name} className="relative">
                 <button
                   className={`flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm capitalize text-white/80 transition-colors duration-150 hover:bg-white/10 hover:text-white ${
-                    selectedCategory === category.name ? "bg-white/20 text-white" : ""
+                    selectedCategory === category.name
+                      ? "bg-white/20 text-white"
+                      : ""
                   }`}
                   onClick={() => handleCategorySelect(category.name)}
                 >
@@ -62,17 +64,19 @@ export function DropdownMenu({ isOpen, onClose, position }: DropdownMenuProps) {
                     <span className="text-lg">{category.icon}</span>
                     <span>{category.name}</span>
                   </span>
-                  <span className={`transition-transform duration-200 ${
-                    selectedCategory === category.name ? "rotate-180" : ""
-                  }`}>
+                  <span
+                    className={`transition-transform duration-200 ${
+                      selectedCategory === category.name ? "rotate-180" : ""
+                    }`}
+                  >
                     ▼
                   </span>
                 </button>
 
                 {/* Sub-menu for object types */}
                 {selectedCategory === category.name && (
-                  <div className="mt-1 ml-4 rounded border border-white/10 bg-black/60 p-2">
-                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                  <div className="ml-4 mt-1 rounded border border-white/10 bg-black/60 p-2">
+                    <div className="custom-scrollbar max-h-48 overflow-y-auto">
                       <div className="space-y-1">
                         {category.items.map((item) => (
                           <button
@@ -92,7 +96,7 @@ export function DropdownMenu({ isOpen, onClose, position }: DropdownMenuProps) {
           </div>
 
           {/* Close button */}
-          <div className="mt-3 pt-2 border-t border-white/10">
+          <div className="mt-3 border-t border-white/10 pt-2">
             <button
               className="flex w-full items-center justify-center rounded px-3 py-2 text-sm text-red-400 transition-colors duration-150 hover:bg-red-500/20 hover:text-red-300"
               onClick={onClose}

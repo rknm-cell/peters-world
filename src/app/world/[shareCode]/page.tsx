@@ -11,13 +11,17 @@ import { deserializeWorld } from "~/lib/utils/world-serialization";
 export default function WorldViewPage() {
   const params = useParams();
   const shareCode = params.shareCode as string;
-  
+
   const { loadWorld } = useWorldStore();
-  
+
   // Fetch world data by share code
-  const { data: world, isLoading, error } = api.world.getByShareCode.useQuery(
+  const {
+    data: world,
+    isLoading,
+    error,
+  } = api.world.getByShareCode.useQuery(
     { shortCode: shareCode },
-    { enabled: !!shareCode }
+    { enabled: !!shareCode },
   );
 
   // Load world data when available
@@ -48,8 +52,8 @@ export default function WorldViewPage() {
       <div className="flex h-screen w-screen items-center justify-center bg-gray-900">
         <div className="text-center">
           <p className="mb-4 text-red-400">World not found</p>
-          <a 
-            href="/create" 
+          <a
+            href="/create"
             className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
           >
             Create Your Own World
@@ -62,19 +66,17 @@ export default function WorldViewPage() {
   return (
     <div className="relative h-screen w-screen bg-gray-900">
       <Canvas />
-      
+
       {/* Background Music */}
       <BackgroundMusic volume={0.3} autoPlay={true} />
-      
+
       {/* World info overlay */}
       <div className="fixed left-4 top-4 z-40 rounded-lg border border-white/20 bg-black/70 p-3 backdrop-blur-sm">
         <h1 className="text-lg font-semibold text-white">{world.name}</h1>
         <p className="text-sm text-white/60">
           Created {new Date(world.created).toLocaleDateString()}
         </p>
-        <p className="text-xs text-white/40">
-          Share code: {shareCode}
-        </p>
+        <p className="text-xs text-white/40">Share code: {shareCode}</p>
       </div>
 
       {/* Actions */}

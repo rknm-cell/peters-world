@@ -5,7 +5,11 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { useSelectedObject } from "~/lib/store";
-import { COLOR_PALETTES, DECORATION_MODELS, DECORATION_MODEL_PATHS } from "~/lib/constants";
+import {
+  COLOR_PALETTES,
+  DECORATION_MODELS,
+  DECORATION_MODEL_PATHS,
+} from "~/lib/constants";
 import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 interface DecorationProps {
@@ -19,15 +23,15 @@ interface DecorationProps {
 }
 
 // Component to load GLTF model
-function DecorationModel({ 
-  modelPath, 
-  materials, 
+function DecorationModel({
+  modelPath,
+  materials,
   position = [0, 0, 0],
   preview = false,
   modelType,
-  canPlace = true
-}: { 
-  modelPath: string; 
+  canPlace = true,
+}: {
+  modelPath: string;
   materials: Record<string, THREE.Material>;
   position?: [number, number, number];
   preview?: boolean;
@@ -35,24 +39,24 @@ function DecorationModel({
   canPlace?: boolean;
 }) {
   const { scene } = useGLTF(`/${modelPath}.glb`);
-  
+
   // Clone and apply materials
   const clonedScene = useMemo(() => {
     const cloned = scene.clone();
-    
+
     // Apply standardized scaling
     applyStandardizedScaling(cloned, {
-      objectType: 'decoration',
+      objectType: "decoration",
       modelType,
-      preview
+      preview,
     });
-    
+
     // Apply materials to all meshes
     cloned.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         // Only apply custom materials to stone decorations
         // Preserve original GLB materials for flowers and mushrooms
-        if (modelPath.includes('stone') || modelPath.includes('brown_stone')) {
+        if (modelPath.includes("stone") || modelPath.includes("brown_stone")) {
           child.material = materials.stone;
         }
         // For flowers and mushrooms, keep their original GLB materials
@@ -61,21 +65,23 @@ function DecorationModel({
           // Clone the original material and modify for preview
           const originalMaterial = child.material as THREE.Material;
           const previewMaterial = originalMaterial.clone();
-          if ('transparent' in previewMaterial) {
+          if ("transparent" in previewMaterial) {
             previewMaterial.transparent = true;
             previewMaterial.opacity = 0.6;
           }
-          if ('color' in previewMaterial && !canPlace) {
-            (previewMaterial as THREE.MeshStandardMaterial).color.setHex(0xff0000);
+          if ("color" in previewMaterial && !canPlace) {
+            (previewMaterial as THREE.MeshStandardMaterial).color.setHex(
+              0xff0000,
+            );
           }
           child.material = previewMaterial;
         }
-        
+
         child.castShadow = true;
         child.receiveShadow = true;
       }
     });
-    
+
     return cloned;
   }, [scene, materials, modelPath, preview, modelType, canPlace]);
 
@@ -101,7 +107,7 @@ export function Decoration({
     const stoneColor = preview && !canPlace ? "#ff0000" : "#8B7355";
     const flowerColor = preview && !canPlace ? "#ff0000" : "#FF69B4";
     const mushroomColor = preview && !canPlace ? "#ff0000" : "#8B4513";
-    
+
     return {
       stone: new THREE.MeshToonMaterial({
         color: stoneColor,
@@ -130,17 +136,26 @@ export function Decoration({
   }, [preview, canPlace]);
 
   // Check if this is a GLTF model type
-  const isGLTFModel = DECORATION_MODELS.some(model => model === type);
-  
+  const isGLTFModel = DECORATION_MODELS.some((model) => model === type);
+
   // Generate decoration geometry based on type
   const renderDecoration = () => {
     // Handle new GLTF models
     if (isGLTFModel) {
-      const modelPath = DECORATION_MODEL_PATHS[type as keyof typeof DECORATION_MODEL_PATHS] || type;
+      const modelPath =
+        DECORATION_MODEL_PATHS[type as keyof typeof DECORATION_MODEL_PATHS] ||
+        type;
       return (
-        <Suspense fallback={<mesh geometry={new THREE.BoxGeometry(0.2, 0.2, 0.2)} material={materials.rock} />}>
-          <DecorationModel 
-            modelPath={modelPath} 
+        <Suspense
+          fallback={
+            <mesh
+              geometry={new THREE.BoxGeometry(0.2, 0.2, 0.2)}
+              material={materials.rock}
+            />
+          }
+        >
+          <DecorationModel
+            modelPath={modelPath}
             materials={materials}
             position={[0, 0, 0]}
             modelType={type}
@@ -150,7 +165,7 @@ export function Decoration({
         </Suspense>
       );
     }
-    
+
     // Handle legacy types
     switch (type) {
       case "rock":
@@ -215,9 +230,12 @@ export function Decoration({
   useFrame((state) => {
     if (groupRef.current && selected) {
       if (type === "flower") {
-        groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 3) * 0.1;
+        groupRef.current.rotation.y =
+          rotation[1] + Math.sin(state.clock.elapsedTime * 3) * 0.1;
       } else {
-        groupRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 4) * 0.05);
+        groupRef.current.scale.setScalar(
+          1 + Math.sin(state.clock.elapsedTime * 4) * 0.05,
+        );
       }
     }
   });

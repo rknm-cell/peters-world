@@ -12,7 +12,12 @@ useGLTF.preload("/buildings/building-cabin-small.glb");
 useGLTF.preload("/buildings/building-cabin-big.glb");
 
 interface StructureProps {
-  type?: "house" | "tower" | "bridge" | "building-cabin-small" | "building-cabin-big";
+  type?:
+    | "house"
+    | "tower"
+    | "bridge"
+    | "building-cabin-small"
+    | "building-cabin-big";
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -47,8 +52,9 @@ export function Structure({
     // Use red color for invalid placement previews
     const wallColor = preview && !canPlace ? "#ff0000" : "#D2B48C";
     const roofColor = preview && !canPlace ? "#ff0000" : "#8B4513";
-    const stoneColor = preview && !canPlace ? "#ff0000" : COLOR_PALETTES.rock.primary;
-    
+    const stoneColor =
+      preview && !canPlace ? "#ff0000" : COLOR_PALETTES.rock.primary;
+
     return {
       wall: new THREE.MeshStandardMaterial({
         color: wallColor,
@@ -76,11 +82,14 @@ export function Structure({
 
   // Calculate scale factor to match target heights
   const getBuildingScale = useMemo(() => {
-    const targetHeight = MODEL_SCALING.targetHeights.structures[type as keyof typeof MODEL_SCALING.targetHeights.structures] || 1.0;
-    
+    const targetHeight =
+      MODEL_SCALING.targetHeights.structures[
+        type as keyof typeof MODEL_SCALING.targetHeights.structures
+      ] || 1.0;
+
     // Estimate the original height of the GLB model (this may need adjustment based on actual model dimensions)
     let originalHeight = 1.0;
-    
+
     switch (type) {
       case "building-cabin-small":
         originalHeight = 2.0; // Estimate - adjust based on actual model
@@ -91,16 +100,19 @@ export function Structure({
       default:
         originalHeight = 1.0;
     }
-    
+
     // Calculate scale factor to achieve target height
     const scaleFactor = targetHeight / originalHeight;
-    
+
     // Apply global scale factor and ensure it's within bounds
     const finalScale = Math.max(
       MODEL_SCALING.minScaleFactor,
-      Math.min(MODEL_SCALING.maxScaleFactor, scaleFactor * MODEL_SCALING.globalScaleFactor)
+      Math.min(
+        MODEL_SCALING.maxScaleFactor,
+        scaleFactor * MODEL_SCALING.globalScaleFactor,
+      ),
     );
-    
+
     // Debug logging for scaling
     if (type === "building-cabin-small" || type === "building-cabin-big") {
       console.log(`🏗️ ${type} scaling:`, {
@@ -108,10 +120,10 @@ export function Structure({
         originalHeight,
         scaleFactor,
         finalScale,
-        type
+        type,
       });
     }
-    
+
     return finalScale;
   }, [type]);
 
@@ -121,20 +133,20 @@ export function Structure({
       if (isLoadingSmall || !cabinSmallModel.scene) {
         console.log(`Structure ${type}: GLB loading failed or no scene`, {
           isLoading: isLoadingSmall,
-          hasScene: !!cabinSmallModel.scene
+          hasScene: !!cabinSmallModel.scene,
         });
         return null;
       }
 
       try {
         const clonedScene = cabinSmallModel.scene.clone(true);
-        
+
         // Enable shadows and apply preview styling
         clonedScene.traverse((child: THREE.Object3D) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            
+
             if (preview) {
               // Preview styling - make it more transparent and colored
               if (child.material) {
@@ -154,7 +166,7 @@ export function Structure({
         console.log(`Structure ${type}: Model loaded successfully`, {
           hasModel: !!clonedScene,
           scaleFactor: getBuildingScale,
-          'structure positioned by PlacementSystem': true
+          "structure positioned by PlacementSystem": true,
         });
 
         return clonedScene;
@@ -166,20 +178,20 @@ export function Structure({
       if (isLoadingBig || !cabinBigModel.scene) {
         console.log(`Structure ${type}: GLB loading failed or no scene`, {
           isLoading: isLoadingBig,
-          hasScene: !!cabinBigModel.scene
+          hasScene: !!cabinBigModel.scene,
         });
         return null;
       }
 
       try {
         const clonedScene = cabinBigModel.scene.clone(true);
-        
+
         // Enable shadows and apply preview styling
         clonedScene.traverse((child: THREE.Object3D) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            
+
             if (preview) {
               // Preview styling - make it more transparent and colored
               if (child.material) {
@@ -199,7 +211,7 @@ export function Structure({
         console.log(`Structure ${type}: Model loaded successfully`, {
           hasModel: !!clonedScene,
           scaleFactor: getBuildingScale,
-          'structure positioned by PlacementSystem': true
+          "structure positioned by PlacementSystem": true,
         });
 
         return clonedScene;
@@ -208,9 +220,18 @@ export function Structure({
         return null;
       }
     }
-    
+
     return null;
-  }, [type, cabinSmallModel.scene, cabinBigModel.scene, isLoadingSmall, isLoadingBig, preview, canPlace, getBuildingScale]);
+  }, [
+    type,
+    cabinSmallModel.scene,
+    cabinBigModel.scene,
+    isLoadingSmall,
+    isLoadingBig,
+    preview,
+    canPlace,
+    getBuildingScale,
+  ]);
 
   // Generate structure geometry based on type
   const renderStructure = () => {
@@ -287,24 +308,28 @@ export function Structure({
 
       case "building-cabin-small":
         if (!processedCabinModels) {
-          console.warn(`Structure ${type}: Failed to load model, not rendering`);
+          console.warn(
+            `Structure ${type}: Failed to load model, not rendering`,
+          );
           return null;
         }
         return (
-          <primitive 
-            object={processedCabinModels} 
+          <primitive
+            object={processedCabinModels}
             scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
           />
         );
 
       case "building-cabin-big":
         if (!processedCabinModels) {
-          console.warn(`Structure ${type}: Failed to load model, not rendering`);
+          console.warn(
+            `Structure ${type}: Failed to load model, not rendering`,
+          );
           return null;
         }
         return (
-          <primitive 
-            object={processedCabinModels} 
+          <primitive
+            object={processedCabinModels}
             scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
           />
         );
@@ -328,9 +353,11 @@ export function Structure({
 
     // Handle rotation updates consistently with placement system
     // Only update rotation if there's a significant difference to reduce flickering
-    if (Math.abs(groupRef.current.rotation.x - rotation[0]) > 0.01 ||
-        Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01 ||
-        Math.abs(groupRef.current.rotation.z - rotation[2]) > 0.01) {
+    if (
+      Math.abs(groupRef.current.rotation.x - rotation[0]) > 0.01 ||
+      Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01 ||
+      Math.abs(groupRef.current.rotation.z - rotation[2]) > 0.01
+    ) {
       groupRef.current.rotation.set(rotation[0], rotation[1], rotation[2]);
     }
 
@@ -339,7 +366,8 @@ export function Structure({
       // Store base rotation and set absolute rotation with animation
       groupRef.current.userData.baseRotationY ??= rotation[1];
       const baseRotationY = groupRef.current.userData.baseRotationY as number;
-      groupRef.current.rotation.y = baseRotationY + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+      groupRef.current.rotation.y =
+        baseRotationY + Math.sin(state.clock.elapsedTime * 2) * 0.05;
     } else {
       // Clear stored base rotation when not selected
       if (groupRef.current.userData.baseRotationY !== undefined) {
@@ -349,7 +377,10 @@ export function Structure({
   });
 
   // Don't render if cabin models failed to load
-  if ((type === "building-cabin-small" || type === "building-cabin-big") && !processedCabinModels) {
+  if (
+    (type === "building-cabin-small" || type === "building-cabin-big") &&
+    !processedCabinModels
+  ) {
     return null;
   }
 
@@ -359,10 +390,10 @@ export function Structure({
       position={position}
       rotation={rotation}
       scale={scale}
-      userData={{ 
-        isPlacedObject: true, 
+      userData={{
+        isPlacedObject: true,
         objectId,
-        type: 'structure'
+        type: "structure",
       }}
     >
       {renderStructure()}

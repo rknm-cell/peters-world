@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
-import { terrainNormalMapGenerator } from '~/components/debug/TerrainNormalMap';
-import { getTerrainCollisionDetector } from './terrain-collision';
+import * as THREE from "three";
+import { terrainHeightMapGenerator } from "~/components/debug/TerrainHeightMap";
+import { terrainNormalMapGenerator } from "~/components/debug/TerrainNormalMap";
+import { getTerrainCollisionDetector } from "./terrain-collision";
 
 export interface PathValidationResult {
   isValid: boolean;
@@ -25,14 +25,14 @@ export interface PathfindingOptions {
  */
 export class EnhancedPathfinder {
   private static instance: EnhancedPathfinder | null = null;
-  
+
   private readonly defaultOptions: PathfindingOptions = {
     maxSlopeAngle: Math.PI / 4, // 45 degrees
     avoidWater: true,
     samples: 20,
     useHeightMap: true,
     useNormalMap: true,
-    generateAlternatives: true
+    generateAlternatives: true,
   };
 
   static getInstance(): EnhancedPathfinder {
@@ -46,24 +46,36 @@ export class EnhancedPathfinder {
   validatePath(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    options: Partial<PathfindingOptions> = {}
+    options: Partial<PathfindingOptions> = {},
   ): PathValidationResult {
     const opts = { ...this.defaultOptions, ...options };
     const results: PathValidationResult[] = [];
 
     // Approach 1: Traditional terrain collision detection
-    const traditionalResult = this.validateWithTraditionalCollision(startPos, endPos, opts);
+    const traditionalResult = this.validateWithTraditionalCollision(
+      startPos,
+      endPos,
+      opts,
+    );
     results.push(traditionalResult);
 
     // Approach 2: Height map validation
     if (opts.useHeightMap) {
-      const heightMapResult = this.validateWithHeightMap(startPos, endPos, opts);
+      const heightMapResult = this.validateWithHeightMap(
+        startPos,
+        endPos,
+        opts,
+      );
       if (heightMapResult) results.push(heightMapResult);
     }
 
     // Approach 3: Normal map validation
     if (opts.useNormalMap) {
-      const normalMapResult = this.validateWithNormalMap(startPos, endPos, opts);
+      const normalMapResult = this.validateWithNormalMap(
+        startPos,
+        endPos,
+        opts,
+      );
       if (normalMapResult) results.push(normalMapResult);
     }
 
@@ -77,7 +89,7 @@ export class EnhancedPathfinder {
   private validateWithTraditionalCollision(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    options: PathfindingOptions
+    options: PathfindingOptions,
   ): PathValidationResult {
     const detector = getTerrainCollisionDetector();
     const path = this.generatePathPoints(startPos, endPos, options.samples);
@@ -86,24 +98,24 @@ export class EnhancedPathfinder {
       const prevPoint = path[i - 1];
       const currPoint = path[i];
       if (!prevPoint || !currPoint) continue;
-      
+
       const result = detector.checkMovement(prevPoint, currPoint);
-      
+
       if (!result.canMove) {
-        let reason = 'Unknown obstacle';
+        let reason = "Unknown obstacle";
         if (result.isBuildingBlocked) {
           reason = `Building obstacle (${result.blockedByBuilding})`;
         } else if (result.isWater) {
-          reason = 'Water obstacle';
+          reason = "Water obstacle";
         } else {
-          reason = 'Steep terrain';
+          reason = "Steep terrain";
         }
-        
+
         return {
           isValid: false,
           blockedAt: path[i],
           reason,
-          confidence: 0.8
+          confidence: 0.8,
         };
       }
     }
@@ -117,13 +129,13 @@ export class EnhancedPathfinder {
   private validateWithHeightMap(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    options: PathfindingOptions
+    options: PathfindingOptions,
   ): PathValidationResult | null {
     const heightMapResult = terrainHeightMapGenerator.validatePath(
       startPos,
       endPos,
       options.maxSlopeAngle,
-      options.samples
+      options.samples,
     );
 
     if (!heightMapResult) return null;
@@ -132,7 +144,7 @@ export class EnhancedPathfinder {
       isValid: heightMapResult.valid,
       blockedAt: heightMapResult.blockedAt,
       reason: heightMapResult.reason,
-      confidence: 0.9 // Height maps are typically very accurate
+      confidence: 0.9, // Height maps are typically very accurate
     };
   }
 
@@ -142,18 +154,20 @@ export class EnhancedPathfinder {
   private validateWithNormalMap(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    options: PathfindingOptions
+    options: PathfindingOptions,
   ): PathValidationResult | null {
     const path = this.generatePathPoints(startPos, endPos, options.samples);
 
     for (const point of path) {
-      if (!terrainNormalMapGenerator.isTraversable(point, options.maxSlopeAngle)) {
+      if (
+        !terrainNormalMapGenerator.isTraversable(point, options.maxSlopeAngle)
+      ) {
         const slopeAngle = terrainNormalMapGenerator.getSlopeAngle(point);
         return {
           isValid: false,
           blockedAt: point,
-          reason: `Slope too steep: ${slopeAngle ? (slopeAngle * 180 / Math.PI).toFixed(1) : 'unknown'}°`,
-          confidence: 0.85
+          reason: `Slope too steep: ${slopeAngle ? ((slopeAngle * 180) / Math.PI).toFixed(1) : "unknown"}°`,
+          confidence: 0.85,
         };
       }
     }
@@ -167,10 +181,14 @@ export class EnhancedPathfinder {
   private combineValidationResults(
     results: PathValidationResult[],
     options: PathfindingOptions,
-    endPos: THREE.Vector3
+    endPos: THREE.Vector3,
   ): PathValidationResult {
     if (results.length === 0) {
-      return { isValid: false, reason: 'No validation methods available', confidence: 0 };
+      return {
+        isValid: false,
+        reason: "No validation methods available",
+        confidence: 0,
+      };
     }
 
     // Calculate weighted scores
@@ -183,7 +201,10 @@ export class EnhancedPathfinder {
       if (result.isValid) {
         weightedValidScore += result.confidence;
       } else {
-        if (!highestConfidenceInvalid || result.confidence > highestConfidenceInvalid.confidence) {
+        if (
+          !highestConfidenceInvalid ||
+          result.confidence > highestConfidenceInvalid.confidence
+        ) {
           highestConfidenceInvalid = result;
         }
       }
@@ -194,21 +215,21 @@ export class EnhancedPathfinder {
 
     if (validityScore >= threshold) {
       // Generate alternative path if requested
-      const alternativePath = options.generateAlternatives 
+      const alternativePath = options.generateAlternatives
         ? this.generateAlternativePath(results[0]?.blockedAt, endPos, options)
         : undefined;
 
       return {
         isValid: true,
         confidence: validityScore,
-        alternativePath
+        alternativePath,
       };
     } else {
       return {
         isValid: false,
         blockedAt: highestConfidenceInvalid?.blockedAt,
-        reason: highestConfidenceInvalid?.reason ?? 'Path blocked',
-        confidence: 1 - validityScore
+        reason: highestConfidenceInvalid?.reason ?? "Path blocked",
+        confidence: 1 - validityScore,
       };
     }
   }
@@ -219,7 +240,7 @@ export class EnhancedPathfinder {
   private generateAlternativePath(
     blockedPoint: THREE.Vector3 | undefined,
     endPos: THREE.Vector3,
-    options: PathfindingOptions
+    options: PathfindingOptions,
   ): THREE.Vector3[] | undefined {
     if (!blockedPoint) return undefined;
 
@@ -236,9 +257,14 @@ export class EnhancedPathfinder {
         .multiplyScalar(offset);
 
       const alternativePoint = blockedPoint.clone().add(perpendicular);
-      
+
       // Validate this alternative point
-      if (terrainNormalMapGenerator.isTraversable(alternativePoint, options.maxSlopeAngle)) {
+      if (
+        terrainNormalMapGenerator.isTraversable(
+          alternativePoint,
+          options.maxSlopeAngle,
+        )
+      ) {
         alternatives.push(alternativePoint);
       }
     }
@@ -252,36 +278,38 @@ export class EnhancedPathfinder {
   private generatePathPoints(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    samples: number
+    samples: number,
   ): THREE.Vector3[] {
     const points: THREE.Vector3[] = [];
-    
+
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
-      
+
       // Spherical interpolation for better paths on globe
       const startNorm = startPos.clone().normalize();
       const endNorm = endPos.clone().normalize();
       const angle = startNorm.angleTo(endNorm);
-      
+
       if (angle < 0.01) {
         // Points are very close, use linear interpolation
         points.push(startPos.clone().lerp(endPos, t));
       } else {
         // Spherical interpolation
-        const axis = new THREE.Vector3().crossVectors(startNorm, endNorm).normalize();
+        const axis = new THREE.Vector3()
+          .crossVectors(startNorm, endNorm)
+          .normalize();
         const quaternion = new THREE.Quaternion();
         quaternion.setFromAxisAngle(axis, angle * t);
-        
+
         const interpolatedDir = startNorm.clone().applyQuaternion(quaternion);
         const startDist = startPos.length();
         const endDist = endPos.length();
         const interpolatedDist = startDist + (endDist - startDist) * t;
-        
+
         points.push(interpolatedDir.multiplyScalar(interpolatedDist));
       }
     }
-    
+
     return points;
   }
 
@@ -291,30 +319,34 @@ export class EnhancedPathfinder {
   findBestPath(
     startPos: THREE.Vector3,
     endPos: THREE.Vector3,
-    options: Partial<PathfindingOptions> = {}
+    options: Partial<PathfindingOptions> = {},
   ): { path: THREE.Vector3[]; confidence: number } {
     const validation = this.validatePath(startPos, endPos, options);
-    
+
     if (validation.isValid) {
       return {
-        path: this.generatePathPoints(startPos, endPos, options.samples ?? this.defaultOptions.samples),
-        confidence: validation.confidence
+        path: this.generatePathPoints(
+          startPos,
+          endPos,
+          options.samples ?? this.defaultOptions.samples,
+        ),
+        confidence: validation.confidence,
       };
     } else if (validation.alternativePath) {
       // Try to create path using alternative points
       const alternativePath: THREE.Vector3[] = [startPos];
       alternativePath.push(...validation.alternativePath);
       alternativePath.push(endPos);
-      
+
       return {
         path: alternativePath,
-        confidence: validation.confidence * 0.7 // Lower confidence for alternative paths
+        confidence: validation.confidence * 0.7, // Lower confidence for alternative paths
       };
     } else {
       // Return direct path with low confidence
       return {
         path: this.generatePathPoints(startPos, endPos, 3), // Fewer samples for fallback
-        confidence: 0.1
+        confidence: 0.1,
       };
     }
   }

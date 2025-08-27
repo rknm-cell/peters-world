@@ -30,7 +30,7 @@ export default function CreatePage() {
       {/* <CollisionValidationTest /> */}
       {/* <TerrainHeightMapDebug /> */}
       {/* <TerrainNormalMapDebug /> */}
-      
+
       {/* Show restoration indicator - only on client to avoid hydration issues */}
       {typeof window !== "undefined" && hasRestoredWorld && (
         <div className="fixed bottom-4 left-20 z-40 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 backdrop-blur-sm">
