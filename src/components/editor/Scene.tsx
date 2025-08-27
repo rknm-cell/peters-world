@@ -14,7 +14,7 @@ import { Sun } from "~/components/three/objects/Sun";
 import { TreeLifecycleManager } from "~/components/three/systems/TreeLifecycleManager";
 import { GrassSpawningManager } from "~/components/three/systems/GrassSpawningManager";
 import { DeerSpawningManager } from "~/components/three/systems/DeerSpawningManager";
-import { WolfSpawningManager } from "~/components/three/systems/WolfSpawningManager";
+// import { WolfSpawningManager } from "~/components/three/systems/WolfSpawningManager"; // DISABLED
 import { SelectionIndicator } from "~/components/three/effects/SelectionIndicator";
 
 import { GlobePhysics } from "~/components/three/physics/GlobePhysics";
@@ -128,7 +128,7 @@ export function Scene() {
       <DeerSpawningManager />
 
       {/* Wolf spawning manager - handles automatic wolf spawning and hunting behavior */}
-      <WolfSpawningManager />
+      {/* <WolfSpawningManager /> */} {/* DISABLED - Wolf spawning disabled */}
 
       {/* Selection indicator for physics objects - doesn't cause physics re-renders */}
       <SelectionIndicator />

@@ -168,7 +168,7 @@ export const GRASS_MODELS = [
 // Animal models for random spawning
 export const ANIMAL_MODELS = [
   "animals/deer",
-  "animals/wolf",
+  // "animals/wolf", // DISABLED - Wolf placement disabled
   "animals/crab",
   "animals/sheep-white",
   "animals/bear_brown",

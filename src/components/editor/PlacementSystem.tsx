@@ -17,7 +17,7 @@ import { Decoration } from "~/components/three/objects/Decoration";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Deer } from "~/components/three/objects/Deer";
-import { Wolf } from "~/components/three/objects/Wolf";
+// import { Wolf } from "~/components/three/objects/Wolf"; // DISABLED
 import { Sheep } from "~/components/three/objects/Sheep";
 import { Bear } from "~/components/three/objects/Bear";
 import { Cow } from "~/components/three/objects/Cow";
@@ -481,17 +481,8 @@ export function PlacementSystem({
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
-            ) : selectedObjectType === "animals/wolf" ? (
-              <Wolf
-                type={selectedObjectType}
-                position={[0, 0, 0]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                scale={[1, 1, 1]}
-                objectId="preview"
-                preview={true}
-                canPlace={placementPreview.canPlace}
-              />
             ) : selectedObjectType === "animals/sheep-white" ? (
+              // Wolf preview disabled - removed "animals/wolf" case
               <Sheep
                 type={selectedObjectType}
                 position={[0, 0, 0]}
