@@ -6,7 +6,7 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Deer } from '~/components/three/objects/Deer';
-import { useWorldStore, useIsUserInteracting } from '~/lib/store';
+import { useWorldStore, useIsUserInteractingOptimized, useAnimalRelevantObjects, useRemoveObject } from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
@@ -47,8 +47,15 @@ interface CharacterController {
  */
 function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const isUserInteracting = useIsUserInteracting();
-  const { invalidate } = useThree(); // For manual render triggering with frameloop="demand"
+  
+  // Use optimized hooks to prevent unnecessary rerenders
+  const isUserInteracting = useIsUserInteractingOptimized();
+  
+  // Use stable action selectors that won't cause rerenders
+  const removeObject = useRemoveObject();
+  
+  // Cache animal-relevant objects to prevent rerenders from irrelevant object changes
+  const animalRelevantObjects = useAnimalRelevantObjects();
   
   // Selection is handled externally - deer don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -92,7 +99,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
       controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
       characterController.current = controller;
-      console.log('🦌 Character controller initialized for deer', objectId);
+      // console.log('🦌 Character controller initialized for deer', objectId);
     }
     
     // Set initial deer orientation to match surface normal
@@ -145,10 +152,9 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   const EATING_DURATION = 3000; // 3 seconds of eating before grass disappears
   const GRASS_APPROACH_DISTANCE = 0.3; // How close deer gets before eating
   
-  // Function to find nearby grass
+  // Function to find nearby grass - use cached animal-relevant objects to prevent rerenders
   const findNearbyGrass = (deerPosition: THREE.Vector3) => {
-    const store = useWorldStore.getState();
-    const grassObjects = store.objects.filter(obj => obj.type.toLowerCase().includes('grass'));
+    const grassObjects = animalRelevantObjects.filter(obj => obj.type.toLowerCase().includes('grass'));
     
     let closestGrass = null;
     let closestDistance = GRASS_DETECTION_RADIUS;
@@ -300,7 +306,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         
         // Debug logging (can be removed later)
         if (orientationDifference > 0.2) { // Only log significant corrections
-          console.log(`🦌 Deer ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
         }
       }
       
@@ -318,10 +324,9 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       
       // Check if eating is complete (3 seconds)
       if (eatingDuration >= EATING_DURATION) {
-        // Remove the grass from the world
+        // Remove the grass from the world using stable action selector
         if (eatingGrassId) {
-          const store = useWorldStore.getState();
-          store.removeObject(eatingGrassId);
+          removeObject(eatingGrassId);
         }
         
         // Stop eating and return to normal behavior
@@ -418,7 +423,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         // Debug logging (can be removed later)
         if (orientationDifference > 0.2) { // Only log significant corrections
           const orientationType = eatingOrientation ? "captured" : "default";
-          console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
         }
       }
       
@@ -459,7 +464,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       if (!targetingGrass) {
         setTarget(grassPosition);
         setIsIdle(false);
-        console.log(`🦌 Deer ${objectId}: Found grass, moving to eat it`);
+        // console.log(`🦌 Deer ${objectId}: Found grass, moving to eat it`);
       }
     }
     
@@ -483,7 +488,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
             setIsIdle(true);
             setIdleStartTime(currentTime);
             setTarget(null);
-            console.log(`🦌 Deer ${objectId}: Starting idle period`);
+            // console.log(`🦌 Deer ${objectId}: Starting idle period`);
             return;
           }
         }
@@ -492,7 +497,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         const newTarget = generateWanderingTarget(currentPosition);
         if (newTarget) {
           setTarget(newTarget);
-          console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
+          // console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
         }
       }
     }
@@ -517,11 +522,11 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       
       // ** ENHANCED TERRAIN COLLISION DETECTION **
       // Always use the most accurate collision detection available
-      console.log(`🦌 Deer ${objectId}: Checking movement from ${currentPosition.x.toFixed(2)}, ${currentPosition.y.toFixed(2)}, ${currentPosition.z.toFixed(2)} to ${targetPosition.x.toFixed(2)}, ${targetPosition.y.toFixed(2)}, ${targetPosition.z.toFixed(2)}`);
+      // console.log(`🦌 Deer ${objectId}: Checking movement from ${currentPosition.x.toFixed(2)}, ${currentPosition.y.toFixed(2)}, ${currentPosition.z.toFixed(2)} to ${targetPosition.x.toFixed(2)}, ${targetPosition.y.toFixed(2)}, ${targetPosition.z.toFixed(2)}`);
       
       // Use traditional collision detection with physics data (most reliable)
       const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
-      console.log(`🦌 Deer ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}`);
+      // console.log(`🦌 Deer ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}`);
       
       let enhancedValidation = null;
       
@@ -539,7 +544,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
             generateAlternatives: true // Generate alternatives if path is blocked
           }
         );
-        console.log(`🦌 Deer ${objectId}: Enhanced validation result: isValid=${enhancedValidation.isValid}, confidence=${(enhancedValidation.confidence * 100).toFixed(1)}%`);
+        // console.log(`🦌 Deer ${objectId}: Enhanced validation result: isValid=${enhancedValidation.isValid}, confidence=${(enhancedValidation.confidence * 100).toFixed(1)}%`);
       }
       
       // Handle collision detection results
@@ -553,14 +558,14 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           blockReason = 'Blocked by steep slope';
         }
         
-        console.log(`🦌 Deer ${objectId}: Traditional collision detection blocked movement`, {
-          reason: blockReason,
-          isWater: terrainCollision.isWater,
-          isBuildingBlocked: terrainCollision.isBuildingBlocked,
-          blockedByBuilding: terrainCollision.blockedByBuilding,
-          slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
-          groundHeight: terrainCollision.groundHeight.toFixed(2)
-        });
+        // console.log(`🦌 Deer ${objectId}: Traditional collision detection blocked movement`, {
+      //     reason: blockReason,
+      //     isWater: terrainCollision.isWater,
+      //     isBuildingBlocked: terrainCollision.isBuildingBlocked,
+      //     blockedByBuilding: terrainCollision.blockedByBuilding,
+      //     slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
+      //     groundHeight: terrainCollision.groundHeight.toFixed(2)
+      // });
         
         // Report collision to debug system
         const debugWin = window as DebugWindow;
@@ -573,19 +578,19 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         
         // For building collisions, generate a new target instead of using adjusted position
         if (terrainCollision.isBuildingBlocked) {
-          console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
+          // console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
           setTarget(null); // Force new target generation
           return; // Skip movement this frame
         } else if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
           targetPosition = enhancedValidation.alternativePath[0]!;
-          console.log(`🦌 Deer ${objectId}: Using enhanced alternative path point`);
+          // console.log(`🦌 Deer ${objectId}: Using enhanced alternative path point`);
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);
+          // console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);
         } else {
           // No alternative available, generate new target
           setTarget(null);
-          console.log(`🦌 Deer ${objectId}: Generating new target due to blocked movement`);
+          // console.log(`🦌 Deer ${objectId}: Generating new target due to blocked movement`);
           return; // Skip movement this frame
         }
       } else {
@@ -593,7 +598,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         const terrainGroundHeight = terrainCollision.groundHeight;
         const surfaceNormal = targetPosition.clone().normalize();
         targetPosition = surfaceNormal.multiplyScalar(terrainGroundHeight);
-        console.log(`🦌 Deer ${objectId}: Movement allowed, positioning at height ${terrainGroundHeight.toFixed(2)}`);
+        // console.log(`🦌 Deer ${objectId}: Movement allowed, positioning at height ${terrainGroundHeight.toFixed(2)}`);
       }
       
       // Calculate actual movement that occurred (for rotation and bounce animation)

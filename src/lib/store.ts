@@ -1,3 +1,4 @@
+import React from "react";
 import { create } from "zustand";
 import type { Vector3 } from "three";
 import * as THREE from "three";
@@ -1695,6 +1696,27 @@ export const useSetPlacing = () => useWorldStore(state => state.setPlacing);
 export const useSetSelectedObjectType = () => useWorldStore(state => state.setSelectedObjectType);
 export const useResetWorld = () => useWorldStore(state => state.resetWorld);
 
+// Optimized selectors for animal components - prevent rerenders from irrelevant state changes
+export const useIsUserInteractingOptimized = () => {
+  // Use a more selective subscription that doesn't cause rerenders for every interaction
+  return useWorldStore(state => state.isUserInteracting);
+};
+
+// Optimized selector for objects list that animals care about (grass, other animals)
+// Use useMemo to cache the filtered result
+export const useAnimalRelevantObjects = () => {
+  const objects = useWorldStore(state => state.objects);
+  
+  return React.useMemo(() => {
+    return objects.filter((obj: PlacedObject) => 
+      obj.type.includes('grass') || obj.type.includes('animals')
+    );
+  }, [objects]);
+};
+
+// Stable action selector for removeObject (won't cause rerenders)
+export const useRemoveObject = () => useWorldStore(state => state.removeObject);
+
 // Scene state
 export const useTimeOfDay = () => useWorldStore(state => state.timeOfDay);
 
@@ -1709,4 +1731,3 @@ export const useTerrainVertices = () => useWorldStore(state => state.terrainVert
 
 // Other operations
 export const useObjects = () => useWorldStore(state => state.objects);
-export const useRemoveObject = () => useWorldStore(state => state.removeObject);

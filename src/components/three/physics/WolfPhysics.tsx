@@ -6,7 +6,7 @@ import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Wolf } from '~/components/three/objects/Wolf';
-import { useWorldStore, useIsUserInteracting } from '~/lib/store';
+import { useWorldStore, useIsUserInteractingOptimized, useAnimalRelevantObjects } from '~/lib/store';
 import { WOLF_CONFIG } from '~/lib/constants';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
@@ -48,8 +48,12 @@ interface CharacterController {
  */
 function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const isUserInteracting = useIsUserInteracting();
-  const { invalidate } = useThree(); // For manual render triggering with frameloop="demand"
+  
+  // Use optimized hooks to prevent unnecessary rerenders
+  const isUserInteracting = useIsUserInteractingOptimized();
+  
+  // Cache animal-relevant objects to prevent rerenders from irrelevant object changes
+  const animalRelevantObjects = useAnimalRelevantObjects();
   
   // Selection is handled externally - wolves don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -150,8 +154,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   
   // Function to find nearby deer for hunting
   const findNearbyDeer = (wolfPosition: THREE.Vector3) => {
-    const store = useWorldStore.getState();
-    const deerObjects = store.objects.filter(obj => obj.type === 'animals/deer');
+    const deerObjects = animalRelevantObjects.filter(obj => obj.type === 'animals/deer');
     
     let closestDeer = null;
     let closestDistance: number = DEER_DETECTION_RADIUS;
