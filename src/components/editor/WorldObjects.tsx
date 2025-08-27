@@ -30,7 +30,6 @@ type TreeType =
   | "bush-medium-high"
   | "bush-big"
   // Adult trees
-  | "tree"
   | "tree-baobab"
   | "tree-beech"
   | "tree-birch"

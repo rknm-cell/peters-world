@@ -37,7 +37,6 @@ import {
 function isTreeType(
   objectType: string,
 ): objectType is
-  | "tree"
   | "tree-baobab"
   | "tree-beech"
   | "tree-birch"
@@ -49,7 +48,6 @@ function isTreeType(
   | "tree-tall" {
   return OBJECT_TYPES.trees.includes(
     objectType as
-      | "tree"
       | "tree-baobab"
       | "tree-beech"
       | "tree-birch"
