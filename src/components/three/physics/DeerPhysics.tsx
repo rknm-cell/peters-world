@@ -172,9 +172,13 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
     const body = rigidBodyRef.current;
     const currentTime = Date.now();
     
-    // Throttle updates to prevent flickering (max 60 FPS)
-    const minUpdateInterval = 16.67; // ~60 FPS
-    if (currentTime - lastUpdateTime.current < minUpdateInterval) {
+    // Staggered update system to prevent synchronized twitching
+    // Each deer gets a unique update offset based on their objectId
+    const updateOffset = parseInt(objectId.slice(-2), 36) % 8; // 0-8ms offset
+    const minUpdateInterval = 16.67; // ~60 FPS base interval
+    const staggeredInterval = minUpdateInterval + updateOffset;
+    
+    if (currentTime - lastUpdateTime.current < staggeredInterval) {
       return;
     }
     lastUpdateTime.current = currentTime;
@@ -289,8 +293,8 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           delta * IDLE_CORRECTION_SPEED
         );
         
-        // Apply the corrected orientation
-        queueDeerTransformUpdate(objectId, () => {
+        // Apply the corrected orientation with micro-stagger to prevent sync
+        queueDeerTransformUpdate(`${objectId}-idle-orient`, () => {
           body.setRotation(correctedQuaternion, true);
         }, 'low'); // Low priority since this is just orientation maintenance
         
@@ -613,7 +617,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       
       // Queue the transform update to prevent multiple simultaneous updates
       // Use direct mutation for physics updates (R3F best practice 2024)
-      queueDeerTransformUpdate(objectId, () => {
+      queueDeerTransformUpdate(`${objectId}-movement`, () => {
         // For kinematic bodies, directly set the new position (single source of truth)
         body.setTranslation(targetPosition, true);
         
@@ -786,16 +790,14 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   );
 }
 
-// Temporarily disable memoization to test if it's interfering with animations
-export const DeerPhysics = DeerPhysicsComponent;
-
-// TODO: Re-implement smart memoization that doesn't interfere with useFrame
-// export const DeerPhysics = React.memo(DeerPhysicsComponent, (prevProps, nextProps) => {
-//   return (
-//     prevProps.objectId === nextProps.objectId &&
-//     prevProps.type === nextProps.type &&
-//     prevProps.position[0] === nextProps.position[0] &&
-//     prevProps.position[1] === nextProps.position[1] &&
-//     prevProps.position[2] === nextProps.position[2]
-//   );
-// });
+// Smart memoization that prevents unnecessary re-renders while preserving useFrame
+export const DeerPhysics = React.memo(DeerPhysicsComponent, (prevProps, nextProps) => {
+  // Only re-render if essential props change
+  return (
+    prevProps.objectId === nextProps.objectId &&
+    prevProps.type === nextProps.type &&
+    prevProps.position[0] === nextProps.position[0] &&
+    prevProps.position[1] === nextProps.position[1] &&
+    prevProps.position[2] === nextProps.position[2]
+  );
+});
