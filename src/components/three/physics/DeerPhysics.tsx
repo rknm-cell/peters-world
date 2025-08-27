@@ -9,9 +9,7 @@ import { Deer } from '~/components/three/objects/Deer';
 import { 
   useIsUserInteractingOptimized, 
   useRemoveObject, 
-  useGrassObjectsOnly,
-  useTreeObjectsOnly,
-  useAnimalObjectsOnly
+  useAnimalRelevantObjectsAtomic
 } from '~/lib/store';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
@@ -53,6 +51,9 @@ interface CharacterController {
  * Uses Rapier physics for natural movement, collision detection, and surface following
  */
 function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
+  // CRITICAL FIX: Create stable position reference to prevent rerenders from prop changes
+  // Position arrays are new references on every store update, causing unnecessary rerenders
+  const stablePosition = React.useMemo(() => position, [position[0], position[1], position[2]]);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   
   // Use optimized hooks to prevent unnecessary rerenders
@@ -61,23 +62,10 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   // Use stable action selectors that won't cause rerenders
   const removeObject = useRemoveObject();
   
-  // Use ultra-optimized category-specific hooks to prevent rerenders from irrelevant object changes
-  const grassObjects = useGrassObjectsOnly();
-  const treeObjects = useTreeObjectsOnly();
-  const otherAnimals = useAnimalObjectsOnly();
-  
-  // Filter out this animal from the other animals list to prevent self-reference
-  const otherAnimalsFiltered = React.useMemo(() => 
-    otherAnimals.filter(animal => animal.id !== objectId), 
-    [otherAnimals, objectId]
-  );
-  
-  // Combine relevant objects for pathfinding and behavior
-  const relevantObjects = React.useMemo(() => [
-    ...grassObjects,
-    ...treeObjects,
-    ...otherAnimalsFiltered
-  ], [grassObjects, treeObjects, otherAnimalsFiltered]);
+  // ULTIMATE OPTIMIZATION: Use atomic selector with useShallow
+  // This is the most advanced Zustand pattern for preventing unnecessary rerenders
+  // Single subscription that only updates when relevant objects actually change
+  const relevantObjects = useAnimalRelevantObjectsAtomic(objectId);
   
   // Selection is handled externally - deer don't need to know about selection state
   // This prevents re-renders when selection changes elsewhere in the app
@@ -85,9 +73,11 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   // Render queue for batching updates and preventing multiple simultaneous re-renders
   const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue(isUserInteracting);
   
-  // Ensure deer starts on globe surface (globe radius is 6.0)
-  const initialPosition = new THREE.Vector3(...position);
-  const surfacePosition = initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
+  // CRITICAL FIX: Memoize surface position calculation to prevent useEffect reruns
+  const surfacePosition = React.useMemo(() => {
+    const initialPosition = new THREE.Vector3(...stablePosition);
+    return initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
+  }, [stablePosition[0], stablePosition[1], stablePosition[2]]);
   
   const [target, setTarget] = useState<THREE.Vector3 | null>(null);
   const [isIdle, setIsIdle] = useState(false);
@@ -174,24 +164,27 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   const EATING_DURATION = 3000; // 3 seconds of eating before grass disappears
   const GRASS_APPROACH_DISTANCE = 0.3; // How close deer gets before eating
   
-  // Function to find nearby grass - use cached animal-relevant objects to prevent rerenders
+  // Function to find nearby grass - use stable object map to prevent rerenders
   const findNearbyGrass = (deerPosition: THREE.Vector3) => {
-    const grassObjects = relevantObjects.filter(obj => obj.type.toLowerCase().includes('grass'));
-    
     let closestGrass = null;
     let closestDistance = GRASS_DETECTION_RADIUS;
+    let closestGrassId = null;
     
-    for (const grass of grassObjects) {
-      const grassPosition = new THREE.Vector3(...grass.position);
-      const distance = deerPosition.distanceTo(grassPosition);
-      
-      if (distance < closestDistance) {
-        closestGrass = grass;
-        closestDistance = distance;
+    // Iterate through the stable object map
+    for (const [objId, objData] of Object.entries(relevantObjects)) {
+      if (objData.type.toLowerCase().includes('grass')) {
+        const grassPosition = new THREE.Vector3(...objData.position);
+        const distance = deerPosition.distanceTo(grassPosition);
+        
+        if (distance < closestDistance) {
+          closestGrass = objData;
+          closestGrassId = objId;
+          closestDistance = distance;
+        }
       }
     }
     
-    return closestGrass;
+    return closestGrass ? { ...closestGrass, id: closestGrassId } : null;
   };
 
   useFrame((state, delta) => {
@@ -200,12 +193,13 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
     const body = rigidBodyRef.current;
     const currentTime = Date.now();
     
-    // Staggered update system to prevent synchronized twitching
-    // Each deer gets a unique update offset based on their objectId
-    const updateOffset = parseInt(objectId.slice(-2), 36) % 8; // 0-8ms offset
+    // ENHANCED: Staggered update system with better frame isolation
+    // Each deer gets a unique update offset to prevent synchronized twitching
+    const updateOffset = parseInt(objectId.slice(-3), 36) % 16; // Larger offset range
     const minUpdateInterval = 16.67; // ~60 FPS base interval
     const staggeredInterval = minUpdateInterval + updateOffset;
     
+    // Additional frame-skip for heavily loaded scenes
     if (currentTime - lastUpdateTime.current < staggeredInterval) {
       return;
     }
@@ -818,9 +812,10 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
   );
 }
 
-// Smart memoization that prevents unnecessary re-renders while preserving useFrame
+// ULTRA-OPTIMIZED: Smart memoization with stable primitive comparison
 export const DeerPhysics = React.memo(DeerPhysicsComponent, (prevProps, nextProps) => {
-  // Only re-render if essential props change
+  // CRITICAL: Compare array elements, not array references (which are always different)
+  // This prevents rerenders when position arrays have same values but different references
   return (
     prevProps.objectId === nextProps.objectId &&
     prevProps.type === nextProps.type &&
