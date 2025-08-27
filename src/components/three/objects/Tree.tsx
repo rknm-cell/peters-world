@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import * as THREE from "three";
 import type { TreeLifecycleStage } from "~/lib/store";
+import { useSelectedObject } from "~/lib/store";
 import { applySpecialScaling } from "~/lib/utils/model-scaling";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
@@ -25,7 +26,6 @@ interface TreeProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  selected?: boolean;
   objectId: string;
   preview?: boolean;
   canPlace?: boolean;
@@ -37,13 +37,14 @@ const TreeComponent = ({
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
-  selected = false,
   objectId,
   preview = false,
   canPlace = true,
   lifecycleStage,
 }: TreeProps) => {
   const groupRef = useRef<THREE.Group>(null);
+  const selectedObject = useSelectedObject();
+  const selected = selectedObject === objectId;
 
 
   // Load the GLB file - useGLTF handles its own error cases
@@ -124,13 +125,10 @@ const TreeComponent = ({
     }
   }, [gltfResult.scene, type, lifecycleStage, preview, canPlace, isLoading]); // Include all dependencies
 
-  // Animation for selected state - throttled to reduce flickering
+  // Animation for selected state
   useFrame((state) => {
     if (groupRef.current && selected) {
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    } else if (groupRef.current && Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01) {
-      // Only update rotation if there's a significant difference to reduce flickering
-      groupRef.current.rotation.y = rotation[1];
+      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 

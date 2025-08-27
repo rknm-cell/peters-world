@@ -154,7 +154,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     const deerObjects = store.objects.filter(obj => obj.type === 'animals/deer');
     
     let closestDeer = null;
-    let closestDistance = DEER_DETECTION_RADIUS;
+    let closestDistance: number = DEER_DETECTION_RADIUS;
     
     for (const deer of deerObjects) {
       const deerPosition = new THREE.Vector3(...deer.position);
@@ -739,7 +739,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
           type={type}
           position={[0, 0, 0]}
           scale={[1, 1, 1]}
-          selected={false}
           objectId={objectId}
           preview={false}
           canPlace={true}

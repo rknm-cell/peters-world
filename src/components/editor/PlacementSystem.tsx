@@ -381,7 +381,6 @@ export function PlacementSystem({
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}
-              selected={false}
               objectId="preview"
               preview={true}
               canPlace={placementPreview.canPlace}
@@ -392,7 +391,6 @@ export function PlacementSystem({
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}
-              selected={false}
               objectId="preview"
               preview={true}
               canPlace={placementPreview.canPlace}
@@ -403,7 +401,6 @@ export function PlacementSystem({
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}
-              selected={false}
               objectId="preview"
               preview={true}
               canPlace={placementPreview.canPlace}
@@ -419,8 +416,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -434,8 +430,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -449,8 +444,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -464,8 +458,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -479,8 +472,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -494,8 +486,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -509,8 +500,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -524,8 +514,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -539,8 +528,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -554,8 +542,7 @@ export function PlacementSystem({
                   placementPreview.rotation.z
                 ]}
                 scale={[1, 1, 1]}
-                selected={false}
-                objectId="preview"
+                  objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -566,7 +553,6 @@ export function PlacementSystem({
               position={[0, 0, 0]}
               rotation={[0, 0, 0]}
               scale={[1, 1, 1]}
-              selected={false}
               objectId="preview"
               preview={true}
               canPlace={placementPreview.canPlace}

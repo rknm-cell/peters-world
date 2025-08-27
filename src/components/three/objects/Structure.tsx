@@ -4,6 +4,7 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { useSelectedObject } from "~/lib/store";
 import { COLOR_PALETTES, MODEL_SCALING } from "~/lib/constants";
 
 // Preload GLB models
@@ -15,7 +16,6 @@ interface StructureProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  selected?: boolean;
   objectId: string;
   preview?: boolean;
   canPlace?: boolean;
@@ -26,12 +26,13 @@ export function Structure({
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
-  selected = false,
   objectId,
   preview = false,
   canPlace = true,
 }: StructureProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const selectedObject = useSelectedObject();
+  const selected = selectedObject === objectId;
 
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
@@ -215,10 +216,7 @@ export function Structure({
   // Animation for selected state
   useFrame((state) => {
     if (groupRef.current && selected) {
-      groupRef.current.rotation.y =
-        rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
-    } else if (groupRef.current) {
-      groupRef.current.rotation.y = rotation[1];
+      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
     }
   });
 

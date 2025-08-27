@@ -4,6 +4,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSelectedObject } from '~/lib/store';
 import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
 
 // Grass types are defined in constants.ts and used dynamically
@@ -13,7 +14,6 @@ interface GrassProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  selected?: boolean;
   objectId?: string;
   preview?: boolean;
   canPlace?: boolean;
@@ -24,12 +24,13 @@ export function Grass({
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
-  selected = false,
   objectId,
   preview = false,
   canPlace = true,
 }: GrassProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const selectedObject = useSelectedObject();
+  const selected = selectedObject === objectId;
 
   // Load the GLTF model
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);

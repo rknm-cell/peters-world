@@ -257,7 +257,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
     set((state) => ({
       objects: state.objects.concat([newObject]),
-      selectedObject: id,
+      // Don't auto-select newly placed objects to prevent unwanted rotation animations
+      selectedObject: null,
       // Keep isPlacing as true so user can continue placing more objects
       isPlacing: state.isPlacing,
     }));

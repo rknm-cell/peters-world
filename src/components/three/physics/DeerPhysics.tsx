@@ -769,7 +769,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           type={type}
           position={[0, 0, 0]}
           scale={[1, 1, 1]}
-          selected={false}
           objectId={objectId}
           preview={false}
           canPlace={true}
