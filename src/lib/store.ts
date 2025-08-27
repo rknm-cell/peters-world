@@ -302,7 +302,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       isPlacing: state.isPlacing,
     }));
 
-    // Update categorized objects immediately
+    // Update categorized objects immediately (synchronously to prevent unnecessary rerenders)
     _get().updateObjectsByCategory();
 
     // Run forest detection after adding a tree (with slight delay to avoid race conditions)
@@ -324,7 +324,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       setTimeout(() => _get().detectForests(), 100);
     }
     
-    // Update categorized objects
+    // Update categorized objects immediately
     _get().updateObjectsByCategory();
   },
 
@@ -332,14 +332,39 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     const state = _get();
     const categorized = categorizeObjects(state.objects);
     
-    set({
-      objectsByCategory: new Map([
-        ['animals', categorized.animals],
-        ['trees', categorized.trees],
-        ['grass', categorized.grass],
-        ['others', categorized.others]
-      ])
-    });
+    // Only update if the categorized objects have actually changed
+    // This prevents unnecessary Map recreation and component rerenders
+    const currentMap = state.objectsByCategory;
+    const currentAnimals = currentMap.get('animals') ?? [];
+    const currentTrees = currentMap.get('trees') ?? [];
+    const currentGrass = currentMap.get('grass') ?? [];
+    const currentOthers = currentMap.get('others') ?? [];
+    
+    // Check if any category has changed (by ID comparison for performance)
+    const animalsChanged = 
+      currentAnimals.length !== categorized.animals.length ||
+      !currentAnimals.every((obj, i) => obj.id === categorized.animals[i]?.id);
+    const treesChanged = 
+      currentTrees.length !== categorized.trees.length ||
+      !currentTrees.every((obj, i) => obj.id === categorized.trees[i]?.id);
+    const grassChanged = 
+      currentGrass.length !== categorized.grass.length ||
+      !currentGrass.every((obj, i) => obj.id === categorized.grass[i]?.id);
+    const othersChanged = 
+      currentOthers.length !== categorized.others.length ||
+      !currentOthers.every((obj, i) => obj.id === categorized.others[i]?.id);
+    
+    // Only update the state if something actually changed
+    if (animalsChanged || treesChanged || grassChanged || othersChanged) {
+      set({
+        objectsByCategory: new Map([
+          ['animals', categorized.animals],
+          ['trees', categorized.trees],
+          ['grass', categorized.grass],
+          ['others', categorized.others]
+        ])
+      });
+    }
   },
 
   selectObject: (id: string | null) => {
@@ -1139,8 +1164,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           terraformMode: state.terraformMode
         };
         
-        // Update categorized objects after spawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1274,8 +1299,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           terraformMode: state.terraformMode
         };
         
-        // Update categorized objects after spawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1432,8 +1457,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           terraformMode: state.terraformMode
         };
         
-        // Update categorized objects after spawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1467,8 +1492,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           objects: state.objects.filter(obj => !deerToRemove.includes(obj.id))
         };
         
-        // Update categorized objects after despawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1630,8 +1655,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           terraformMode: state.terraformMode
         };
         
-        // Update categorized objects after spawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1665,8 +1690,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           objects: state.objects.filter(obj => !wolvesToRemove.includes(obj.id))
         };
         
-        // Update categorized objects after despawning to prevent unnecessary re-renders
-        setTimeout(() => _get().updateObjectsByCategory(), 0);
+        // Update categorized objects immediately to prevent unnecessary re-renders
+        _get().updateObjectsByCategory();
         
         return result;
       }
@@ -1801,22 +1826,140 @@ export const useSelectObject = () => useWorldStore(state => state.selectObject);
 export const useUpdateObject = () => useWorldStore(state => state.updateObject);
 export const useClearAllModes = () => useWorldStore(state => state.clearAllModes);
 
-// NEW: Ultra-optimized animal-specific hook that prevents re-renders from non-animal changes
+// CACHED: Memoized selectors using proper Zustand patterns
+// Create stable cached selectors that prevent infinite loops
+
+// Cache for animal objects
+let animalObjectsCache: Array<{ id: string; type: string; position: [number, number, number] }> = [];
+let animalObjectsLastHash = '';
+
 export const useAnimalObjectsOnly = () => {
-  // Only subscribe to the animals category, completely isolated from other object changes
-  return useWorldStore(state => state.objectsByCategory.get('animals') ?? []);
+  return useWorldStore((state: WorldState) => {
+    // Create a stable hash of animal IDs to detect changes
+    const animalIds = state.objects
+      .filter(obj => obj.type.includes('animals'))
+      .map(obj => obj.id)
+      .sort()
+      .join('|');
+    
+    // Only recompute if animal composition has actually changed
+    if (animalIds !== animalObjectsLastHash) {
+      animalObjectsLastHash = animalIds;
+      animalObjectsCache = state.objects
+        .filter(obj => obj.type.includes('animals'))
+        .map(obj => ({
+          id: obj.id,
+          type: obj.type,
+          position: obj.position
+        }));
+    }
+    
+    return animalObjectsCache;
+  });
 };
 
-// NEW: Ultra-optimized tree-specific hook that prevents re-renders from non-tree changes
+// Cache for tree objects
+let treeObjectsCache: Array<{ id: string; type: string; position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number]; treeLifecycle?: TreeLifecycleData }> = [];
+let treeObjectsLastHash = '';
+
 export const useTreeObjectsOnly = () => {
-  // Only subscribe to the trees category, completely isolated from other object changes
-  return useWorldStore(state => state.objectsByCategory.get('trees') ?? []);
+  return useWorldStore((state: WorldState) => {
+    // Create stable hash for trees
+    const treeIds = state.objects
+      .filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree'))
+      .map(obj => obj.id)
+      .sort()
+      .join('|');
+    
+    if (treeIds !== treeObjectsLastHash) {
+      treeObjectsLastHash = treeIds;
+      treeObjectsCache = state.objects
+        .filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree'))
+        .map(obj => ({
+          id: obj.id,
+          type: obj.type,
+          position: obj.position,
+          rotation: obj.rotation,
+          scale: obj.scale,
+          treeLifecycle: obj.treeLifecycle
+        }));
+    }
+    
+    return treeObjectsCache;
+  });
 };
 
-// NEW: Ultra-optimized grass-specific hook that prevents re-renders from non-grass changes
+// Cache for grass objects
+let grassObjectsCache: Array<{ id: string; type: string; position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }> = [];
+let grassObjectsLastHash = '';
+
 export const useGrassObjectsOnly = () => {
-  // Only subscribe to the grass category, completely isolated from other object changes
-  return useWorldStore(state => state.objectsByCategory.get('grass') ?? []);
+  return useWorldStore((state: WorldState) => {
+    // Create stable hash for grass
+    const grassIds = state.objects
+      .filter(obj => obj.type.includes('grass'))
+      .map(obj => obj.id)
+      .sort()
+      .join('|');
+    
+    if (grassIds !== grassObjectsLastHash) {
+      grassObjectsLastHash = grassIds;
+      grassObjectsCache = state.objects
+        .filter(obj => obj.type.includes('grass'))
+        .map(obj => ({
+          id: obj.id,
+          type: obj.type,
+          position: obj.position,
+          rotation: obj.rotation,
+          scale: obj.scale
+        }));
+    }
+    
+    return grassObjectsCache;
+  });
+};
+
+// Cache for animal-relevant objects per deer
+const animalRelevantCache = new Map<string, Record<string, { type: string; position: [number, number, number] }>>();
+const animalRelevantHashCache = new Map<string, string>();
+
+export const useAnimalRelevantObjectsAtomic = (animalId: string) => {
+  return useWorldStore((state: WorldState) => {
+    // Create hash of all relevant objects for this animal
+    const relevantObjects = state.objects.filter(obj => 
+      obj.id !== animalId && (
+        obj.type.includes('grass') || 
+        obj.type.includes('tree') || 
+        obj.type.includes('dead_tree') ||
+        obj.type.includes('animals')
+      )
+    );
+    
+    const currentHash = relevantObjects
+      .map(obj => `${obj.id}:${obj.type}:${obj.position.join(',')}`)
+      .sort()
+      .join('|');
+    
+    const cachedHash = animalRelevantHashCache.get(animalId);
+    
+    // Only recompute if relevant objects have actually changed for this animal
+    if (currentHash !== cachedHash) {
+      animalRelevantHashCache.set(animalId, currentHash);
+      
+      const relevantData: Record<string, { type: string; position: [number, number, number] }> = {};
+      
+      for (const obj of relevantObjects) {
+        relevantData[obj.id] = {
+          type: obj.type,
+          position: obj.position
+        };
+      }
+      
+      animalRelevantCache.set(animalId, relevantData);
+    }
+    
+    return animalRelevantCache.get(animalId) ?? {};
+  });
 };
 
 // NEW: Selective subscription hooks to prevent unnecessary re-renders

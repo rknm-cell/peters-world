@@ -5,13 +5,12 @@ import { useThree } from "@react-three/fiber";
 import { Raycaster, Vector2, Mesh } from "three";
 import { 
   usePlacementState,
-  useObjects,
   useAddObject,
   useSelectObject,
   useRemoveObject,
   useSetUserInteracting,
-  useUpdateObject,
-  useClearAllModes
+  useClearAllModes,
+  useWorldStore
 } from "~/lib/store";
 import { OBJECT_TYPES } from "~/lib/constants";
 import { Decoration } from "~/components/three/objects/Decoration";
@@ -63,11 +62,20 @@ export function PlacementSystem({
   
   // Use selective subscription hooks to prevent unnecessary re-renders
   const { isPlacing, selectedObjectType } = usePlacementState();
-  const objects = useObjects();
+  
+  // Only subscribe to essential object data for collision detection
+  // Use memoization to prevent rerenders when object properties change
+  const objects = useWorldStore(state => state.objects);
+  const objectsForCollision = React.useMemo(() => 
+    objects.map(obj => ({
+      id: obj.id,
+      position: obj.position,
+      type: obj.type
+    })), [objects]
+  );
   const addObject = useAddObject();
   const selectObject = useSelectObject();
   const removeObject = useRemoveObject();
-  const updateObject = useUpdateObject();
   const clearAllModes = useClearAllModes();
   const setUserInteracting = useSetUserInteracting();
 
@@ -81,14 +89,14 @@ export function PlacementSystem({
   const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
   // Use refs for values that don't need to trigger callback recreation
-  const objectsRef = useRef(objects);
+  const objectsRef = useRef(objectsForCollision);
   const isPlacingRef = useRef(isPlacing);
   const selectedObjectTypeRef = useRef(selectedObjectType);
   
   // Update refs when values change
   useEffect(() => {
-    objectsRef.current = objects;
-  }, [objects]);
+    objectsRef.current = objectsForCollision;
+  }, [objectsForCollision]);
   
   useEffect(() => {
     isPlacingRef.current = isPlacing;
@@ -233,11 +241,11 @@ export function PlacementSystem({
         debouncedSelectObject(null);
       }
       
-      // Only signal user interaction when actually performing physics-affecting actions
+      // Only signal interaction for physics systems that actually need it
       if (shouldSignalUserInteraction) {
         setUserInteracting(true);
-        // End user interaction after processing
-        setTimeout(() => setUserInteracting(false), 100);
+        // Quick reset to signal physics systems
+        setTimeout(() => setUserInteracting(false), 16);
       }
     },
     [
@@ -247,7 +255,6 @@ export function PlacementSystem({
       addObject,
       debouncedSelectObject,
       removeObject,
-      objects,
       scene.children,
       setUserInteracting,
     ],
@@ -287,7 +294,7 @@ export function PlacementSystem({
             selectedObjectType,
             mathSurfacePoint, // Use mathematical point
             mathNormal,       // Use mathematical normal
-            objects,
+            objectsForCollision,
           );
 
           // Only update if the placement info has actually changed
@@ -313,11 +320,9 @@ export function PlacementSystem({
       globeRef,
       isPlacing,
       selectedObjectType,
-      objects,
+      objectsForCollision,
     ],
   );
-
-  // Removed empty useFrame loop to prevent unnecessary re-renders
 
   // Add event listeners - use refs to avoid dependency issues
   const handlePointerMoveRef = useRef(handlePointerMove);
@@ -426,7 +431,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -436,7 +441,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -446,7 +451,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -456,7 +461,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -466,7 +471,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -476,7 +481,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -486,7 +491,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -496,7 +501,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -506,7 +511,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />
@@ -516,7 +521,7 @@ export function PlacementSystem({
                 position={[0, 0, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
-                  objectId="preview"
+                objectId="preview"
                 preview={true}
                 canPlace={placementPreview.canPlace}
               />

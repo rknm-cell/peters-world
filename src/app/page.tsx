@@ -46,14 +46,7 @@ export default function Home() {
                 Welcome to my world <br /> Make it your own
               </p>
               
-              <Button 
-                size="lg" 
-                className="mt-6 px-10 py-4 bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 transition-all duration-300"
-                onClick={() => setShowOverlay(false)}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Start Building Now
-              </Button>
+              
             </div>
           </div>
         </div>

@@ -111,6 +111,16 @@ export function Wolf({
     }
   }, [wolfModel, preview, canPlace]);
 
+  // CRITICAL FIX: Use stable refs to avoid store access in useFrame
+  const currentPositionRef = useRef(position);
+  const currentRotationRef = useRef(rotation);
+  
+  // Update refs when props change (outside of useFrame)
+  useEffect(() => {
+    currentPositionRef.current = position;
+    currentRotationRef.current = rotation;
+  }, [position, rotation]);
+
   // Animation and movement updates
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -121,29 +131,9 @@ export function Wolf({
       return;
     }
 
-    // Get fresh store state every frame for movement updates (non-physics wolf)
-    if (!preview && objectId) {
-      const storeState = useWorldStore.getState();
-      const currentObject = storeState.objects.find(obj => obj.id === objectId);
-      
-      if (currentObject) {
-        // Update position from store state (for movement)
-        groupRef.current.position.set(...currentObject.position);
-        
-        // Update rotation from store state (wolf face movement direction)
-        if (currentObject.rotation) {
-          groupRef.current.rotation.set(...currentObject.rotation);
-        }
-      } else {
-        // Fallback to props if not found in store
-        groupRef.current.position.set(...position);
-        groupRef.current.rotation.set(...rotation);
-      }
-    } else {
-      // Use props for preview or if no objectId
-      groupRef.current.position.set(...position);
-      groupRef.current.rotation.set(...rotation);
-    }
+    // FIXED: Use stable refs instead of store access inside useFrame
+    groupRef.current.position.set(...currentPositionRef.current);
+    groupRef.current.rotation.set(...currentRotationRef.current);
 
     // Selected state animation (override rotation temporarily)
     if (selected) {

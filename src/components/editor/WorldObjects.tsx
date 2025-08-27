@@ -65,96 +65,139 @@ function isAnimalType(type: string): type is AnimalType {
   return (ANIMAL_MODELS as readonly string[]).includes(type);
 }
 
-export const WorldObjects = React.memo(function WorldObjects() {
-  // Use ultra-optimized category-specific hooks to prevent unnecessary re-renders
-  // These hooks only re-render when objects in their specific category change
+// Individual render components for each category - highly optimized with React.memo
+const AnimalRenderer = React.memo(function AnimalRenderer() {
   const animals = useAnimalObjectsOnly();
-  const trees = useTreeObjectsOnly();
-  const grass = useGrassObjectsOnly();
   
-  // For other objects, we can use the stable hook since they're less critical
-  const { others } = useStableObjectsByCategory();
-  
-
-
-  const renderObject = React.useCallback((obj: PlacedObject) => {
-    const props = {
-      position: obj.position,
-      rotation: obj.rotation,
-      scale: obj.scale,
+  // CRITICAL FIX: Create stable props to prevent array reference changes from causing rerenders
+  const stableAnimalProps = React.useMemo(() => 
+    animals.map((obj) => ({
+      key: obj.id,
       objectId: obj.id,
-    };
-
-    // Determine object category and render appropriate component
-    if (isTreeType(obj.type)) {
-      return (
-        <Tree 
-          key={obj.id} 
-          type={obj.type} 
-          lifecycleStage={obj.treeLifecycle?.stage}
-          {...props} 
-        />
-      );
-    }
-
-    if (isStructureType(obj.type)) {
-      return <Structure key={obj.id} type={obj.type} {...props} />;
-    }
-
-    if (isDecorationType(obj.type)) {
-      return <Decoration key={obj.id} type={obj.type} {...props} />;
-    }
-
-    if (isGrassType(obj.type)) {
-      return <Grass key={obj.id} type={obj.type} {...props} />;
-    }
-
-    if (isAnimalType(obj.type)) {
-      // Use different physics components based on animal type
-      if (obj.type === "animals/deer") {
-        // Use physics-based deer for realistic movement and surface adhesion
+      type: obj.type,
+      // FIXED: Pass position as individual primitives to avoid array reference instability
+      positionX: obj.position[0],
+      positionY: obj.position[1],
+      positionZ: obj.position[2]
+    }))
+  , [animals]);
+  
+  return (
+    <>
+      {stableAnimalProps.map((props) => {
+        // Reconstruct position array inside component to maintain API compatibility
+        const position: [number, number, number] = [props.positionX, props.positionY, props.positionZ];
+        
+        if (props.type === "animals/deer") {
+          return (
+            <DeerPhysics 
+              key={props.key}
+              objectId={props.objectId}
+              type={props.type}
+              position={position}
+            />
+          );
+        } else if (props.type === "animals/wolf") {
+          return (
+            <WolfPhysics 
+              key={props.key}
+              objectId={props.objectId}
+              type={props.type}
+              position={position}
+            />
+          );
+        }
+        
+        // For other animals, fall back to deer physics
         return (
           <DeerPhysics 
-            key={obj.id}
-            objectId={obj.id}
-            type={obj.type}
-            position={obj.position}
+            key={props.key}
+            objectId={props.objectId}
+            type={props.type}
+            position={position}
           />
         );
-      } else if (obj.type === "animals/wolf") {
-        // Use physics-based wolf with deer-chasing behavior
-        return (
-          <WolfPhysics 
-            key={obj.id}
-            objectId={obj.id}
-            type={obj.type}
-            position={obj.position}
-          />
-        );
-      }
-      
-      // For other animals, fall back to deer physics for now
-      return (
-        <DeerPhysics 
-          key={obj.id}
-          objectId={obj.id}
-          type={obj.type}
+      })}
+    </>
+  );
+});
+
+const TreeRenderer = React.memo(function TreeRenderer() {
+  const trees = useTreeObjectsOnly();
+  
+  return (
+    <>
+      {trees.map((obj) => (
+        <Tree 
+          key={obj.id} 
+          type={obj.type as TreeType} 
+          lifecycleStage={obj.treeLifecycle?.stage}
           position={obj.position}
+          rotation={obj.rotation}
+          scale={obj.scale}
+          objectId={obj.id}
         />
-      );
-    }
+      ))}
+    </>
+  );
+});
 
-    // Default fallback for unknown types
-    return <Tree key={obj.id} type="tree" {...props} />;
-  }, []); // Remove selectedObject dependency to prevent recreating the callback
+const GrassRenderer = React.memo(function GrassRenderer() {
+  const grass = useGrassObjectsOnly();
+  
+  return (
+    <>
+      {grass.map((obj) => (
+        <Grass 
+          key={obj.id} 
+          type={obj.type} 
+          position={obj.position}
+          rotation={obj.rotation}
+          scale={obj.scale}
+          objectId={obj.id}
+        />
+      ))}
+    </>
+  );
+});
 
-  // Combine all categorized objects for rendering
-  const allObjectsToRender = [
-    ...animals,
-    ...trees, 
-    ...grass,
-    ...others
-  ];
+const OtherObjectsRenderer = React.memo(function OtherObjectsRenderer() {
+  const { others } = useStableObjectsByCategory();
+  
+  return (
+    <>
+      {others.map((obj) => {
+        const props = {
+          position: obj.position,
+          rotation: obj.rotation,
+          scale: obj.scale,
+          objectId: obj.id,
+        };
 
-  return <>{allObjectsToRender.map(renderObject)}</>;
+        if (isStructureType(obj.type)) {
+          return <Structure key={obj.id} type={obj.type} {...props} />;
+        }
+
+        if (isDecorationType(obj.type)) {
+          return <Decoration key={obj.id} type={obj.type} {...props} />;
+        }
+
+        // Default fallback
+        return <Tree key={obj.id} type="tree" {...props} />;
+      })}
+    </>
+  );
+});
+
+export const WorldObjects = React.memo(function WorldObjects() {
+  // Each renderer is independently memoized and only updates its own category
+  // This prevents animals from rerendering when trees, structures, or decorations are placed
+  return (
+    <>
+      <AnimalRenderer />
+      <TreeRenderer />
+      <GrassRenderer />
+      <OtherObjectsRenderer />
+    </>
+  );
 });

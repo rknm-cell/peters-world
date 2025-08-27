@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { Canvas } from "~/components/editor/Canvas";
+import { BackgroundMusic } from "~/components/three/BackgroundMusic";
 import { api } from "~/trpc/react";
 import { useWorldStore } from "~/lib/store";
 import { deserializeWorld } from "~/lib/utils/world-serialization";
@@ -61,6 +62,9 @@ export default function WorldViewPage() {
   return (
     <div className="relative h-screen w-screen bg-gray-900">
       <Canvas />
+      
+      {/* Background Music */}
+      <BackgroundMusic volume={0.3} autoPlay={true} />
       
       {/* World info overlay */}
       <div className="fixed left-4 top-4 z-40 rounded-lg border border-white/20 bg-black/70 p-3 backdrop-blur-sm">
