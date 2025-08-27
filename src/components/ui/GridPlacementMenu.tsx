@@ -172,8 +172,15 @@ function ObjectItem({
         if (objectType === "animals/pig") return "🐷";
         return "🦌"; // fallback
       }
-      case "grass":
-        return "🌿";
+      case "grass": {
+        // Use specific emojis for different grass types
+        if (objectType === "grass/grass") return "🌱";
+        if (objectType === "grass/grass-basic") return "🌿";
+        if (objectType === "grass/grass-clumb") return "🍀";
+        if (objectType === "grass/grass-long") return "🌾";
+        if (objectType === "grass/grass-tall") return "🌾";
+        return "🌿"; // fallback
+      }
       default:
         return "📦";
     }
