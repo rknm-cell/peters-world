@@ -404,11 +404,16 @@ export function PlacementSystem({
             <Structure
               type={selectedObjectType}
               position={[0, 0, 0]}
-              rotation={[
-                placementPreview.rotation.x,
-                placementPreview.rotation.y,
-                placementPreview.rotation.z
-              ]}
+              rotation={
+                // Use tree-like preview rotation for cabins, calculated rotation for other structures
+                (selectedObjectType === "building-cabin-small" || selectedObjectType === "building-cabin-big")
+                  ? [0, 0, 0]  // Static rotation like trees
+                  : [
+                      placementPreview.rotation.x,
+                      placementPreview.rotation.y,
+                      placementPreview.rotation.z
+                    ]  // Calculated rotation for other structures
+              }
               scale={[1, 1, 1]}
               objectId="preview"
               preview={true}
