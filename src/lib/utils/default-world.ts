@@ -1,110 +1,10 @@
 import type { PlacedObject, TerrainVertex, TimeOfDay, TerraformMode } from "../store";
 import type { SerializedWorld } from "./world-serialization";
+// Import the curated default world template
+import defaultWorldTemplateJson from "../default/default-world-template.json";
 
-// Default world template - captured from a curated development world
-const DEFAULT_WORLD_TEMPLATE: SerializedWorld = {
-  version: "1.0.0",
-  objects: [
-    // A few starter trees to create a nice scene
-    {
-      id: "default-tree-1",
-      type: "tree-oak.glb",
-      position: [0.3, 0, 1.05],
-      rotation: [0, 0.5, 0],
-      scale: [1, 1, 1],
-      treeLifecycle: {
-        stage: "adult",
-        stageStartTime: Date.now() - 30000, // Started 30 seconds ago
-        adultTreeType: "tree-oak.glb",
-        isPartOfForest: false
-      }
-    },
-    {
-      id: "default-tree-2", 
-      type: "tree-birch.glb",
-      position: [-0.4, 0, 1.02],
-      rotation: [0, -0.8, 0],
-      scale: [0.9, 0.9, 0.9],
-      treeLifecycle: {
-        stage: "adult",
-        stageStartTime: Date.now() - 45000, // Started 45 seconds ago
-        adultTreeType: "tree-birch.glb",
-        isPartOfForest: false
-      }
-    },
-    {
-      id: "default-tree-3",
-      type: "tree-maple.glb", 
-      position: [0, 0, 1.08],
-      rotation: [0, 1.2, 0],
-      scale: [1.1, 1.1, 1.1],
-      treeLifecycle: {
-        stage: "adult",
-        stageStartTime: Date.now() - 60000, // Started 1 minute ago
-        adultTreeType: "tree-maple.glb",
-        isPartOfForest: false
-      }
-    },
-    // Some grass around the trees
-    {
-      id: "default-grass-1",
-      type: "grass/grass-basic.glb",
-      position: [0.5, 0, 1.01],
-      rotation: [0, 0.3, 0],
-      scale: [1, 1, 1]
-    },
-    {
-      id: "default-grass-2",
-      type: "grass/grass-tall.glb",
-      position: [-0.2, 0, 1.03],
-      rotation: [0, -0.5, 0],
-      scale: [0.8, 0.8, 0.8]
-    },
-    {
-      id: "default-grass-3",
-      type: "grass/grass-clumb.glb",
-      position: [0.1, 0, 1.06],
-      rotation: [0, 1.8, 0],
-      scale: [1.2, 1.2, 1.2]
-    },
-    // A friendly deer
-    {
-      id: "default-deer-1",
-      type: "animals/deer.glb",
-      position: [-0.6, 0, 1.01],
-      rotation: [0, 0.7, 0],
-      scale: [1, 1, 1]
-    },
-    // Some decorative flowers
-    {
-      id: "default-flower-1",
-      type: "decorations/flower-red.glb",
-      position: [0.7, 0, 1.02],
-      rotation: [0, -0.2, 0],
-      scale: [1, 1, 1]
-    },
-    {
-      id: "default-flower-2",
-      type: "decorations/roses.glb",
-      position: [-0.8, 0, 1.04],
-      rotation: [0, 1.5, 0],
-      scale: [0.9, 0.9, 0.9]
-    }
-  ],
-  terrain: {
-    vertices: [], // Start with flat terrain
-    terraformMode: "none",
-    brushSize: 0.5,
-    brushStrength: 0.1
-  },
-  environment: {
-    timeOfDay: "day"
-  },
-  metadata: {
-    created: Date.now(),
-    objectCount: 9
-  }
-};
+// Load the default world template from JSON file
+const DEFAULT_WORLD_TEMPLATE: SerializedWorld = defaultWorldTemplateJson as SerializedWorld;
 
 export interface DefaultWorldState {
   objects: PlacedObject[];
@@ -117,10 +17,28 @@ export interface DefaultWorldState {
 
 /**
  * Get the default world state for new users
+ * Randomizes tree lifecycle timestamps to create variety
  */
 export function getDefaultWorld(): DefaultWorldState {
+  const currentTime = Date.now();
+  
+  // Process objects to randomize tree lifecycle timestamps
+  const processedObjects = DEFAULT_WORLD_TEMPLATE.objects.map(obj => {
+    if (obj.treeLifecycle) {
+      return {
+        ...obj,
+        treeLifecycle: {
+          ...obj.treeLifecycle,
+          // Randomize stage start time to be within the last 2 minutes
+          stageStartTime: currentTime - Math.random() * 120000, // 0-2 minutes ago
+        }
+      };
+    }
+    return obj;
+  });
+
   return {
-    objects: DEFAULT_WORLD_TEMPLATE.objects,
+    objects: processedObjects,
     terrainVertices: DEFAULT_WORLD_TEMPLATE.terrain.vertices,
     terraformMode: DEFAULT_WORLD_TEMPLATE.terrain.terraformMode,
     brushSize: DEFAULT_WORLD_TEMPLATE.terrain.brushSize,
@@ -161,7 +79,7 @@ export function captureCurrentWorldAsDefault(worldState: DefaultWorldState): Ser
   };
 
   console.log("🎨 Captured world template:", JSON.stringify(template, null, 2));
-  console.log("📋 Copy this template to update DEFAULT_WORLD_TEMPLATE in default-world.ts");
+  console.log("📋 Copy this template to update src/lib/default/default-world-template.json");
   
   return template;
 }
@@ -181,21 +99,9 @@ export function shouldLoadDefaultWorld(): boolean {
 }
 
 /**
- * Development helper: Make capture function available globally
+ * Development helper: Console logging for capture availability
+ * The capture function is available through the UI button in development mode
  */
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-  (window as any).captureWorldAsDefault = () => {
-    const { useWorldStore } = require("../store");
-    const state = useWorldStore.getState();
-    return captureCurrentWorldAsDefault({
-      objects: state.objects,
-      terrainVertices: state.terrainVertices,
-      terraformMode: state.terraformMode,
-      brushSize: state.brushSize,
-      brushStrength: state.brushStrength,
-      timeOfDay: state.timeOfDay,
-    });
-  };
-  
-  console.log("🛠️ Development helper available: window.captureWorldAsDefault()");
+  console.log("🛠️ Development capture available via 'Capture Default' button in create page");
 }

@@ -39,15 +39,11 @@ This system allows you to create and manage a default world that new users see w
 
 4. **Update the default template**:
    - Copy the generated template
-   - Replace `DEFAULT_WORLD_TEMPLATE` in `src/lib/utils/default-world.ts`
+   - Replace the contents of `src/lib/default/default-world-template.json`
    - The new default will be used for all new users
 
 ### Alternative Capture Method
-You can also use the browser console:
-```javascript
-// Run this in the browser console while on the create page
-window.captureWorldAsDefault()
-```
+The capture functionality is primarily available through the UI button. The console method has been removed to maintain TypeScript safety and code quality.
 
 ## Files Involved
 
@@ -59,22 +55,26 @@ window.captureWorldAsDefault()
 
 ## Default World Content
 
-The current default world includes:
-- 3 different trees (oak, birch, maple) with lifecycle data
-- 3 grass patches of different types
-- 1 friendly deer
-- 2 decorative flowers
-- Flat terrain
-- Daytime lighting
+The current default world includes **85 objects** from a curated template:
+- 🌳 Multiple trees of various types with lifecycle data and forest formations
+- 🌱 Grass patches distributed naturally across the terrain
+- 🦌 Various animals including deer and other creatures
+- 🌸 Decorative elements like flowers and mushrooms
+- 🗻 Terraformed terrain with varied topology
+- ☀️ Daytime lighting
+- 💧 Water features and terrain modifications
 
 ## Customization
 
 To customize the default world:
 
-1. Modify the `DEFAULT_WORLD_TEMPLATE` object in `src/lib/utils/default-world.ts`
-2. Add/remove/modify objects in the `objects` array
-3. Adjust terrain, environment settings
-4. Update object positions, rotations, scales as needed
+1. Use the capture system to create a new world template (see above)
+2. Or directly edit `src/lib/default/default-world-template.json`
+3. Add/remove/modify objects in the `objects` array
+4. Adjust terrain, environment settings
+5. Update object positions, rotations, scales as needed
+
+The JSON file is automatically loaded when the application starts.
 
 ## Technical Details
 
