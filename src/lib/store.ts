@@ -6,6 +6,7 @@ import { TerrainOctree } from "./utils/spatial-partitioning";
 import { TREE_LIFECYCLE, TREE_LIFECYCLE_CONFIG, FOREST_CONFIG, GRASS_CONFIG, GRASS_MODELS, DEER_CONFIG, WOLF_CONFIG } from "./constants";
 import { calculatePlacement, getDetailedIntersection } from "./utils/placement";
 import { saveWorldToStorage, loadWorldFromStorage } from "./utils/world-persistence";
+import { getDefaultWorld } from "./utils/default-world";
 
 // Optimized logging system for production
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -181,6 +182,7 @@ interface WorldState extends ObjectSlice, TerrainSlice, EnvironmentSlice, DebugS
     brushStrength: number;
     timeOfDay: TimeOfDay;
   }) => void;
+  loadDefaultWorld: () => void;
   resetWorld: () => void;
   autoSaveWorld: () => void;
   restoreWorldFromStorage: () => boolean;
@@ -1753,6 +1755,13 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     
     // Run forest detection after loading (with delay to ensure objects are rendered)
     setTimeout(() => _get().detectForests(), 500);
+  },
+
+  // Load default world for new users
+  loadDefaultWorld: () => {
+    const defaultWorld = getDefaultWorld();
+    _get().loadWorld(defaultWorld);
+    logger.info("🌟 Default world loaded");
   },
 
   // Reset world to initial state

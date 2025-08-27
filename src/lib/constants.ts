@@ -380,12 +380,12 @@ export const MODEL_SCALING = {
       "mushroom-toadstool": 0.15,
       "mushroom-toadstool-green": 0.15,
       // Stones
-      "stone-diamond-brown": 0.3,
-      "stone-flat-brown": 0.15,
-      "stone-oval-brown": 0.25,
-      "stone-pointy-brown": 0.4,
-      "stone-round-brown": 0.2,
-      "stone-small-brown": 0.1,
+      "stone-diamond-brown": 0.5,
+      "stone-flat-brown": 0.25,
+      "stone-oval-brown": 0.5,
+      "stone-pointy-brown": 0.25,
+      "stone-round-brown": 0.5,
+      "stone-small-brown": 0.5,
       // Legacy
       rock: 0.3,
       flower: 0.25,
