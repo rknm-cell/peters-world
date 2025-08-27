@@ -279,8 +279,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     };
 
     // Initialize tree lifecycle if it's a tree
-    if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type) || type === "tree") {
-      const adultTreeType = type === "tree" ? TREE_LIFECYCLE.adult[Math.floor(Math.random() * TREE_LIFECYCLE.adult.length)] : type;
+    if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type)) {
+      const adultTreeType = type;
       // Stagger initial start times - place trees at random points within their adult stage
       const baseTime = Date.now();
       const adultStageDurationMs = TREE_LIFECYCLE_CONFIG.stageDurations.adult * 1000;
@@ -308,7 +308,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
     _get().updateObjectsByCategory();
 
     // Run forest detection after adding a tree (with slight delay to avoid race conditions)
-    if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type) || type === "tree") {
+    if ((TREE_LIFECYCLE.adult as readonly string[]).includes(type)) {
       setTimeout(() => _get().detectForests(), 100);
     }
   },
@@ -656,7 +656,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
             newType = selectedDeathType;
           } else {
             newStage = "adult";
-            newType = adultTreeType ?? "tree";
+            newType = adultTreeType ?? "tree-oak";
           }
           break;
         case "adult":
@@ -825,7 +825,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 newType = selectedDeathType;
               } else {
                 newStage = "adult";
-                newType = adultTreeType ?? "tree";
+                newType = adultTreeType ?? "tree-oak";
               }
               break;
             case "adult":
@@ -1081,7 +1081,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           if (detailedIntersection) {
             console.log(`📍 Surface hit at [${detailedIntersection.point.x.toFixed(2)}, ${detailedIntersection.point.y.toFixed(2)}, ${detailedIntersection.point.z.toFixed(2)}]`);
             // Use placement system to get proper position and rotation
-            const parentAdultType = spawnerTree.treeLifecycle?.adultTreeType ?? "tree";
+            const parentAdultType = spawnerTree.treeLifecycle?.adultTreeType ?? "tree-oak";
             const spawnTreeType = TREE_LIFECYCLE.youth.small;
             
             const placementInfo = calculatePlacement(

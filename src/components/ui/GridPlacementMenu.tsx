@@ -14,7 +14,6 @@ import { Grass } from "~/components/three/objects/Grass";
 
 // Type definitions for the object types
 type TreeType =
-  | "tree"
   | "tree-baobab"
   | "tree-beech"
   | "tree-birch"
@@ -132,8 +131,19 @@ function ObjectItem({
 }) {
   const getCategoryIcon = () => {
     switch (category) {
-      case "trees":
-        return "🌲";
+      case "trees": {
+        // Use specific emojis for different tree types
+        if (objectType === "tree-baobab") return "🌳"; // Baobab - distinctive African tree
+        if (objectType === "tree-beech") return "🌳"; // Beech - deciduous tree
+        if (objectType === "tree-birch") return "🌲"; // Birch - white bark tree
+        if (objectType === "tree-elipse") return "🌳"; // Elliptical tree
+        if (objectType === "tree-lime") return "🍃"; // Lime tree - leafy
+        if (objectType === "tree-maple") return "🍁"; // Maple - distinctive leaf
+        if (objectType === "tree-oak") return "🌰"; // Oak - acorn tree
+        if (objectType === "tree-round") return "🌳"; // Round tree
+        if (objectType === "tree-tall") return "🌲"; // Tall conifer-like tree
+        return "🌲"; // fallback
+      }
       case "decorations": {
         // Use specific emojis for different decoration types
         if (objectType === "carnations") return "🌺";
