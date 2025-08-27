@@ -2,6 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { useWorldStore } from "~/lib/store";
+import { useEffect } from "react";
 
 export function CameraController() {
   const { isPlacing, terraformMode, isTerraforming } = useWorldStore();
@@ -19,6 +20,22 @@ export function CameraController() {
     controlsEnabled: !shouldDisableRotation,
     enableRotate: !shouldDisableRotation
   });
+
+  // Log when component mounts
+  useEffect(() => {
+    console.log("🎮 CameraController mounted");
+    console.log("🎮 Initial state:", { isPlacing, terraformMode, isTerraforming });
+  }, []);
+
+  // Log when state changes
+  useEffect(() => {
+    console.log("🎮 CameraController state changed:", { 
+      isPlacing, 
+      terraformMode, 
+      isTerraforming,
+      shouldDisableRotation 
+    });
+  }, [isPlacing, terraformMode, isTerraforming, shouldDisableRotation]);
 
   // Add global function to force reset camera controls (for debugging)
   if (typeof window !== 'undefined') {

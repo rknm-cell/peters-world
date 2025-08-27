@@ -42,10 +42,19 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
 
   // Determine current interaction mode
   const getInteractionMode = useCallback(() => {
-    if (isPlacing) return 'placing';
-    if (isDeleting) return 'deleting';
-    if (isTerraforming && terraformMode !== 'none') return 'terraforming';
-    return 'idle';
+    const mode = isPlacing ? 'placing' : 
+                 isDeleting ? 'deleting' : 
+                 (isTerraforming && terraformMode !== 'none') ? 'terraforming' : 'idle';
+    
+    // Debug logging for interaction mode
+    console.log("🎯 InputManager mode:", mode, { 
+      isPlacing, 
+      isDeleting, 
+      isTerraforming, 
+      terraformMode 
+    });
+    
+    return mode;
   }, [isPlacing, isDeleting, isTerraforming, terraformMode]);
 
   // Handle clicks outside the world (disable terraform tools)
@@ -268,20 +277,28 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const handlePointerDown = useCallback((event: PointerEvent) => {
     const mode = getInteractionMode();
     
-    // Always check for off-world clicks first (in idle mode)
+    console.log("🖱️ Pointer down event:", { 
+      mode, 
+      clientX: event.clientX, 
+      clientY: event.clientY,
+      target: event.target 
+    });
+    
+    // In idle mode, let OrbitControls handle all events
     if (mode === 'idle') {
-      handleOffWorldClick(event);
-      // Let OrbitControls handle all events in idle mode
-      return;
+      console.log("🖱️ Idle mode - letting OrbitControls handle event");
+      return; // Don't interfere with OrbitControls
     }
     
     // Only handle events that this system should process
     switch (mode) {
       case 'placing':
+        console.log("🖱️ Placing mode - letting PlacementSystem handle");
         // Let PlacementSystem handle this completely
         return;
         
       case 'terraforming':
+        console.log("🖱️ Terraforming mode - handling event");
         const canvas = gl.domElement;
         const rect = canvas.getBoundingClientRect();
         
@@ -307,6 +324,7 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
         break;
         
       case 'deleting':
+        console.log("🖱️ Deleting mode - handling event");
         const deleteCanvas = gl.domElement;
         const deleteRect = deleteCanvas.getBoundingClientRect();
         

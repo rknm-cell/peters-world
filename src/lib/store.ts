@@ -1527,7 +1527,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                      placementInfo.rotation.y, // No random rotation - keep wolf straight like deer
                      placementInfo.rotation.z
                    ],
-                   scale: [0.5, 0.5, 0.5], // Same scale as deer
+                   scale: [1, 1, 1], // Same scale as deer
                  };
                 
                 newWolves.push(newWolfObj);

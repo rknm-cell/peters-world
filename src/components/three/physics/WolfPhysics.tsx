@@ -1,22 +1,35 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Wolf } from '~/components/three/objects/Wolf';
-import { useWorldStore } from '~/lib/store';
+import { useWorldStore, useIsUserInteracting } from '~/lib/store';
 import { WOLF_CONFIG } from '~/lib/constants';
 import { calculateTargetRotation, calculateSmoothedRotation, extractMovementVectors } from '~/lib/utils/deer-rotation';
 import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
+import { enhancedPathfinder } from '~/lib/utils/enhanced-pathfinding';
+import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
+
+// Type for debug window functions
+interface DebugWindow extends Window {
+  updateWolfDebug?: (wolfId: string, data: {
+    position?: THREE.Vector3;
+    target?: THREE.Vector3 | null;
+    state?: string;
+    lastDecision?: string;
+    collisionPoints?: THREE.Vector3[];
+  }) => void;
+}
 
 interface WolfPhysicsProps {
   objectId: string;
   position: [number, number, number];
   type: string;
-  // Removed selected prop - selection handled externally to prevent re-renders
+  // Removed selected prop - will get it from store internally
 }
 
 // Character controller interface for proper typing
@@ -29,33 +42,33 @@ interface CharacterController {
 }
 
 /**
- * WolfPhysics - Physics-enabled wolf with realistic movement, surface adhesion, and deer-chasing behavior
+ * WolfPhysics - Physics-enabled wolf with realistic movement, surface adhesion, and deer-hunting behavior
  * Uses Rapier physics for natural movement, collision detection, and hunting behavior
+ * Mirrors DeerPhysics architecture exactly for consistent behavior
  */
 function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const isUserInteracting = useIsUserInteracting();
+  const { invalidate } = useThree(); // For manual render triggering with frameloop="demand"
+  
+  // Selection is handled externally - wolves don't need to know about selection state
+  // This prevents re-renders when selection changes elsewhere in the app
   
   // Render queue for batching updates and preventing multiple simultaneous re-renders
-  const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue();
+  const { queueDeerTransformUpdate, cancelDeerUpdates } = useDeerRenderQueue(isUserInteracting);
   
   // Ensure wolf starts on globe surface (globe radius is 6.0)
   const initialPosition = new THREE.Vector3(...position);
   const surfacePosition = initialPosition.normalize().multiplyScalar(6.05); // Place just above surface
   
   const [target, setTarget] = useState<THREE.Vector3 | null>(null);
-  const [lastTargetTime, setLastTargetTime] = useState(Date.now());
   const [isIdle, setIsIdle] = useState(false);
   const [idleStartTime, setIdleStartTime] = useState(Date.now());
-  
-  // Debug: Log wolf initialization
-  useEffect(() => {
-    console.log(`🐺 Wolf ${objectId}: Initialized at position`, position);
-  }, [objectId, position]);
 
-  // Wolf-specific hunting states
   const [isHunting, setIsHunting] = useState(false);
-  const [huntingTarget, setHuntingTarget] = useState<string | null>(null); // Deer object ID being hunted
   const [huntingStartTime, setHuntingStartTime] = useState(0);
+  const [huntingTargetId, setHuntingTargetId] = useState<string | null>(null);
+  const [huntingOrientation, setHuntingOrientation] = useState<THREE.Quaternion | null>(null);
   const lastUpdateTime = useRef(0);
   
   // Bounce animation state
@@ -81,6 +94,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
       controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
       characterController.current = controller;
+      console.log('🐺 Character controller initialized for wolf', objectId);
     }
     
     // Set initial wolf orientation to match surface normal
@@ -121,13 +135,18 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     };
   }, [rapier, world, objectId, surfacePosition]);
   
-  // Movement parameters for wolf behavior
+  // Movement parameters for wolf behavior (using WOLF_CONFIG like deer use their params)
   const MOVEMENT_SPEED = WOLF_CONFIG.movement.moveSpeed.min + Math.random() * 
     (WOLF_CONFIG.movement.moveSpeed.max - WOLF_CONFIG.movement.moveSpeed.min);
   const TARGET_DISTANCE = WOLF_CONFIG.movement.targetDistance;
-  const TARGET_UPDATE_INTERVAL = { min: 3000, max: 6000 }; // Longer intervals for wolves
-  const IDLE_PROBABILITY = 0.15; // Lower idle probability for more active wolves
+  const TARGET_REACHED_THRESHOLD = 0.3; // How close wolf needs to be to consider target reached
+  const IDLE_PROBABILITY = 0.2; // Lower than deer for more active hunting behavior
   const IDLE_DURATION = WOLF_CONFIG.movement.idleTime;
+  
+  // Hunting parameters
+  const DEER_DETECTION_RADIUS = WOLF_CONFIG.hunting.detectionRadius;
+  const HUNTING_DURATION = 15000; // 15 seconds of hunting before giving up
+  const DEER_APPROACH_DISTANCE = 0.5; // How close wolf gets before "catching" deer
   
   // Function to find nearby deer for hunting
   const findNearbyDeer = (wolfPosition: THREE.Vector3) => {
@@ -135,7 +154,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     const deerObjects = store.objects.filter(obj => obj.type === 'animals/deer');
     
     let closestDeer = null;
-    let closestDistance: number = WOLF_CONFIG.hunting.detectionRadius;
+    let closestDistance = DEER_DETECTION_RADIUS;
     
     for (const deer of deerObjects) {
       const deerPosition = new THREE.Vector3(...deer.position);
@@ -163,143 +182,289 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
     }
     lastUpdateTime.current = currentTime;
     
-    // Debug logging every few seconds to track wolf state
-    const debugInterval = 3000; // Log every 3 seconds
-    if (currentTime % debugInterval < minUpdateInterval) {
-      console.log(`🐺 Wolf ${objectId}: State check - isIdle: ${isIdle}, isHunting: ${isHunting}, hasTarget: ${target !== null}, huntingTarget: ${huntingTarget}`);
-    }
-    
     // === CHARACTER CONTROLLER LOGIC ===
     
     // Get current position from physics body (needed for all logic below)
     const currentPos = body.translation();
     const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
     
-    // Handle idle state
+    // Report debug state
+    const debugWindow = window as DebugWindow;
+    if (debugWindow.updateWolfDebug) {
+      const distanceToTarget = target ? currentPosition.distanceTo(target) : 0;
+      let decision = 'Seeking target';
+      
+      if (isHunting) {
+        decision = `Hunting deer`;
+      } else if (isIdle) {
+        decision = `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s`;
+      } else if (target) {
+        decision = `Traveling (${distanceToTarget.toFixed(1)}m to go)`;
+      }
+      
+      debugWindow.updateWolfDebug(objectId, {
+        position: currentPosition,
+        target: target,
+        state: isHunting ? 'hunting' : isIdle ? 'idle' : 'moving',
+        lastDecision: decision
+      });
+    }
+    
+    // Handle idle state (exactly like deer)
     if (isIdle) {
       const idleDuration = currentTime - idleStartTime;
       const maxIdleDuration = IDLE_DURATION.min + Math.random() * (IDLE_DURATION.max - IDLE_DURATION.min);
       
       if (idleDuration > maxIdleDuration) {
-        console.log(`🐺 Wolf ${objectId}: Ending idle state after ${(idleDuration/1000).toFixed(1)}s`);
         setIsIdle(false);
         setTarget(null); // Force new target generation
-      } else {
-        // Periodically log idle progress
-        if (Math.floor(idleDuration / 1000) !== Math.floor((idleDuration - minUpdateInterval) / 1000)) {
-          console.log(`🐺 Wolf ${objectId}: Idling - ${(idleDuration/1000).toFixed(1)}s/${(maxIdleDuration/1000).toFixed(1)}s`);
+      }
+      
+      // Reset movement speed when entering idle to stop any residual bounce
+      lastMovementSpeed.current = 0;
+      
+      // === SURFACE ALIGNMENT MAINTENANCE DURING IDLE ===
+      // Prevent orientation drift by maintaining surface-relative alignment
+      
+      const surfaceNormal = currentPosition.clone().normalize();
+      const currentRotation = body.rotation();
+      const currentQuaternion = new THREE.Quaternion(
+        currentRotation.x, 
+        currentRotation.y, 
+        currentRotation.z, 
+        currentRotation.w
+      );
+      
+      // Calculate what the correct surface-aligned orientation should be
+      // Use a default forward direction (wolf facing "north" relative to surface)
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const localForward = worldUp.clone()
+        .sub(surfaceNormal.clone().multiplyScalar(worldUp.dot(surfaceNormal)))
+        .normalize();
+      
+      // If forward vector is too small (e.g., at poles), use alternative direction
+      if (localForward.length() < 0.1) {
+        const worldForward = new THREE.Vector3(1, 0, 0);
+        localForward.copy(worldForward)
+          .sub(surfaceNormal.clone().multiplyScalar(worldForward.dot(surfaceNormal)))
+          .normalize();
+      }
+      
+      // Calculate target surface-aligned rotation using existing utilities
+      const targetQuaternion = calculateTargetRotation(
+        currentPosition,
+        localForward, // Default forward direction for idle wolf
+        surfaceNormal
+      );
+      
+      // Check how far we've drifted from proper surface alignment
+      const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
+      const ORIENTATION_DRIFT_THRESHOLD = 0.1; // ~6 degrees - only correct if significantly misaligned
+      
+      // Skip orientation corrections during user interactions to prevent jittering
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD && !isUserInteracting) {
+        // Gradually correct orientation drift during idle
+        // Use slower correction speed to avoid jittery movement
+        const IDLE_CORRECTION_SPEED = 0.5; // Slower than normal movement rotation
+        const correctedQuaternion = calculateSmoothedRotation(
+          currentQuaternion,
+          targetQuaternion,
+          delta,
+          IDLE_CORRECTION_SPEED
+        );
+        
+        // Apply the corrected orientation
+        queueDeerTransformUpdate(objectId, () => {
+          body.setRotation(correctedQuaternion, true);
+        }, 'low'); // Low priority since this is just orientation maintenance
+        
+        // Debug logging (can be removed later)
+        if (orientationDifference > 0.2) { // Only log significant corrections
+          console.log(`🐺 Wolf ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
         }
       }
       
-      // Apply bounce decay when idle
-      const bounceDecayRate = 5.0; // How quickly bounce fades when idle
-      lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
-      
-      // Continue bounce animation with decaying speed
-      bouncePhase.current += lastMovementSpeed.current * 8.0 * delta;
-      
-      // Calculate fading bounce height
-      const maxBounceHeight = 0.08;
-      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
-      
-      // Apply subtle bounce to wolf position even when idle
-      if (Math.abs(bounceHeight) > 0.01) {
-        const idealSurfaceDistance = 6.05 + bounceHeight;
-        const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-        body.setTranslation(adjustedPosition, true);
-      }
-      
-      // During idle, no movement
+      // During idle, no movement but orientation is maintained
       return;
     }
     
-    // === HUNTING LOGIC ===
+    // === DEER HUNTING LOGIC ===
     
     // Handle hunting state
-    if (isHunting && huntingTarget) {
-      const store = useWorldStore.getState();
-      const targetDeer = store.objects.find(obj => obj.id === huntingTarget);
+    if (isHunting) {
+      const huntingDuration = currentTime - huntingStartTime;
       
-      if (targetDeer) {
-        const deerPosition = new THREE.Vector3(...targetDeer.position);
-        const distanceToDeer = currentPosition.distanceTo(deerPosition);
+      // Check if hunting is complete (15 seconds) or deer no longer exists
+      if (huntingDuration >= HUNTING_DURATION) {
+        // Stop hunting and return to normal behavior
+        setIsHunting(false);
+        setHuntingTargetId(null);
+        setHuntingOrientation(null);
+        setTarget(null); // Force new target generation
+        console.log(`🐺 Wolf ${objectId}: Hunting timeout, returning to wandering`);
+      } else if (huntingTargetId) {
+        // Check if target deer still exists
+        const store = useWorldStore.getState();
+        const targetDeer = store.objects.find(obj => obj.id === huntingTargetId);
         
-        // Stop hunting if deer is too far away or we've been hunting too long
-        const huntingDuration = currentTime - huntingStartTime;
-        const maxHuntingTime = 15000; // 15 seconds max hunting time
-        
-        if (distanceToDeer > WOLF_CONFIG.hunting.chaseRadius || huntingDuration > maxHuntingTime) {
-          setIsHunting(false);
-          setHuntingTarget(null);
-          setTarget(null); // Force new target generation
-        } else {
+        if (targetDeer) {
+          const deerPosition = new THREE.Vector3(...targetDeer.position);
+          const distanceToDeer = currentPosition.distanceTo(deerPosition);
+          
+          // If close enough to deer, "catch" it (stop hunting)
+          if (distanceToDeer <= DEER_APPROACH_DISTANCE) {
+            setIsHunting(false);
+            setHuntingTargetId(null);
+            setHuntingOrientation(null);
+            setTarget(null);
+            setIsIdle(true);
+            setIdleStartTime(currentTime);
+            console.log(`🐺 Wolf ${objectId}: Caught deer, resting`);
+            return;
+          }
+          
           // Continue hunting - set deer position as target
           setTarget(deerPosition);
+        } else {
+          // Target deer no longer exists
+          setIsHunting(false);
+          setHuntingTargetId(null);
+          setHuntingOrientation(null);
+          setTarget(null);
+          console.log(`🐺 Wolf ${objectId}: Target deer disappeared`);
         }
-      } else {
-        // Target deer no longer exists
-        setIsHunting(false);
-        setHuntingTarget(null);
-        setTarget(null);
       }
+      
+      // === SURFACE ALIGNMENT MAINTENANCE DURING HUNTING ===
+      // Similar to deer eating behavior - maintain orientation while hunting
+      
+      const surfaceNormal = currentPosition.clone().normalize();
+      const currentRotation = body.rotation();
+      const currentQuaternion = new THREE.Quaternion(
+        currentRotation.x, 
+        currentRotation.y, 
+        currentRotation.z, 
+        currentRotation.w
+      );
+      
+      // Use the captured orientation from when hunting started, or fallback to default
+      let targetQuaternion: THREE.Quaternion;
+      
+      if (huntingOrientation) {
+        // Maintain the exact orientation the wolf had when it started hunting
+        targetQuaternion = huntingOrientation.clone();
+      } else {
+        // Fallback: Calculate surface-aligned orientation
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        const localForward = worldUp.clone()
+          .cross(surfaceNormal)
+          .normalize();
+        
+        // Handle edge case where surface normal is parallel to world up
+        if (localForward.length() < 0.1) {
+          localForward.set(1, 0, 0)
+            .cross(surfaceNormal)
+            .normalize();
+        }
+        
+        targetQuaternion = calculateTargetRotation(
+          currentPosition,
+          localForward,
+          surfaceNormal
+        );
+      }
+      
+      // Check how far we've drifted from proper surface alignment
+      const orientationDifference = currentQuaternion.angleTo(targetQuaternion);
+      const ORIENTATION_DRIFT_THRESHOLD = 0.1;
+      
+      // Skip orientation corrections during user interactions to prevent jittering
+      if (orientationDifference > ORIENTATION_DRIFT_THRESHOLD && !isUserInteracting) {
+        const HUNTING_CORRECTION_SPEED = 0.3; // Even slower than idle to be gentle
+        const correctedQuaternion = calculateSmoothedRotation(
+          currentQuaternion,
+          targetQuaternion,
+          delta,
+          HUNTING_CORRECTION_SPEED
+        );
+        
+        queueDeerTransformUpdate(objectId, () => {
+          body.setRotation(correctedQuaternion, true);
+        }, 'low');
+        
+        if (orientationDifference > 0.2) {
+          const orientationType = huntingOrientation ? "captured" : "default";
+          console.log(`🐺 Wolf ${objectId}: Correcting orientation drift while hunting using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
+        }
+      }
+      
+      // During hunting, movement continues below (unlike eating deer which return here)
     }
     
     // Look for nearby deer if not currently hunting
-    if (!isHunting) {
-      const nearbyDeer = findNearbyDeer(currentPosition);
+    const nearbyDeer = findNearbyDeer(currentPosition);
+    
+    if (nearbyDeer && !isHunting && Math.random() < WOLF_CONFIG.hunting.huntingProbability) {
+      const deerPosition = new THREE.Vector3(...nearbyDeer.position);
+      const distanceToDeer = currentPosition.distanceTo(deerPosition);
       
-      if (nearbyDeer && Math.random() < WOLF_CONFIG.hunting.huntingProbability) {
+      // Start hunting if deer is within detection range
+      if (distanceToDeer <= DEER_DETECTION_RADIUS) {
+        // Capture current orientation to maintain during hunting
+        const currentRotation = body.rotation();
+        const capturedOrientation = new THREE.Quaternion(
+          currentRotation.x,
+          currentRotation.y,
+          currentRotation.z,
+          currentRotation.w
+        );
+        
         setIsHunting(true);
-        setHuntingTarget(nearbyDeer.id);
         setHuntingStartTime(currentTime);
-        setTarget(new THREE.Vector3(...nearbyDeer.position));
+        setHuntingTargetId(nearbyDeer.id);
+        setHuntingOrientation(capturedOrientation);
+        setTarget(deerPosition);
         setIsIdle(false);
+        console.log(`🐺 Wolf ${objectId}: Starting to hunt deer at distance ${distanceToDeer.toFixed(2)}`);
       }
     }
     
-    // Check if we need a new target (only if not hunting)
-    if (!isHunting) {
+    // Check if we need a new target (only if not hunting specific deer)
+    if (!isHunting || !huntingTargetId) {
       const distanceToTarget = target ? currentPosition.distanceTo(target) : Infinity;
-      const timeSinceLastTarget = currentTime - lastTargetTime;
-      const maxTargetInterval = TARGET_UPDATE_INTERVAL.min + 
-        Math.random() * (TARGET_UPDATE_INTERVAL.max - TARGET_UPDATE_INTERVAL.min);
       
-      const needsNewTarget = 
-        !target || 
-        distanceToTarget < 0.2 || // Close to target
-        timeSinceLastTarget > maxTargetInterval; // Time for new target
+      // Only generate new target when:
+      // 1. No target exists
+      // 2. Target has been reached (within threshold)
+      const targetReached = distanceToTarget < TARGET_REACHED_THRESHOLD;
+      const needsNewTarget = !target || targetReached;
       
       if (needsNewTarget) {
-        // Decide if wolf should idle or move
-        const idleRoll = Math.random();
-        console.log(`🐺 Wolf ${objectId}: Generating new target - idle roll: ${idleRoll.toFixed(2)}, idle threshold: ${IDLE_PROBABILITY}`);
-        
-        if (idleRoll < IDLE_PROBABILITY) {
-          console.log(`🐺 Wolf ${objectId}: Entering idle state`);
-          setIsIdle(true);
-          setIdleStartTime(currentTime);
-          setTarget(null);
-          return;
-        } else {
-          // Generate new wandering target
-          console.log(`🐺 Wolf ${objectId}: Generating new wandering target`);
-          const newTarget = generateWanderingTarget(currentPosition);
-          if (newTarget) {
-            console.log(`🐺 Wolf ${objectId}: New target generated at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
-            setTarget(newTarget);
-            setLastTargetTime(currentTime);
-          } else {
-            console.log(`🐺 Wolf ${objectId}: Failed to generate target, will try again next frame`);
+        // If we just reached a target, decide whether to idle or continue moving
+        if (targetReached && target) {
+          console.log(`🐺 Wolf ${objectId}: Reached target at distance ${distanceToTarget.toFixed(2)}`);
+          
+          // Decide if wolf should idle or move to new location
+          if (Math.random() < IDLE_PROBABILITY) {
+            setIsIdle(true);
+            setIdleStartTime(currentTime);
+            setTarget(null);
+            console.log(`🐺 Wolf ${objectId}: Starting idle period`);
+            return;
           }
+        }
+        
+        // Generate new wandering target
+        const newTarget = generateWanderingTarget(currentPosition);
+        if (newTarget) {
+          setTarget(newTarget);
+          console.log(`🐺 Wolf ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
         }
       }
     }
     
-    // Move toward target using kinematic movement
+    // Move toward target using kinematic movement (exactly like deer)
     if (target && !isIdle) {
-      const distanceToTarget = currentPosition.distanceTo(target);
-      console.log(`🐺 Wolf ${objectId}: Moving toward target - distance: ${distanceToTarget.toFixed(2)}, hunting: ${isHunting}`);
-      
       const direction = target.clone().sub(currentPosition).normalize();
       
       // Get surface normal for surface-parallel movement
@@ -316,27 +481,34 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       // Calculate movement for this frame
       const movement = surfaceMovement.multiplyScalar(currentSpeed * delta);
       
-      // Update bounce animation based on movement speed
-      const currentMovementSpeed = movement.length() / delta;
-      lastMovementSpeed.current = currentMovementSpeed;
-      
-      // Advance bounce phase based on movement speed
-      const bounceFrequency = 8.0; // How fast the bounce cycles
-      bouncePhase.current += currentMovementSpeed * bounceFrequency * delta;
-      
-      // Calculate bounce height (small vertical offset)
-      const maxBounceHeight = 0.08; // Maximum bounce height
-      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(currentMovementSpeed / currentSpeed, 1.0);
-      
-      // Calculate target position for this frame
+      // Calculate target position for this frame (before collision checking)
       let targetPosition = currentPosition.clone().add(movement);
       
-      // ** BUILDING AND TERRAIN COLLISION DETECTION **
+      // ** ENHANCED TERRAIN COLLISION DETECTION ** (exactly like deer)
       console.log(`🐺 Wolf ${objectId}: Checking movement from ${currentPosition.x.toFixed(2)}, ${currentPosition.y.toFixed(2)}, ${currentPosition.z.toFixed(2)} to ${targetPosition.x.toFixed(2)}, ${targetPosition.y.toFixed(2)}, ${targetPosition.z.toFixed(2)}`);
       
-      // Check for collisions (terrain, water, buildings)
+      // Use traditional collision detection with physics data (most reliable)
       const terrainCollision = terrainCollisionDetector.checkMovement(currentPosition, targetPosition);
-      console.log(`🐺 Wolf ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}, isBuildingBlocked=${terrainCollision.isBuildingBlocked}`);
+      console.log(`🐺 Wolf ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}`);
+      
+      let enhancedValidation = null;
+      
+      // Only use enhanced pathfinding for additional validation if traditional collision fails
+      if (!terrainCollision.canMove) {
+        enhancedValidation = enhancedPathfinder.validatePath(
+          currentPosition,
+          targetPosition,
+          {
+            maxSlopeAngle: Math.PI / 3, // 60 degrees
+            avoidWater: true,
+            samples: 3, // Quick validation for real-time movement
+            useHeightMap: true,
+            useNormalMap: false, // Disable normal map to reduce complexity
+            generateAlternatives: true // Generate alternatives if path is blocked
+          }
+        );
+        console.log(`🐺 Wolf ${objectId}: Enhanced validation result: isValid=${enhancedValidation.isValid}, confidence=${(enhancedValidation.confidence * 100).toFixed(1)}%`);
+      }
       
       // Handle collision detection results
       if (!terrainCollision.canMove) {
@@ -349,37 +521,70 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
           blockReason = 'Blocked by steep slope';
         }
         
-        console.log(`🐺 Wolf ${objectId}: Movement blocked - ${blockReason}`);
+        console.log(`🐺 Wolf ${objectId}: Traditional collision detection blocked movement`, {
+          reason: blockReason,
+          isWater: terrainCollision.isWater,
+          isBuildingBlocked: terrainCollision.isBuildingBlocked,
+          blockedByBuilding: terrainCollision.blockedByBuilding,
+          slopeAngle: (terrainCollision.slopeAngle * 180 / Math.PI).toFixed(1) + '°',
+          groundHeight: terrainCollision.groundHeight.toFixed(2)
+        });
+        
+        // Report collision to debug system
+        const debugWin = window as DebugWindow;
+        if (debugWin.updateWolfDebug) {
+          debugWin.updateWolfDebug(objectId, {
+            lastDecision: blockReason,
+            collisionPoints: [targetPosition]
+          });
+        }
         
         // For building collisions, generate a new target instead of using adjusted position
         if (terrainCollision.isBuildingBlocked) {
           console.log(`🐺 Wolf ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
           setTarget(null); // Force new target generation
           return; // Skip movement this frame
+        } else if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
+          targetPosition = enhancedValidation.alternativePath[0]!;
+          console.log(`🐺 Wolf ${objectId}: Using enhanced alternative path point`);
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          console.log(`🐺 Wolf ${objectId}: Using terrain adjusted position`);
+          console.log(`🐺 Wolf ${objectId}: Using traditional adjusted position`);
         } else {
           // No alternative available, generate new target
           setTarget(null);
           console.log(`🐺 Wolf ${objectId}: Generating new target due to blocked movement`);
           return; // Skip movement this frame
         }
+      } else {
+        // Traditional collision detection passed, use accurate terrain height
+        const terrainGroundHeight = terrainCollision.groundHeight;
+        const surfaceNormal = targetPosition.clone().normalize();
+        targetPosition = surfaceNormal.multiplyScalar(terrainGroundHeight);
+        console.log(`🐺 Wolf ${objectId}: Movement allowed, positioning at height ${terrainGroundHeight.toFixed(2)}`);
       }
       
-      // Ensure wolf stays on surface (handle this here instead of GravityController to avoid conflicts)
-      const idealSurfaceDistance = 6.05 + bounceHeight; // Add bounce height to surface distance
-      const currentDistance = targetPosition.length();
-
-      // Only correct if significantly off surface to prevent micro-corrections
-      if (Math.abs(currentDistance - (6.05 + bounceHeight)) > 0.1) {
-        targetPosition = targetPosition.normalize().multiplyScalar(idealSurfaceDistance);
-      }
-      
-      // Calculate actual movement that occurred (for rotation)
+      // Calculate actual movement that occurred (for rotation and bounce animation)
       const actualMovement = targetPosition.clone().sub(currentPosition);
       
+      // Update bounce animation based on movement speed
+      const currentMovementSpeed = actualMovement.length() / delta;
+      lastMovementSpeed.current = currentMovementSpeed;
+      
+      // Advance bounce phase based on movement speed
+      const bounceFrequency = 8.0; // How fast the bounce cycles
+      bouncePhase.current += currentMovementSpeed * bounceFrequency * delta;
+      
+      // Calculate bounce height (small vertical offset)
+      const maxBounceHeight = 0.08; // Maximum bounce height
+      const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(currentMovementSpeed / currentSpeed, 1.0);
+      
+      // Apply bounce to final position
+      const bounceOffset = targetPosition.clone().normalize().multiplyScalar(bounceHeight);
+      targetPosition.add(bounceOffset);
+      
       // Queue the transform update to prevent multiple simultaneous updates
+      // Use direct mutation for physics updates (R3F best practice 2024)
       queueDeerTransformUpdate(objectId, () => {
         // For kinematic bodies, directly set the new position (single source of truth)
         body.setTranslation(targetPosition, true);
@@ -426,40 +631,86 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   
   /**
    * Generate a random wandering target on the globe surface
+   * Enhanced with height map and multi-method terrain validation (exactly like deer)
    */
   function generateWanderingTarget(currentPos: THREE.Vector3): THREE.Vector3 | null {
-    // Generate random direction and distance for wandering
-    const angle = Math.random() * Math.PI * 2;
-    const distance = TARGET_DISTANCE.min + Math.random() * (TARGET_DISTANCE.max - TARGET_DISTANCE.min);
+    const maxAttempts = 20; // Increased attempts for enhanced validation
     
-    // Get current surface normal
-    const normal = currentPos.clone().normalize();
+    const baseDistance = TARGET_DISTANCE.min + Math.random() * (TARGET_DISTANCE.max - TARGET_DISTANCE.min);
     
-    // Create tangent vectors for local movement
-    const tangent1 = new THREE.Vector3();
-    const tangent2 = new THREE.Vector3();
-    
-    // Generate perpendicular vectors
-    if (Math.abs(normal.y) < 0.9) {
-      tangent1.set(0, 1, 0).cross(normal).normalize();
-    } else {
-      tangent1.set(1, 0, 0).cross(normal).normalize();
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Generate random direction and distance for wandering
+      const angle = Math.random() * Math.PI * 2;
+      const distance = baseDistance * (attempt > maxAttempts / 2 ? 0.6 : 1.0); // Reduce distance for later attempts
+      
+      // Get current surface normal
+      const normal = currentPos.clone().normalize();
+      
+      // Create tangent vectors for local movement
+      const tangent1 = new THREE.Vector3();
+      const tangent2 = new THREE.Vector3();
+      
+      // Generate perpendicular vectors
+      if (Math.abs(normal.y) < 0.9) {
+        tangent1.set(0, 1, 0).cross(normal).normalize();
+      } else {
+        tangent1.set(1, 0, 0).cross(normal).normalize();
+      }
+      tangent2.crossVectors(normal, tangent1).normalize();
+      
+      // Generate target in local tangent space
+      const localX = Math.cos(angle) * distance;
+      const localZ = Math.sin(angle) * distance;
+      
+      // Convert to world coordinates
+      const targetDirection = normal.clone()
+        .add(tangent1.clone().multiplyScalar(localX))
+        .add(tangent2.clone().multiplyScalar(localZ))
+        .normalize();
+      
+      // Use height map to get accurate terrain height at target location
+      let targetRadius = 6.05; // Default surface radius
+      const terrainHeight = terrainHeightMapGenerator.sampleHeight(targetDirection.clone().multiplyScalar(6.0));
+      if (terrainHeight !== null && terrainHeight > 5.0) {
+        targetRadius = terrainHeight + 0.05; // Small offset above terrain
+      }
+      
+      const candidateTarget = targetDirection.multiplyScalar(targetRadius);
+      
+      // Use enhanced pathfinding for comprehensive validation
+      const pathValidation = enhancedPathfinder.validatePath(
+        currentPos,
+        candidateTarget,
+        {
+          maxSlopeAngle: Math.PI / 3, // 60 degrees - wolves can climb moderate slopes
+          avoidWater: true,
+          samples: 8, // Fewer samples for performance during target generation
+          useHeightMap: true,
+          useNormalMap: true,
+          generateAlternatives: false // Don't need alternatives during target generation
+        }
+      );
+      
+      if (pathValidation.isValid && pathValidation.confidence > 0.6) {
+        console.log(`🐺 Wolf ${objectId}: Enhanced pathfinding found valid target after ${attempt + 1} attempts (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`);
+        return candidateTarget;
+      } else if (pathValidation.confidence > 0.3) {
+        // If path has moderate confidence but isn't fully valid, try traditional collision detection as fallback
+        const terrainCollision = terrainCollisionDetector.checkMovement(currentPos, candidateTarget);
+        if (terrainCollision.canMove) {
+          console.log(`🐺 Wolf ${objectId}: Fallback collision detection found target after ${attempt + 1} attempts`);
+          return candidateTarget;
+        }
+      }
+      
+      // Log why this target was rejected for debugging
+      if (attempt % 5 === 0) { // Log every 5th attempt to avoid spam
+        console.log(`🐺 Wolf ${objectId}: Target attempt ${attempt + 1} rejected - ${pathValidation.reason ?? 'Unknown reason'} (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`);
+      }
     }
-    tangent2.crossVectors(normal, tangent1).normalize();
     
-    // Generate target in local tangent space
-    const localX = Math.cos(angle) * distance;
-    const localZ = Math.sin(angle) * distance;
-    
-    // Convert to world coordinates
-    const targetDirection = normal.clone()
-      .add(tangent1.clone().multiplyScalar(localX))
-      .add(tangent2.clone().multiplyScalar(localZ))
-      .normalize();
-    
-    // Use consistent surface radius to keep wolf on surface
-    const targetRadius = 6.05; // Match initial positioning and gravity controller
-    return targetDirection.multiplyScalar(targetRadius);
+    console.log(`🐺 Wolf ${objectId}: Could not find valid wandering target after ${maxAttempts} attempts`);
+    return null; // No valid target found, wolf will idle
   }
   
   return (
@@ -470,7 +721,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       colliders={false}
       userData={{ isWolf: true, objectId, isMoving: !isIdle && target !== null, isHunting: isHunting }}
     >
-      {/* Capsule collider for character controller */}
+      {/* Capsule collider for character controller - slightly larger than deer */}
       <CapsuleCollider 
         args={[0.25, 0.45]} // Slightly larger than deer
         position={[0, 0.25, 0]} // Lower position for better surface adherence
@@ -483,7 +734,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
         <Wolf 
           type={type}
           position={[0, 0, 0]}
-          rotation={[0, 0, 0]}
           scale={[1, 1, 1]}
           selected={false}
           objectId={objectId}
@@ -496,7 +746,7 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
         {/* Hunting indicator */}
         {isHunting && (
           <mesh position={[0, 1.4, 0]}>
-            <sphereGeometry args={[0.1, 8, 8]} />
+            <sphereGeometry args={[0.08, 8, 8]} />
             <meshBasicMaterial color="red" />
           </mesh>
         )}
@@ -505,5 +755,16 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
   );
 }
 
-// Temporarily disable memoization to test if it's interfering with animations  
+// Temporarily disable memoization to test if it's interfering with animations
 export const WolfPhysics = WolfPhysicsComponent;
+
+// TODO: Re-implement smart memoization that doesn't interfere with useFrame
+// export const WolfPhysics = React.memo(WolfPhysicsComponent, (prevProps, nextProps) => {
+//   return (
+//     prevProps.objectId === nextProps.objectId &&
+//     prevProps.type === nextProps.type &&
+//     prevProps.position[0] === nextProps.position[0] &&
+//     prevProps.position[1] === nextProps.position[1] &&
+//     prevProps.position[2] === nextProps.position[2]
+//   );
+// });
