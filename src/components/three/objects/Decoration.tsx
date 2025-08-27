@@ -4,6 +4,7 @@ import { useRef, useMemo, Suspense } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { useSelectedObject } from "~/lib/store";
 import { COLOR_PALETTES, DECORATION_MODELS, DECORATION_MODEL_PATHS } from "~/lib/constants";
 import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
@@ -12,7 +13,6 @@ interface DecorationProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  selected?: boolean;
   objectId: string;
   preview?: boolean;
   canPlace?: boolean;
@@ -87,12 +87,13 @@ export function Decoration({
   position,
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
-  selected = false,
   objectId,
   preview = false,
   canPlace = true,
 }: DecorationProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const selectedObject = useSelectedObject();
+  const selected = selectedObject === objectId;
 
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
@@ -214,16 +215,10 @@ export function Decoration({
   useFrame((state) => {
     if (groupRef.current && selected) {
       if (type === "flower") {
-        groupRef.current.rotation.y =
-          Math.sin(state.clock.elapsedTime * 3) * 0.1;
+        groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 3) * 0.1;
       } else {
-        groupRef.current.scale.setScalar(
-          1 + Math.sin(state.clock.elapsedTime * 4) * 0.05,
-        );
+        groupRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 4) * 0.05);
       }
-    } else if (groupRef.current) {
-      groupRef.current.rotation.y = rotation[1];
-      groupRef.current.scale.set(...scale);
     }
   });
 

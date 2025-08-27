@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
+import { useWorldStore, useSelectedObject } from '~/lib/store';
 import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
 
 interface DeerProps {
@@ -12,7 +12,6 @@ interface DeerProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  selected?: boolean;
   objectId?: string;
   preview?: boolean;
   canPlace?: boolean;
@@ -25,7 +24,6 @@ export function Deer({
   position,
   rotation = [0, 0, 0],
   scale = [0.5, 0.5, 0.5],
-  selected = false,
   objectId,
   preview = false,
   canPlace = true,
@@ -33,6 +31,8 @@ export function Deer({
   isPhysicsControlled = false,
 }: DeerProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const selectedObject = useSelectedObject();
+  const selected = (!preview && objectId) ? selectedObject === objectId : false;
 
   // Load the GLTF model
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
@@ -60,24 +60,15 @@ export function Deer({
         preview
       });
 
-      // Enable shadows and apply preview styling
+      // Enable shadows and store original materials for preview switching
       clonedScene.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
           
-          if (preview) {
-            // Preview styling - make it more transparent and colored
-            if (child.material) {
-              const material = child.material as THREE.MeshStandardMaterial;
-              if (material.clone) {
-                const previewMaterial = material.clone();
-                previewMaterial.transparent = true;
-                previewMaterial.opacity = 0.6;
-                previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
-                child.material = previewMaterial;
-              }
-            }
+          // Store original material for dynamic switching
+          if (child.material) {
+            child.userData.originalMaterial = (child.material as THREE.Material).clone();
           }
         }
       });
@@ -93,7 +84,29 @@ export function Deer({
       console.error(`Deer ${type}: Error processing GLB scene:`, error);
       return null;
     }
-  }, [gltfScene, preview, canPlace, type, isLoading]);
+  }, [gltfScene, type, isLoading]); // Remove preview and canPlace from deps to prevent unnecessary recreations
+
+  // Update materials dynamically when preview state changes (without recreating the model)
+  useEffect(() => {
+    if (deerModel && preview) {
+      deerModel.traverse((child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh && child.userData.originalMaterial) {
+          const previewMaterial = (child.userData.originalMaterial as THREE.MeshStandardMaterial).clone();
+          previewMaterial.transparent = true;
+          previewMaterial.opacity = 0.6;
+          previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
+          child.material = previewMaterial;
+        }
+      });
+    } else if (deerModel && !preview) {
+      // Restore original materials
+      deerModel.traverse((child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh && child.userData.originalMaterial) {
+          child.material = child.userData.originalMaterial as THREE.Material;
+        }
+      });
+    }
+  }, [deerModel, preview, canPlace]);
 
   // Animation and movement updates
   useFrame((state) => {

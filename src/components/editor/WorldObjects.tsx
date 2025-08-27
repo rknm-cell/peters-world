@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useWorldObjectsList, useSelectedObject } from "~/lib/store";
+import { useWorldObjectsList } from "~/lib/store";
 import { Tree } from "~/components/three/objects/Tree";
 import { Structure } from "~/components/three/objects/Structure";
 import { Decoration } from "~/components/three/objects/Decoration";
@@ -62,15 +62,12 @@ function isAnimalType(type: string): type is AnimalType {
 
 export const WorldObjects = React.memo(function WorldObjects() {
   const objects = useWorldObjectsList();
-  const selectedObject = useSelectedObject();
 
   const renderObject = React.useCallback((obj: PlacedObject) => {
-    const isSelected = selectedObject === obj.id;
     const props = {
       position: obj.position,
       rotation: obj.rotation,
       scale: obj.scale,
-      selected: isSelected,
       objectId: obj.id,
     };
 
@@ -135,7 +132,7 @@ export const WorldObjects = React.memo(function WorldObjects() {
 
     // Default fallback for unknown types
     return <Tree key={obj.id} type="tree" {...props} />;
-  }, [selectedObject]);
+  }, []); // Remove selectedObject dependency to prevent recreating the callback
 
   return <>{objects.map(renderObject)}</>;
 });

@@ -93,12 +93,12 @@ export function Bear({
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
 
-  // Animation and movement updates
+  // Animation updates - only for selection animation
   useFrame((state) => {
     if (!groupRef.current) return;
 
-    // Update position from store if not physics-controlled
-    if (!isPhysicsControlled && !disablePositionSync) {
+    // For physics-controlled objects, sync from store (they need dynamic updates)
+    if (isPhysicsControlled && !disablePositionSync) {
       const store = useWorldStore.getState();
       const object = store.objects.find(obj => obj.id === objectId);
       if (object) {
@@ -106,12 +106,11 @@ export function Bear({
         groupRef.current.rotation.set(...object.rotation);
       }
     }
-
-    // Add subtle idle animation for bear
+    
+    // Only apply selection animation when selected, let JSX props handle static positioning
     if (selected) {
-      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 1.2) * 0.05;
-    } else {
-      groupRef.current.rotation.y = rotation[1];
+      const baseRotationY = isPhysicsControlled ? groupRef.current.rotation.y : rotation[1];
+      groupRef.current.rotation.y = baseRotationY + Math.sin(state.clock.elapsedTime * 1.2) * 0.05;
     }
   });
 

@@ -257,7 +257,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
     set((state) => ({
       objects: state.objects.concat([newObject]),
-      selectedObject: id,
+      // Don't auto-select newly placed objects to prevent unwanted rotation animations
+      selectedObject: null,
       // Keep isPlacing as true so user can continue placing more objects
       isPlacing: state.isPlacing,
     }));
@@ -1527,7 +1528,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                      placementInfo.rotation.y, // No random rotation - keep wolf straight like deer
                      placementInfo.rotation.z
                    ],
-                   scale: [0.5, 0.5, 0.5], // Same scale as deer
+                   scale: [1, 1, 1], // Same scale as deer
                  };
                 
                 newWolves.push(newWolfObj);
