@@ -1,15 +1,17 @@
-import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 interface WaterMaterialProps {
   waterVertices: Array<{ waterLevel: number }>;
 }
 
 // Water material that receives proper lighting like the globe using custom shader with Three.js lighting
-const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }> }) => {
+const WaterToonMaterial = (_props: {
+  waterVertices: Array<{ waterLevel: number }>;
+}) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  
+
   // Animate water over time
   useFrame((state) => {
     if (materialRef.current?.uniforms.uTime) {
@@ -23,9 +25,9 @@ const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }
       uniforms: {
         ...THREE.UniformsLib.lights, // Include Three.js lighting uniforms
         uTime: { value: 0 },
-        uWaterColor: { value: new THREE.Color(0x4A90E2) },
-        uShadowColor: { value: new THREE.Color(0x2B5A87) },
-        uFoamColor: { value: new THREE.Color(0x87CEEB) },
+        uWaterColor: { value: new THREE.Color(0x4a90e2) },
+        uShadowColor: { value: new THREE.Color(0x2b5a87) },
+        uFoamColor: { value: new THREE.Color(0x87ceeb) },
         uOpacity: { value: 0.9 },
       },
       lights: true, // Enable Three.js lighting
@@ -129,20 +131,24 @@ const WaterToonMaterial = (_props: { waterVertices: Array<{ waterLevel: number }
     });
   }, []);
 
-  return <primitive ref={materialRef} object={shaderMaterial} attach="material" />;
+  return (
+    <primitive ref={materialRef} object={shaderMaterial} attach="material" />
+  );
 };
 
 export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
   // Check if there's any water to render
-  const hasWater = waterVertices.some(v => v.waterLevel > 0.001);
-  
+  const hasWater = waterVertices.some((v) => v.waterLevel > 0.001);
+
   if (!hasWater) {
     return null;
   }
-  
-  const waterCount = waterVertices.filter(v => v.waterLevel > 0.001).length;
-  const maxWaterLevel = Math.max(...waterVertices.map(v => v.waterLevel));
-  console.log(`WaterMaterial: Rendering water with toon material, ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`);
-  
+
+  const waterCount = waterVertices.filter((v) => v.waterLevel > 0.001).length;
+  const maxWaterLevel = Math.max(...waterVertices.map((v) => v.waterLevel));
+  console.log(
+    `WaterMaterial: Rendering water with toon material, ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`,
+  );
+
   return <WaterToonMaterial waterVertices={waterVertices} />;
 }

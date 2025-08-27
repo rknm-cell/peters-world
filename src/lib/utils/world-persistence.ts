@@ -1,5 +1,10 @@
 import { serializeWorld, deserializeWorld } from "./world-serialization";
-import type { PlacedObject, TerrainVertex, TimeOfDay, TerraformMode } from "../store";
+import type {
+  PlacedObject,
+  TerrainVertex,
+  TimeOfDay,
+  TerraformMode,
+} from "../store";
 
 const AUTOSAVE_KEY = "tiny-world-autosave";
 const AUTOSAVE_INTERVAL = 30000; // Auto-save every 30 seconds
@@ -156,17 +161,14 @@ class WorldPersistence {
 export const worldPersistence = WorldPersistence.getInstance();
 
 // Convenience functions
-export const saveWorldToStorage = (state: WorldPersistenceState) => 
+export const saveWorldToStorage = (state: WorldPersistenceState) =>
   worldPersistence.saveWorld(state);
 
-export const loadWorldFromStorage = () => 
-  worldPersistence.loadWorld();
+export const loadWorldFromStorage = () => worldPersistence.loadWorld();
 
-export const clearStoredWorld = () => 
-  worldPersistence.clearSavedWorld();
+export const clearStoredWorld = () => worldPersistence.clearSavedWorld();
 
-export const hasStoredWorld = () => 
-  worldPersistence.hasSavedWorld();
+export const hasStoredWorld = () => worldPersistence.hasSavedWorld();
 
-export const forceStoreSave = (state: WorldPersistenceState) => 
+export const forceStoreSave = (state: WorldPersistenceState) =>
   worldPersistence.forceSave(state);

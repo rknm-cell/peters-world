@@ -22,22 +22,29 @@ export function Instructions() {
   return (
     <>
       {/* Modal backdrop */}
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md">
           <div className="rounded-lg border border-white/20 bg-black/90 p-6 backdrop-blur-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-white">Welcome to Tiny World!</h3>
+              <h3 className="text-lg font-medium text-white">
+                Welcome to Tiny World!
+              </h3>
               <button
                 onClick={() => setIsVisible(false)}
                 className="text-white/60 transition-colors hover:text-white"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                 </svg>
               </button>
             </div>
 
-            <div className="space-y-3 text-sm text-white/80 mb-6">
+            <div className="mb-6 space-y-3 text-sm text-white/80">
               <div className="flex items-center space-x-3">
                 <span className="h-3 w-3 flex-shrink-0 rounded-full bg-green-400"></span>
                 <span>Drag to rotate globe</span>
@@ -62,7 +69,7 @@ export function Instructions() {
 
             <button
               onClick={() => setIsVisible(false)}
-              className="w-full rounded-lg bg-blue-500 px-4 py-2 text-white font-medium transition-colors hover:bg-blue-600"
+              className="w-full rounded-lg bg-blue-500 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-600"
             >
               Start Building!
             </button>

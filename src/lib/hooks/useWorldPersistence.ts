@@ -6,15 +6,15 @@ import { hasStoredWorld } from "../utils/world-persistence";
  * Hook to handle automatic world persistence
  */
 export function useWorldPersistence() {
-  const { 
-    objects, 
-    terrainVertices, 
-    terraformMode, 
-    brushSize, 
-    brushStrength, 
+  const {
+    objects,
+    terrainVertices,
+    terraformMode,
+    brushSize,
+    brushStrength,
     timeOfDay,
     autoSaveWorld,
-    restoreWorldFromStorage 
+    restoreWorldFromStorage,
   } = useWorldStore();
 
   const hasRestoredRef = useRef(false);
@@ -24,7 +24,7 @@ export function useWorldPersistence() {
   useEffect(() => {
     // Only run on client-side to avoid hydration issues
     if (typeof window === "undefined") return;
-    
+
     if (!hasRestoredRef.current) {
       const hasData = hasStoredWorld();
       if (hasData) {
@@ -61,20 +61,20 @@ export function useWorldPersistence() {
       lastSaveDataRef.current = currentStateSnapshot;
     }
   }, [
-    objects, 
-    terrainVertices, 
-    terraformMode, 
-    brushSize, 
-    brushStrength, 
-    timeOfDay, 
-    autoSaveWorld
+    objects,
+    terrainVertices,
+    terraformMode,
+    brushSize,
+    brushStrength,
+    timeOfDay,
+    autoSaveWorld,
   ]);
 
   // Force save on page unload (client-side only)
   useEffect(() => {
     // Only run on client-side
     if (typeof window === "undefined") return;
-    
+
     const handleBeforeUnload = () => {
       if (hasRestoredRef.current) {
         autoSaveWorld();

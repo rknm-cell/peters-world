@@ -7,7 +7,10 @@ interface BackgroundMusicProps {
   autoPlay?: boolean;
 }
 
-export function BackgroundMusic({ volume = 0.3, autoPlay = true }: BackgroundMusicProps) {
+export function BackgroundMusic({
+  volume = 0.3,
+  autoPlay = true,
+}: BackgroundMusicProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -18,7 +21,7 @@ export function BackgroundMusic({ volume = 0.3, autoPlay = true }: BackgroundMus
     audio.loop = true;
     audio.volume = volume;
     audio.preload = "auto";
-    
+
     audioRef.current = audio;
 
     // Set up event listeners
@@ -74,7 +77,10 @@ export function BackgroundMusic({ volume = 0.3, autoPlay = true }: BackgroundMus
   // Optional: Add keyboard shortcuts for audio control
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
         return; // Don't handle shortcuts when typing in input fields
       }
 
@@ -95,23 +101,23 @@ export function BackgroundMusic({ volume = 0.3, autoPlay = true }: BackgroundMus
   }, [isPlaying, isMuted]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg p-2 text-white">
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-black/20 p-2 text-white backdrop-blur-sm">
       <button
         onClick={togglePlayPause}
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
         title={`${isPlaying ? "Pause" : "Play"} music (Space)`}
       >
         {isPlaying ? "⏸️" : "▶️"}
       </button>
-      
+
       <button
         onClick={toggleMute}
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
         title={`${isMuted ? "Unmute" : "Mute"} music (M)`}
       >
         {isMuted ? "🔇" : "🔊"}
       </button>
-      
+
       <input
         type="range"
         min="0"
@@ -119,7 +125,7 @@ export function BackgroundMusic({ volume = 0.3, autoPlay = true }: BackgroundMus
         step="0.1"
         value={volume}
         onChange={(e) => setVolume(parseFloat(e.target.value))}
-        className="w-20 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+        className="h-2 w-20 cursor-pointer appearance-none rounded-lg bg-white/20"
         title="Volume control"
       />
     </div>

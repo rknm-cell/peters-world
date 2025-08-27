@@ -16,26 +16,31 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
     const terrainMeshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const { showWireframe, setGlobeRef } = useWorldStore();
-    
+
     // Callback ref to set globe reference when mesh is mounted
-    const handleMeshRef = useCallback((mesh: THREE.Mesh | null) => {
-      // Set both the forwarded ref and internal ref
-      if (typeof ref === 'function') {
-        ref(mesh);
-      } else if (ref) {
-        ref.current = mesh;
-      }
-      meshRef.current = mesh;
-      
-      // Set globe reference for tree spawning
-      if (mesh) {
-        console.log("🌍 Globe mesh mounted - setting reference for tree spawning");
-        setGlobeRef(mesh);
-      } else {
-        console.log("🌍 Globe mesh unmounted - clearing reference");
-        setGlobeRef(null);
-      }
-    }, [ref, setGlobeRef]);
+    const handleMeshRef = useCallback(
+      (mesh: THREE.Mesh | null) => {
+        // Set both the forwarded ref and internal ref
+        if (typeof ref === "function") {
+          ref(mesh);
+        } else if (ref) {
+          ref.current = mesh;
+        }
+        meshRef.current = mesh;
+
+        // Set globe reference for tree spawning
+        if (mesh) {
+          console.log(
+            "🌍 Globe mesh mounted - setting reference for tree spawning",
+          );
+          setGlobeRef(mesh);
+        } else {
+          console.log("🌍 Globe mesh unmounted - clearing reference");
+          setGlobeRef(null);
+        }
+      },
+      [ref, setGlobeRef],
+    );
 
     // Create a simple sphere for reference (this will be replaced by TerrainSystem)
     const geometry = useMemo(() => {
@@ -49,13 +54,12 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
       return new THREE.MeshStandardMaterial({
         color: 0x4a7c59, // Earthy green
         roughness: 1, // Slightly rough surface for realistic shadow reception
-         // Low metalness for natural appearance
+        // Low metalness for natural appearance
         flatShading: false, // Smooth shading for the sphere
         transparent: true,
         opacity: 0.3, // Make it semi-transparent so TerrainSystem shows through
       });
     }, []);
-
 
     return (
       <group ref={groupRef}>
@@ -68,9 +72,9 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
           castShadow
           position={[0, 0, 0]} // Center the globe
         />
-        
+
         {/* Terrain System - this will handle the actual terrain */}
-        <TerrainSystem 
+        <TerrainSystem
           onTerrainMeshReady={(terrainMesh) => {
             console.log("🏔️ TerrainSystem mesh ready in Globe");
             terrainMeshRef.current = terrainMesh;
@@ -86,18 +90,20 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
             }
           }}
         />
-        
+
         {/* Separate wireframe overlay that doesn't interfere with water */}
         {showWireframe && (
           <mesh
             geometry={geometry}
-            material={new THREE.MeshBasicMaterial({
-              color: 0xffffff,
-              wireframe: true,
-              transparent: true,
-              opacity: 0.3,
-              depthTest: false, // Don't interfere with depth testing
-            })}
+            material={
+              new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3,
+                depthTest: false, // Don't interfere with depth testing
+              })
+            }
             position={[0, 0, 0]}
           />
         )}

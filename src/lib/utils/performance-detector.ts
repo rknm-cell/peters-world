@@ -46,43 +46,43 @@ export class PerformanceDetector {
     const isMobile = this.detectMobile();
     const gpuTier = this.detectGPUTier();
     const memoryInfo = this.getMemoryInfo();
-    
+
     // Calculate performance score (0-1, higher is better)
     let performanceScore = 0.5; // Start with average
-    
+
     // GPU tier scoring
-    if (gpuTier === 'high') performanceScore += 0.3;
-    else if (gpuTier === 'low') performanceScore -= 0.2;
-    
+    if (gpuTier === "high") performanceScore += 0.3;
+    else if (gpuTier === "low") performanceScore -= 0.2;
+
     // Mobile penalty
     if (isMobile) performanceScore -= 0.2;
-    
+
     // Memory scoring
     if (memoryInfo.totalMemory > 8) performanceScore += 0.2;
     else if (memoryInfo.totalMemory < 4) performanceScore -= 0.2;
-    
+
     // Hardware concurrency scoring
     const cores = navigator.hardwareConcurrency || 4;
     if (cores >= 8) performanceScore += 0.1;
     else if (cores <= 2) performanceScore -= 0.1;
-    
+
     // Determine settings based on performance score
     const isLowEnd = performanceScore < 0.4;
-    
+
     this.profile = {
       isLowEnd,
       isMobile,
       suggestedWaterResolution: isLowEnd ? 16 : isMobile ? 24 : 32,
       suggestedUpdateFrequency: isLowEnd ? 15 : isMobile ? 20 : 30,
-      useLowPerformanceMode: isLowEnd || (isMobile && performanceScore < 0.6)
+      useLowPerformanceMode: isLowEnd || (isMobile && performanceScore < 0.6),
     };
 
-    console.log('Performance Profile:', {
+    console.log("Performance Profile:", {
       ...this.profile,
       performanceScore: performanceScore.toFixed(2),
       gpuTier,
       cores,
-      memory: memoryInfo
+      memory: memoryInfo,
     });
 
     return this.profile;
@@ -117,64 +117,87 @@ export class PerformanceDetector {
     const now = performance.now();
     const delta = now - this.lastFrameTime;
     this.lastFrameTime = now;
-    
+
     if (delta > 0) {
       const fps = 1000 / delta;
       this.frameRates.push(fps);
-      
+
       // Keep only recent measurements
-      if (this.frameRates.length > 180) { // 3 seconds at 60fps
+      if (this.frameRates.length > 180) {
+        // 3 seconds at 60fps
         this.frameRates.shift();
       }
     }
-    
+
     requestAnimationFrame(() => this.measureFPS());
   }
 
   private detectMobile(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
   }
 
-  private detectGPUTier(): 'high' | 'medium' | 'low' {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') ?? 
-               canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
-    
-    if (!gl) return 'low';
-    
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string : '';
-    
+  private detectGPUTier(): "high" | "medium" | "low" {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") ??
+      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
+
+    if (!gl) return "low";
+
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer = debugInfo
+      ? (gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string)
+      : "";
+
     // Basic GPU classification (simplified)
-    const highEndGPUs = ['RTX', 'GTX 1060', 'GTX 1070', 'GTX 1080', 'RX 580', 'RX 590'];
-    const lowEndGPUs = ['Intel HD', 'Intel UHD', 'PowerVR', 'Adreno 5', 'Mali-G'];
-    
+    const highEndGPUs = [
+      "RTX",
+      "GTX 1060",
+      "GTX 1070",
+      "GTX 1080",
+      "RX 580",
+      "RX 590",
+    ];
+    const lowEndGPUs = [
+      "Intel HD",
+      "Intel UHD",
+      "PowerVR",
+      "Adreno 5",
+      "Mali-G",
+    ];
+
     const rendererLower = renderer.toLowerCase();
-    
-    if (highEndGPUs.some(gpu => rendererLower.includes(gpu.toLowerCase()))) {
-      return 'high';
-    } else if (lowEndGPUs.some(gpu => rendererLower.includes(gpu.toLowerCase()))) {
-      return 'low';
+
+    if (highEndGPUs.some((gpu) => rendererLower.includes(gpu.toLowerCase()))) {
+      return "high";
+    } else if (
+      lowEndGPUs.some((gpu) => rendererLower.includes(gpu.toLowerCase()))
+    ) {
+      return "low";
     }
-    
-    return 'medium';
+
+    return "medium";
   }
 
   private getMemoryInfo(): { totalMemory: number; usedMemory: number } {
     const extendedNavigator = navigator as ExtendedNavigator;
     const deviceMemory: number = extendedNavigator.deviceMemory ?? 4; // Default to 4GB
-    
+
     // Estimate used memory (very rough)
     let usedMemory = 0;
-    if ('memory' in performance) {
+    if ("memory" in performance) {
       const extendedPerformance = performance as ExtendedPerformance;
       const memoryInfo = extendedPerformance.memory;
-      usedMemory = memoryInfo?.usedJSHeapSize ? memoryInfo.usedJSHeapSize / (1024 * 1024 * 1024) : 0; // Convert to GB
+      usedMemory = memoryInfo?.usedJSHeapSize
+        ? memoryInfo.usedJSHeapSize / (1024 * 1024 * 1024)
+        : 0; // Convert to GB
     }
-    
+
     return {
       totalMemory: deviceMemory,
-      usedMemory
+      usedMemory,
     };
   }
 }
@@ -185,15 +208,16 @@ export class PerformanceDetector {
 export function usePerformanceDetector() {
   const detector = PerformanceDetector.getInstance();
   const profile = detector.detectPerformance();
-  
+
   // Start FPS monitoring on first use
-  if (detector.getCurrentFPS() === 60) { // Default value indicates no monitoring yet
+  if (detector.getCurrentFPS() === 60) {
+    // Default value indicates no monitoring yet
     detector.startFPSMonitoring();
   }
-  
+
   return {
     profile,
     currentFPS: detector.getCurrentFPS(),
-    shouldReduceQuality: detector.shouldReduceQuality()
+    shouldReduceQuality: detector.shouldReduceQuality(),
   };
 }

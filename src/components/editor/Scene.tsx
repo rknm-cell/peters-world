@@ -10,17 +10,16 @@ import { CameraController } from "./CameraController";
 import { PlacementSystem } from "./PlacementSystem";
 import { WorldObjects } from "./WorldObjects";
 import { InputManager } from "./InputManager";
-import { Sun } from '~/components/three/objects/Sun';
-import { TreeLifecycleManager } from '~/components/three/systems/TreeLifecycleManager';
-import { GrassSpawningManager } from '~/components/three/systems/GrassSpawningManager';
-import { DeerSpawningManager } from '~/components/three/systems/DeerSpawningManager';
-import { WolfSpawningManager } from '~/components/three/systems/WolfSpawningManager';
-import { SelectionIndicator } from '~/components/three/effects/SelectionIndicator';
+import { Sun } from "~/components/three/objects/Sun";
+import { TreeLifecycleManager } from "~/components/three/systems/TreeLifecycleManager";
+import { GrassSpawningManager } from "~/components/three/systems/GrassSpawningManager";
+import { DeerSpawningManager } from "~/components/three/systems/DeerSpawningManager";
+import { WolfSpawningManager } from "~/components/three/systems/WolfSpawningManager";
+import { SelectionIndicator } from "~/components/three/effects/SelectionIndicator";
 
-import { GlobePhysics } from '~/components/three/physics/GlobePhysics';
-import { GravityController } from '~/components/three/physics/GravityController';
-import { PhysicsStatusLogger } from '~/components/three/physics/PhysicsStatusLogger';
-
+import { GlobePhysics } from "~/components/three/physics/GlobePhysics";
+import { GravityController } from "~/components/three/physics/GravityController";
+import { PhysicsStatusLogger } from "~/components/three/physics/PhysicsStatusLogger";
 
 export function Scene() {
   const { scene, gl } = useThree();
@@ -40,11 +39,7 @@ export function Scene() {
     }
 
     // Update scene fog
-    scene.fog = new THREE.Fog(
-      preset.fogColor,
-      preset.fogNear,
-      preset.fogFar
-    );
+    scene.fog = new THREE.Fog(preset.fogColor, preset.fogNear, preset.fogFar);
 
     // Update renderer clear color
     gl.setClearColor(preset.fogColor);
@@ -54,52 +49,46 @@ export function Scene() {
     <>
       {/* Lighting */}
       <ambientLight ref={ambientLightRef} />
-      
+
       {/* Sun - provides directional lighting for the entire scene */}
-      <Sun 
-        size={1.0}
-        glowIntensity={20}
-      />
+      <Sun size={1.0} glowIntensity={20} />
 
       {/* Camera Controls */}
       <CameraController />
 
       {/* Physics World - Contains all physics-enabled objects */}
-      <Physics 
+      <Physics
         gravity={[0, 0, 0]} // No global gravity - we use custom radial gravity
         interpolate={true} // Smooth visual interpolation
         updateLoop="independent" // Better performance
-        timeStep={1/60} // 60 FPS physics updates
+        timeStep={1 / 60} // 60 FPS physics updates
       >
         {/* Custom radial gravity system */}
         <GravityController />
-        
+
         {/* Physics debug visualization */}
         {/* <PhysicsDebug /> */}
-        
+
         {/* Physics status logging for debugging */}
         <PhysicsStatusLogger />
-        
+
         {/* Collision mesh debug visualization (3D part) */}
         {/* <CollisionDebugVisualization /> */}
-        
+
         {/* Deer pathfinding debug visualization */}
         {/* <DeerPathfindingDebug /> */}
-        
+
         {/* Terrain analysis debug tools - moved to page layout */}
-        
+
         {/* Rotation group that contains all rotatable content */}
         <group ref={rotationGroupRef}>
           {/* Physics-enabled globe with precise collision detection */}
-          <GlobePhysics 
-            ref={globeRef} 
-            onTerrainMeshReady={setTerrainMesh}
-          />
+          <GlobePhysics ref={globeRef} onTerrainMeshReady={setTerrainMesh} />
 
           {/* All placed objects - includes physics-based deer */}
           {/* MOVED OUTSIDE PlacementSystem to prevent re-render cascading */}
           <WorldObjects />
-          
+
           {/* Placement System handles interactions but doesn't wrap objects */}
           <PlacementSystem
             globeRef={globeRef}
@@ -107,7 +96,7 @@ export function Scene() {
           />
         </group>
       </Physics>
-      
+
       {/* Unified Input Manager handles all interactions */}
       <InputManager
         globeRef={globeRef}
@@ -117,7 +106,7 @@ export function Scene() {
 
       {/* Debug surface normals - toggle with toolbar button */}
       {/* {showDebugNormals && <SurfaceNormalDebug />} */}
-      
+
       {/* Debug placement orientation - shows arrows indicating object orientation */}
       {/* {showPlacementOrientationDebug && (
         <PlacementOrientationDebug 
@@ -128,26 +117,26 @@ export function Scene() {
           showMathNormalComparison={placementDebugShowComparison}
         />
       )} */}
-      
+
       {/* Tree lifecycle manager - handles automatic tree aging */}
       <TreeLifecycleManager />
-      
+
       {/* Grass spawning manager - handles automatic grass spawning on green terrain */}
       <GrassSpawningManager />
-      
+
       {/* Deer spawning manager - handles automatic deer spawning and despawning */}
       <DeerSpawningManager />
-      
+
       {/* Wolf spawning manager - handles automatic wolf spawning and hunting behavior */}
       <WolfSpawningManager />
-      
+
       {/* Selection indicator for physics objects - doesn't cause physics re-renders */}
       <SelectionIndicator />
-      
+
       {/* Debug components for animal orientation testing */}
       {/* <AnimalOrientationTest /> */}
       {/* <IdleOrientationTest /> */}
-      
+
       {/* Debug component for terrain collision testing */}
       {/* <TerrainCollisionTest /> */}
     </>

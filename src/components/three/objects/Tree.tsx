@@ -10,16 +10,33 @@ import { useSelectedObject } from "~/lib/store";
 import { applySpecialScaling } from "~/lib/utils/model-scaling";
 
 // Define the tree types based on available GLB files - includes all lifecycle stages
-type TreeType = 
+type TreeType =
   // Youth stages (bush models)
-  | "bush-small" | "bush-medium" | "bush-medium-high" | "bush-big"
+  | "bush-small"
+  | "bush-medium"
+  | "bush-medium-high"
+  | "bush-big"
   // Adult trees
-  | "tree" | "tree-baobab" | "tree-beech" | "tree-birch"
-  | "tree-elipse" | "tree-lime" | "tree-maple" 
-  | "tree-oak" | "tree-round" | "tree-tall"
+  | "tree"
+  | "tree-baobab"
+  | "tree-beech"
+  | "tree-birch"
+  | "tree-elipse"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-tall"
   // Death stages
-  | "dead-tree-1" | "dead-tree-2" | "dead-tree-3" | "dead-tree-4"
-  | "broke-tree" | "log-a" | "log-b" | "log-small-a" | "log-small-b";
+  | "dead-tree-1"
+  | "dead-tree-2"
+  | "dead-tree-3"
+  | "dead-tree-4"
+  | "broke-tree"
+  | "log-a"
+  | "log-b"
+  | "log-small-a"
+  | "log-small-b";
 
 interface TreeProps {
   type: TreeType;
@@ -46,22 +63,20 @@ const TreeComponent = ({
   const selectedObject = useSelectedObject();
   const selected = selectedObject === objectId;
 
-
   // Load the GLB file - useGLTF handles its own error cases
   const gltfResult = useGLTF(`/${type}.glb`) as GLTF;
-  
+
   // Handle loading state
   const isLoading = !gltfResult.scene;
-  
+
   // Removed getTargetHeight - now using centralized scaling utility
 
-  
   // Clone the scene to avoid sharing between instances - memoized with stable key
   const treeModel = useMemo(() => {
     if (isLoading || !gltfResult.scene) {
       console.log(`Tree ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfResult.scene
+        hasScene: !!gltfResult.scene,
       });
       return null;
     }
@@ -71,7 +86,11 @@ const TreeComponent = ({
       console.log(`Tree ${type}: Scene cloned successfully:`, clonedScene);
 
       // Apply standardized scaling using the new utility
-      const scaleFactor = applySpecialScaling(clonedScene, type, lifecycleStage);
+      const scaleFactor = applySpecialScaling(
+        clonedScene,
+        type,
+        lifecycleStage,
+      );
 
       // Enable shadows for all meshes in the tree model
       clonedScene.traverse((child: THREE.Object3D) => {
@@ -83,16 +102,20 @@ const TreeComponent = ({
 
       // If this is a preview, modify the materials to be transparent
       if (preview) {
-        console.log(`Tree ${type}: Applying preview materials, canPlace: ${canPlace}`);
+        console.log(
+          `Tree ${type}: Applying preview materials, canPlace: ${canPlace}`,
+        );
         clonedScene.traverse((child: THREE.Object3D) => {
           if (child instanceof THREE.Mesh && child.material) {
             // Clone the material to avoid affecting other instances
-            const material = (child.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
-            
+            const material = (
+              child.material as THREE.Material
+            ).clone() as THREE.MeshStandardMaterial;
+
             // Make it transparent
             material.transparent = true;
             material.opacity = 0.6;
-            
+
             // Change color based on placement validity
             if (canPlace) {
               // Green tint for valid placement - multiply existing color with green
@@ -103,19 +126,19 @@ const TreeComponent = ({
               material.color.multiply(new THREE.Color(1.0, 0.3, 0.3));
               console.log(`Tree ${type}: Applied red tint`);
             }
-            
+
             child.material = material;
           }
         });
       }
 
-      console.log(`Tree ready:`, { 
+      console.log(`Tree ready:`, {
         type,
         scaleFactor,
         preview,
         canPlace,
         hasModel: !!clonedScene,
-        'tree will be positioned by PlacementSystem': true
+        "tree will be positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -128,7 +151,8 @@ const TreeComponent = ({
   // Animation for selected state
   useFrame((state) => {
     if (groupRef.current && selected) {
-      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      groupRef.current.rotation.y =
+        rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
@@ -144,16 +168,16 @@ const TreeComponent = ({
       >
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
           {/* <sphereGeometry args={[0.2, 8, 6]} /> */}
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#ff0000"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
           />
         </mesh>
-        
+
         <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[0.2, 0.3, 2, 8]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#8B4513"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
@@ -161,13 +185,13 @@ const TreeComponent = ({
         </mesh>
         <mesh position={[0, 2.5, 0]} castShadow receiveShadow>
           <coneGeometry args={[1.6, 4, 8]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#228B22"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
           />
         </mesh>
-        
+
         {selected && (
           <mesh position={[0, -0.1, 0]}>
             <ringGeometry args={[0.8, 1.0, 16]} />
@@ -192,27 +216,23 @@ const TreeComponent = ({
           {/* Base placement indicator */}
           <mesh position={[0, -0.05, 0]}>
             <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
-            <meshBasicMaterial 
-              color={canPlace ? "#00ff00" : "#ff0000"} 
-              transparent 
-              opacity={0.7} 
+            <meshBasicMaterial
+              color={canPlace ? "#00ff00" : "#ff0000"}
+              transparent
+              opacity={0.7}
             />
           </mesh>
-          
+
           {/* Invalid placement glow effect */}
           {!canPlace && (
             <mesh position={[0, 0.6, 0]}>
               <sphereGeometry args={[1.5, 16, 16]} />
-              <meshBasicMaterial 
-                color="#ff0000" 
-                transparent 
-                opacity={0.1} 
-              />
+              <meshBasicMaterial color="#ff0000" transparent opacity={0.1} />
             </mesh>
           )}
         </>
       )}
-      
+
       {/* The actual tree model - always render this */}
       {treeModel ? (
         <primitive object={treeModel} />
@@ -222,27 +242,27 @@ const TreeComponent = ({
           {/* Tree trunk */}
           <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
             <cylinderGeometry args={[0.1, 0.15, 1.2, 8]} />
-            <meshStandardMaterial 
+            <meshStandardMaterial
               color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#8B4513"}
               transparent={preview}
               opacity={preview ? 0.6 : 1.0}
             />
           </mesh>
-          
+
           {/* Tree foliage */}
           <mesh position={[0, 1.5, 0]} castShadow receiveShadow>
             <coneGeometry args={[0.8, 1.8, 8]} />
-            <meshStandardMaterial 
+            <meshStandardMaterial
               color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#228B22"}
               transparent={preview}
               opacity={preview ? 0.6 : 1.0}
             />
           </mesh>
-          
+
           {/* Additional foliage layer for more realistic look */}
           <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
             <coneGeometry args={[0.6, 1.2, 8]} />
-            <meshStandardMaterial 
+            <meshStandardMaterial
               color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#32CD32"}
               transparent={preview}
               opacity={preview ? 0.6 : 1.0}
@@ -263,16 +283,21 @@ const TreeComponent = ({
         <mesh position={[0.5, 0.1, 0]}>
           {/* spheregeometry debug */}
           {/* <sphereGeometry args={[0.05, 8, 6]} /> */}
-          <meshBasicMaterial 
+          <meshBasicMaterial
             color={
-              lifecycleStage.startsWith("youth") ? "#00ff00" :     // Green for youth
-              lifecycleStage === "adult" ? "#0066ff" :             // Blue for adult
-              lifecycleStage === "dead-standing" ? "#ff6600" :     // Orange for dead
-              lifecycleStage === "broken" ? "#ff3300" :            // Red for broken  
-              lifecycleStage === "logs" ? "#8B4513" :              // Brown for logs (permanent)
-              "#999999"                                            // Gray fallback
-            } 
-            transparent 
+              lifecycleStage.startsWith("youth")
+                ? "#00ff00" // Green for youth
+                : lifecycleStage === "adult"
+                  ? "#0066ff" // Blue for adult
+                  : lifecycleStage === "dead-standing"
+                    ? "#ff6600" // Orange for dead
+                    : lifecycleStage === "broken"
+                      ? "#ff3300" // Red for broken
+                      : lifecycleStage === "logs"
+                        ? "#8B4513" // Brown for logs (permanent)
+                        : "#999999" // Gray fallback
+            }
+            transparent
             opacity={0.8}
           />
         </mesh>

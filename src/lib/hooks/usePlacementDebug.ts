@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface PlacementDebugState {
   enabled: boolean;
@@ -13,25 +13,25 @@ export function usePlacementDebug() {
   const [debugState, setDebugState] = useState<PlacementDebugState>({
     enabled: false,
     problematicOnly: false,
-    density: 16
+    density: 16,
   });
 
   const toggleDebug = useCallback((enabled: boolean) => {
-    setDebugState(prev => ({ ...prev, enabled }));
+    setDebugState((prev) => ({ ...prev, enabled }));
   }, []);
 
   const toggleProblematicOnly = useCallback((problematicOnly: boolean) => {
-    setDebugState(prev => ({ ...prev, problematicOnly }));
+    setDebugState((prev) => ({ ...prev, problematicOnly }));
   }, []);
 
   const setDensity = useCallback((density: number) => {
-    setDebugState(prev => ({ ...prev, density }));
+    setDebugState((prev) => ({ ...prev, density }));
   }, []);
 
   return {
     debugState,
     toggleDebug,
     toggleProblematicOnly,
-    setDensity
+    setDensity,
   };
 }

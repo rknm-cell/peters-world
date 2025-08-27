@@ -3,14 +3,14 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useThree } from "@react-three/fiber";
 import { Raycaster, Vector2, Mesh } from "three";
-import { 
+import {
   usePlacementState,
   useAddObject,
   useSelectObject,
   useRemoveObject,
   useSetUserInteracting,
   useClearAllModes,
-  useWorldStore
+  useWorldStore,
 } from "~/lib/store";
 import { OBJECT_TYPES } from "~/lib/constants";
 import { Decoration } from "~/components/three/objects/Decoration";
@@ -34,17 +34,45 @@ import {
 } from "~/lib/utils/placement";
 
 // Type guard function to check if an object type is a tree
-function isTreeType(objectType: string): objectType is "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall" {
-  return OBJECT_TYPES.trees.includes(objectType as "tree" | "tree-baobab" | "tree-beech" | "tree-birch" | "tree-elipse" | "tree-lime" | "tree-maple" | "tree-oak" | "tree-round" | "tree-tall");
+function isTreeType(
+  objectType: string,
+): objectType is
+  | "tree"
+  | "tree-baobab"
+  | "tree-beech"
+  | "tree-birch"
+  | "tree-elipse"
+  | "tree-lime"
+  | "tree-maple"
+  | "tree-oak"
+  | "tree-round"
+  | "tree-tall" {
+  return OBJECT_TYPES.trees.includes(
+    objectType as
+      | "tree"
+      | "tree-baobab"
+      | "tree-beech"
+      | "tree-birch"
+      | "tree-elipse"
+      | "tree-lime"
+      | "tree-maple"
+      | "tree-oak"
+      | "tree-round"
+      | "tree-tall",
+  );
 }
 
 // Type guard function to check if an object type is a decoration
 function isDecorationType(objectType: string): boolean {
-  return (OBJECT_TYPES.decorations as readonly string[]).includes(objectType) || objectType === "rock" || objectType === "flower";
+  return (
+    (OBJECT_TYPES.decorations as readonly string[]).includes(objectType) ||
+    objectType === "rock" ||
+    objectType === "flower"
+  );
 }
 
 // Type guard function to check if an object type is a structure
-type StructureType = typeof OBJECT_TYPES.structures[number];
+type StructureType = (typeof OBJECT_TYPES.structures)[number];
 function isStructureType(objectType: string): objectType is StructureType {
   return (OBJECT_TYPES.structures as readonly string[]).includes(objectType);
 }
@@ -59,19 +87,21 @@ export function PlacementSystem({
   rotationGroupRef: _rotationGroupRef,
 }: PlacementSystemProps) {
   const { camera, gl, scene } = useThree();
-  
+
   // Use selective subscription hooks to prevent unnecessary re-renders
   const { isPlacing, selectedObjectType } = usePlacementState();
-  
+
   // Only subscribe to essential object data for collision detection
   // Use memoization to prevent rerenders when object properties change
-  const objects = useWorldStore(state => state.objects);
-  const objectsForCollision = React.useMemo(() => 
-    objects.map(obj => ({
-      id: obj.id,
-      position: obj.position,
-      type: obj.type
-    })), [objects]
+  const objects = useWorldStore((state) => state.objects);
+  const objectsForCollision = React.useMemo(
+    () =>
+      objects.map((obj) => ({
+        id: obj.id,
+        position: obj.position,
+        type: obj.type,
+      })),
+    [objects],
   );
   const addObject = useAddObject();
   const selectObject = useSelectObject();
@@ -87,21 +117,21 @@ export function PlacementSystem({
   const lastClickTimeRef = useRef(0);
   const lastSelectionRef = useRef<string | null>(null);
   const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    
+
   // Use refs for values that don't need to trigger callback recreation
   const objectsRef = useRef(objectsForCollision);
   const isPlacingRef = useRef(isPlacing);
   const selectedObjectTypeRef = useRef(selectedObjectType);
-  
+
   // Update refs when values change
   useEffect(() => {
     objectsRef.current = objectsForCollision;
   }, [objectsForCollision]);
-  
+
   useEffect(() => {
     isPlacingRef.current = isPlacing;
   }, [isPlacing]);
-  
+
   useEffect(() => {
     selectedObjectTypeRef.current = selectedObjectType;
   }, [selectedObjectType]);
@@ -112,21 +142,24 @@ export function PlacementSystem({
   }, [placementPreview]);
 
   // Debounced selection to prevent rapid re-renders
-  const debouncedSelectObject = useCallback((objectId: string | null) => {
-    // Clear any existing timeout
-    if (selectionTimeoutRef.current) {
-      clearTimeout(selectionTimeoutRef.current);
-    }
-    
-    // Only update if selection actually changed
-    if (lastSelectionRef.current !== objectId) {
-      // Debounce selection updates to reduce re-renders during rapid clicking
-      selectionTimeoutRef.current = setTimeout(() => {
-        selectObject(objectId);
-        lastSelectionRef.current = objectId;
-      }, 16); // One frame delay (~60fps)
-    }
-  }, [selectObject]);
+  const debouncedSelectObject = useCallback(
+    (objectId: string | null) => {
+      // Clear any existing timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+
+      // Only update if selection actually changed
+      if (lastSelectionRef.current !== objectId) {
+        // Debounce selection updates to reduce re-renders during rapid clicking
+        selectionTimeoutRef.current = setTimeout(() => {
+          selectObject(objectId);
+          lastSelectionRef.current = objectId;
+        }, 16); // One frame delay (~60fps)
+      }
+    },
+    [selectObject],
+  );
 
   // Handle click/tap events for placement and selection
   // Using event delegation pattern (R3F best practice 2024)
@@ -136,21 +169,23 @@ export function PlacementSystem({
       const now = performance.now();
       const timeSinceLastClick = now - lastClickTimeRef.current;
       const MIN_CLICK_INTERVAL = 50; // 50ms minimum between clicks
-      
+
       if (timeSinceLastClick < MIN_CLICK_INTERVAL) {
-        console.log(`🖱️ Click debounced (${timeSinceLastClick.toFixed(1)}ms since last click)`);
+        console.log(
+          `🖱️ Click debounced (${timeSinceLastClick.toFixed(1)}ms since last click)`,
+        );
         return;
       }
       lastClickTimeRef.current = now;
-      
+
       // Only signal user interaction when actually performing actions that affect physics
       // This prevents unnecessary deer twitching on simple scene clicks
       let shouldSignalUserInteraction = false;
-      
+
       // Only prevent default if we're in placement mode or interacting with objects
       // This allows OrbitControls to work when not placing
       const shouldPreventDefault = isPlacingRef.current || event.detail === 2; // placement mode or double-click
-      
+
       if (shouldPreventDefault) {
         event.preventDefault();
         event.stopPropagation(); // Prevent other handlers from processing this event
@@ -166,7 +201,11 @@ export function PlacementSystem({
       raycaster.current.setFromCamera(mouse.current, camera);
 
       // Check for intersections with the globe
-      if (globeRef.current && isPlacingRef.current && selectedObjectTypeRef.current) {
+      if (
+        globeRef.current &&
+        isPlacingRef.current &&
+        selectedObjectTypeRef.current
+      ) {
         const currentObjectType = selectedObjectTypeRef.current;
         const detailedIntersection = getDetailedIntersection(
           raycaster.current,
@@ -178,12 +217,14 @@ export function PlacementSystem({
           // This ensures placement matches the debug arrows exactly
           const globeRadius = 6; // Match SurfaceNormalDebug exactly
           const mathNormal = detailedIntersection.point.clone().normalize();
-          const mathSurfacePoint = mathNormal.clone().multiplyScalar(globeRadius);
+          const mathSurfacePoint = mathNormal
+            .clone()
+            .multiplyScalar(globeRadius);
 
           const placementInfo = calculatePlacement(
             currentObjectType,
             mathSurfacePoint, // Use mathematical point
-            mathNormal,       // Use mathematical normal
+            mathNormal, // Use mathematical normal
             objectsRef.current,
           );
 
@@ -191,16 +232,16 @@ export function PlacementSystem({
           if (placementInfo.canPlace && selectedType) {
             // Use the local coordinates for placement with proper rotation and scale
             addObject(
-              selectedType, 
+              selectedType,
               placementInfo.position,
               [
                 placementInfo.rotation.x,
                 placementInfo.rotation.y,
                 placementInfo.rotation.z,
               ] as [number, number, number],
-              [1, 1, 1] as [number, number, number]
+              [1, 1, 1] as [number, number, number],
             );
-            
+
             // Placing objects affects physics, so signal user interaction
             shouldSignalUserInteraction = true;
           }
@@ -210,8 +251,8 @@ export function PlacementSystem({
       // Check for intersections with existing objects
       // Exclude physics-controlled objects to prevent interference
       const sceneObjects = scene.children.filter(
-        (child) => 
-          child.userData.isPlacedObject && 
+        (child) =>
+          child.userData.isPlacedObject &&
           child instanceof Mesh &&
           !child.userData.isPhysicsControlled, // Exclude physics-controlled objects
       );
@@ -240,7 +281,7 @@ export function PlacementSystem({
         // Click on empty space - use debounced deselection
         debouncedSelectObject(null);
       }
-      
+
       // Only signal interaction for physics systems that actually need it
       if (shouldSignalUserInteraction) {
         setUserInteracting(true);
@@ -288,22 +329,26 @@ export function PlacementSystem({
           // Use mathematical coordinates for preview consistency with debug system
           const globeRadius = 6; // Match SurfaceNormalDebug exactly
           const mathNormal = detailedIntersection.point.clone().normalize();
-          const mathSurfacePoint = mathNormal.clone().multiplyScalar(globeRadius);
+          const mathSurfacePoint = mathNormal
+            .clone()
+            .multiplyScalar(globeRadius);
 
           const placementInfo = calculatePlacement(
             selectedObjectType,
             mathSurfacePoint, // Use mathematical point
-            mathNormal,       // Use mathematical normal
+            mathNormal, // Use mathematical normal
             objectsForCollision,
           );
 
           // Only update if the placement info has actually changed
           const currentPreview = placementPreviewRef.current;
-          if (!currentPreview || 
-              currentPreview.position.x !== placementInfo.position.x ||
-              currentPreview.position.y !== placementInfo.position.y ||
-              currentPreview.position.z !== placementInfo.position.z ||
-              currentPreview.canPlace !== placementInfo.canPlace) {
+          if (
+            !currentPreview ||
+            currentPreview.position.x !== placementInfo.position.x ||
+            currentPreview.position.y !== placementInfo.position.y ||
+            currentPreview.position.z !== placementInfo.position.z ||
+            currentPreview.canPlace !== placementInfo.canPlace
+          ) {
             setPlacementPreview(placementInfo);
           }
         } else {
@@ -327,7 +372,7 @@ export function PlacementSystem({
   // Add event listeners - use refs to avoid dependency issues
   const handlePointerMoveRef = useRef(handlePointerMove);
   const handlePointerDownRef = useRef(handlePointerDown);
-  
+
   useEffect(() => {
     handlePointerMoveRef.current = handlePointerMove;
     handlePointerDownRef.current = handlePointerDown;
@@ -395,7 +440,7 @@ export function PlacementSystem({
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType && isTreeType(selectedObjectType)) ? (
+          ) : selectedObjectType && isTreeType(selectedObjectType) ? (
             <Tree
               type={selectedObjectType}
               position={[0, 0, 0]}
@@ -411,20 +456,21 @@ export function PlacementSystem({
               position={[0, 0, 0]}
               rotation={
                 // Use tree-like preview rotation for cabins, calculated rotation for other structures
-                (selectedObjectType === "building-cabin-small" || selectedObjectType === "building-cabin-big")
-                  ? [0, 0, 0]  // Static rotation like trees
+                selectedObjectType === "building-cabin-small" ||
+                selectedObjectType === "building-cabin-big"
+                  ? [0, 0, 0] // Static rotation like trees
                   : [
                       placementPreview.rotation.x,
                       placementPreview.rotation.y,
-                      placementPreview.rotation.z
-                    ]  // Calculated rotation for other structures
+                      placementPreview.rotation.z,
+                    ] // Calculated rotation for other structures
               }
               scale={[1, 1, 1]}
               objectId="preview"
               preview={true}
               canPlace={placementPreview.canPlace}
             />
-          ) : (selectedObjectType?.startsWith("animals/")) ? (
+          ) : selectedObjectType?.startsWith("animals/") ? (
             selectedObjectType === "animals/deer" ? (
               <Deer
                 type={selectedObjectType}
@@ -526,7 +572,7 @@ export function PlacementSystem({
                 canPlace={placementPreview.canPlace}
               />
             )
-          ) : (selectedObjectType?.startsWith("grass/")) ? (
+          ) : selectedObjectType?.startsWith("grass/") ? (
             <Grass
               type={selectedObjectType}
               position={[0, 0, 0]}

@@ -1,17 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  useIsPlacing, useIsDeleting, useSelectedObjectType, useTerraformMode, 
-  useBrushSize, useBrushStrength, useIsTerraforming, useObjectsCount, useTerrainVerticesCount,
-  useExitPlacementMode, useExitDeleteMode, useSetDeleting, useSetTerraformMode,
-  useSetBrushSize, useSetBrushStrength, useSetIsTerraforming, useResetTerrain,
-  useSetPlacing, useSetSelectedObjectType, useResetWorld
+import {
+  useIsPlacing,
+  useIsDeleting,
+  useSelectedObjectType,
+  useTerraformMode,
+  useBrushSize,
+  useBrushStrength,
+  useIsTerraforming,
+  useObjectsCount,
+  useTerrainVerticesCount,
+  useExitPlacementMode,
+  useExitDeleteMode,
+  useSetDeleting,
+  useSetTerraformMode,
+  useSetBrushSize,
+  useSetBrushStrength,
+  useSetIsTerraforming,
+  useResetTerrain,
+  useSetPlacing,
+  useSetSelectedObjectType,
+  useResetWorld,
 } from "~/lib/store";
 import { GridPlacementMenu } from "./GridPlacementMenu";
-import { hasStoredWorld, clearStoredWorld } from "~/lib/utils/world-persistence";
+import {
+  hasStoredWorld,
+  clearStoredWorld,
+} from "~/lib/utils/world-persistence";
 import type { TerraformMode } from "~/lib/store";
-
 
 export function Toolbar() {
   // State hooks
@@ -24,7 +41,7 @@ export function Toolbar() {
   const isTerraforming = useIsTerraforming();
   const objectsCount = useObjectsCount();
   const terrainVerticesCount = useTerrainVerticesCount();
-  
+
   // Action hooks
   const exitPlacementMode = useExitPlacementMode();
   const exitDeleteMode = useExitDeleteMode();
@@ -37,7 +54,7 @@ export function Toolbar() {
   const setPlacing = useSetPlacing();
   const setSelectedObjectType = useSetSelectedObjectType();
   const resetWorld = useResetWorld();
-  
+
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showTerraformMenu, setShowTerraformMenu] = useState(false);
@@ -76,15 +93,22 @@ export function Toolbar() {
   };
 
   const handleResetTerrain = () => {
-    if (confirm("Are you sure you want to reset all terrain changes? This cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to reset all terrain changes? This cannot be undone.",
+      )
+    ) {
       resetTerrain();
     }
     setShowTerraformMenu(false);
   };
 
-
   const handleDeleteWorld = () => {
-    if (confirm("Are you sure you want to delete your saved world? This will clear all objects, terrain, and settings. This cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete your saved world? This will clear all objects, terrain, and settings. This cannot be undone.",
+      )
+    ) {
       resetWorld();
       clearStoredWorld();
       setHasAutoSave(false);
@@ -107,33 +131,33 @@ export function Toolbar() {
       name: "Raise",
       icon: "M7,14L12,9L17,14H7Z",
       color: "green",
-      description: "Create hills and mountains"
+      description: "Create hills and mountains",
     },
     {
       mode: "lower" as TerraformMode,
-      name: "Lower", 
+      name: "Lower",
       icon: "M7,10L12,15L17,10H7Z",
       color: "orange",
-      description: "Create valleys and depressions"
+      description: "Create valleys and depressions",
     },
     {
       mode: "water" as TerraformMode,
       name: "Water",
       icon: "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z",
-      color: "blue", 
-      description: "Paint lakes and rivers"
+      color: "blue",
+      description: "Paint lakes and rivers",
     },
     {
       mode: "smooth" as TerraformMode,
       name: "Smooth",
       icon: "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z",
       color: "purple",
-      description: "Blend height differences"
-    }
+      description: "Blend height differences",
+    },
   ];
 
   const getCurrentTerraformTool = () => {
-    return terraformTools.find(tool => tool.mode === terraformMode);
+    return terraformTools.find((tool) => tool.mode === terraformMode);
   };
 
   const isActive = (mode: TerraformMode) => terraformMode === mode;
@@ -147,7 +171,7 @@ export function Toolbar() {
             {/* Add object button */}
             <button
               onClick={handleAddObject}
-              className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
+              className={`rounded-lg p-2 transition-all duration-200 sm:p-3 ${
                 isPlacing
                   ? "bg-blue-500 text-white"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
@@ -159,7 +183,7 @@ export function Toolbar() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="sm:w-5 sm:h-5"
+                className="sm:h-5 sm:w-5"
               >
                 <path d="M12 2C13.1 2 14 2.9 14 4V10H20C21.1 10 22 10.9 22 12C22 13.1 21.1 14 20 14H14V20C14 21.1 13.1 22 12 22C10.9 22 10 21.1 10 20V14H4C2.9 14 2 13.1 2 12C2 10.9 2.9 10 4 10H10V4C10 2.9 10.9 2 12 2Z" />
               </svg>
@@ -168,19 +192,23 @@ export function Toolbar() {
             {/* Terraform tools button - moved here for visibility */}
             <button
               onClick={handleTerraformTools}
-              className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
+              className={`rounded-lg p-2 transition-all duration-200 sm:p-3 ${
                 isTerraforming
                   ? "bg-green-500 text-white shadow-lg shadow-green-500/25"
                   : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white"
               }`}
-              title={isTerraforming ? "🏔️ Terraform Active - Click to configure" : "🏔️ Terraform Tools"}
+              title={
+                isTerraforming
+                  ? "🏔️ Terraform Active - Click to configure"
+                  : "🏔️ Terraform Tools"
+              }
             >
               <svg
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="sm:w-5 sm:h-5"
+                className="sm:h-5 sm:w-5"
               >
                 <path d="M14,6L10.25,11L13.1,14.8L11.5,16C9.81,13.75 7,10 7,10L1,18H23L14,6Z" />
               </svg>
@@ -189,7 +217,7 @@ export function Toolbar() {
             {/* Delete object button */}
             <button
               onClick={handleToggleDeleteMode}
-              className={`rounded-lg p-2 sm:p-3 transition-all duration-200 ${
+              className={`rounded-lg p-2 transition-all duration-200 sm:p-3 ${
                 isDeleting
                   ? "bg-orange-500 text-white"
                   : "bg-white/10 text-white/80 hover:bg-orange-500/20 hover:text-orange-300"
@@ -201,19 +229,17 @@ export function Toolbar() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="sm:w-5 sm:h-5"
+                className="sm:h-5 sm:w-5"
               >
                 <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
               </svg>
             </button>
 
-
-
             {/* Cancel placement */}
             {isPlacing && (
               <button
                 onClick={exitPlacementMode}
-                className="rounded-lg bg-red-500/20 p-2 sm:p-3 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300"
+                className="rounded-lg bg-red-500/20 p-2 text-red-400 transition-all duration-200 hover:bg-red-500/30 hover:text-red-300 sm:p-3"
                 title="Cancel"
               >
                 <svg
@@ -221,7 +247,7 @@ export function Toolbar() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="currentColor"
-                  className="sm:w-5 sm:h-5"
+                  className="sm:h-5 sm:w-5"
                 >
                   <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                 </svg>
@@ -230,15 +256,17 @@ export function Toolbar() {
 
             {/* Currently selected object type indicator */}
             {isPlacing && selectedObjectType && (
-              <div className="flex items-center rounded-lg bg-blue-500/20 px-2 py-1 text-xs sm:text-sm text-blue-300">
+              <div className="flex items-center rounded-lg bg-blue-500/20 px-2 py-1 text-xs text-blue-300 sm:text-sm">
                 <span className="mr-1 hidden sm:inline">Placing:</span>
-                <span className="capitalize font-medium">{selectedObjectType}</span>
+                <span className="font-medium capitalize">
+                  {selectedObjectType}
+                </span>
               </div>
             )}
 
             {/* Delete mode indicator */}
             {isDeleting && (
-              <div className="flex items-center rounded-lg bg-orange-500/20 px-2 py-1 text-xs sm:text-sm text-orange-300">
+              <div className="flex items-center rounded-lg bg-orange-500/20 px-2 py-1 text-xs text-orange-300 sm:text-sm">
                 <span className="mr-1 hidden sm:inline">Delete Mode:</span>
                 <span className="font-medium">Click objects to delete</span>
               </div>
@@ -246,9 +274,11 @@ export function Toolbar() {
 
             {/* Terraform mode indicator */}
             {isTerraforming && getCurrentTerraformTool() && (
-              <div className="flex items-center rounded-lg bg-green-500/20 px-2 py-1 text-xs sm:text-sm text-green-300">
+              <div className="flex items-center rounded-lg bg-green-500/20 px-2 py-1 text-xs text-green-300 sm:text-sm">
                 <span className="mr-1 hidden sm:inline">Terraforming:</span>
-                <span className="capitalize font-medium">{getCurrentTerraformTool()?.name}</span>
+                <span className="font-medium capitalize">
+                  {getCurrentTerraformTool()?.name}
+                </span>
               </div>
             )}
 
@@ -276,7 +306,7 @@ export function Toolbar() {
             </button> */}
 
             {/* Separator */}
-            <div className="hidden sm:block h-8 w-px bg-white/20" />
+            <div className="hidden h-8 w-px bg-white/20 sm:block" />
 
             {/* Save button - DISABLED */}
             {/* <button
@@ -332,13 +362,15 @@ export function Toolbar() {
             </button> */}
 
             {/* Separator */}
-            <div className="hidden sm:block h-8 w-px bg-white/20" />
+            <div className="hidden h-8 w-px bg-white/20 sm:block" />
 
             {/* Delete World button */}
             <button
               onClick={handleDeleteWorld}
-              disabled={objectsCount === 0 && terrainVerticesCount === 0 && !hasAutoSave}
-              className="rounded-lg bg-red-600/30 p-2 sm:p-3 text-red-300 transition-all duration-200 hover:bg-red-600/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50 border border-red-500/30"
+              disabled={
+                objectsCount === 0 && terrainVerticesCount === 0 && !hasAutoSave
+              }
+              className="rounded-lg border border-red-500/30 bg-red-600/30 p-2 text-red-300 transition-all duration-200 hover:bg-red-600/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50 sm:p-3"
               title="⚠️ Delete Entire World"
             >
               <svg
@@ -346,14 +378,14 @@ export function Toolbar() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="sm:w-5 sm:h-5"
+                className="sm:h-5 sm:w-5"
               >
                 <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z" />
               </svg>
             </button>
           </div>
         </div>
-        
+
         {/* Debug Tools Panel - Disabled for performance optimization */}
         {/* {showDebugTools && (
           <div className="mt-2 rounded-lg border border-white/20 bg-black/70 p-2 backdrop-blur-sm">
@@ -371,13 +403,16 @@ export function Toolbar() {
 
       {/* Object count and auto-save status - smaller on mobile */}
       <div className="fixed bottom-4 right-4 z-40">
-        <div className="rounded-lg border border-white/20 bg-black/70 px-2 py-1 sm:px-3 sm:py-2 backdrop-blur-sm">
+        <div className="rounded-lg border border-white/20 bg-black/70 px-2 py-1 backdrop-blur-sm sm:px-3 sm:py-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm text-white/80">
+            <span className="text-xs text-white/80 sm:text-sm">
               Objects: {objectsCount}/{50}
             </span>
             {hasAutoSave && (
-              <div className="flex items-center gap-1" title="Auto-save enabled">
+              <div
+                className="flex items-center gap-1"
+                title="Auto-save enabled"
+              >
                 <div className="h-2 w-2 rounded-full bg-green-400"></div>
                 <span className="text-xs text-green-400">Auto</span>
               </div>
@@ -397,16 +432,18 @@ export function Toolbar() {
       {showTerraformMenu && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setShowTerraformMenu(false)}
           />
-          
+
           {/* Menu Content */}
-          <div className="fixed left-4 top-20 z-50 w-64 rounded-lg border border-white/20 bg-black/90 backdrop-blur-sm max-w-[calc(100vw-2rem)]">
+          <div className="fixed left-4 top-20 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-white/20 bg-black/90 backdrop-blur-sm">
             {/* Header with Exit Button */}
-            <div className="flex items-center justify-between p-3 border-b border-white/10">
-              <div className="text-sm font-medium text-white/80">🏔️ Terraform Tools</div>
+            <div className="flex items-center justify-between border-b border-white/10 p-3">
+              <div className="text-sm font-medium text-white/80">
+                🏔️ Terraform Tools
+              </div>
               <button
                 onClick={() => {
                   setTerraformMode("none");
@@ -419,19 +456,26 @@ export function Toolbar() {
                 Exit
               </button>
             </div>
-            
+
             {/* Tool Selection */}
             <div className="p-3">
-              <div className="text-xs text-white/60 mb-3">Choose a tool to modify terrain:</div>
+              <div className="mb-3 text-xs text-white/60">
+                Choose a tool to modify terrain:
+              </div>
               <div className="space-y-2">
                 {terraformTools.map((tool) => {
                   const getActiveColors = (color: string) => {
                     switch (color) {
-                      case "green": return "bg-green-500 text-white";
-                      case "orange": return "bg-orange-500 text-white";
-                      case "blue": return "bg-blue-500 text-white";
-                      case "purple": return "bg-purple-500 text-white";
-                      default: return "bg-gray-500 text-white";
+                      case "green":
+                        return "bg-green-500 text-white";
+                      case "orange":
+                        return "bg-orange-500 text-white";
+                      case "blue":
+                        return "bg-blue-500 text-white";
+                      case "purple":
+                        return "bg-purple-500 text-white";
+                      default:
+                        return "bg-gray-500 text-white";
                     }
                   };
 
@@ -446,12 +490,19 @@ export function Toolbar() {
                       }`}
                       title={tool.description}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
                         <path d={tool.icon} />
                       </svg>
                       <div className="flex-1 text-left">
                         <div className="text-sm font-medium">{tool.name}</div>
-                        <div className="text-xs opacity-70">{tool.description}</div>
+                        <div className="text-xs opacity-70">
+                          {tool.description}
+                        </div>
                       </div>
                       {isActive(tool.mode) && (
                         <div className="h-2 w-2 rounded-full bg-current" />
@@ -465,10 +516,12 @@ export function Toolbar() {
             {/* Brush Controls */}
             {isTerraforming && (
               <div className="border-t border-white/20 p-3">
-                <div className="text-sm font-medium text-white/80 mb-3">Brush Settings:</div>
+                <div className="mb-3 text-sm font-medium text-white/80">
+                  Brush Settings:
+                </div>
                 <div className="space-y-3">
                   <div>
-                    <div className="flex justify-between text-xs text-white/60 mb-1">
+                    <div className="mb-1 flex justify-between text-xs text-white/60">
                       <span>Size</span>
                       <span>{brushSize.toFixed(1)}</span>
                     </div>
@@ -484,7 +537,7 @@ export function Toolbar() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs text-white/60 mb-1">
+                    <div className="mb-1 flex justify-between text-xs text-white/60">
                       <span>Strength</span>
                       <span>{brushStrength.toFixed(2)}</span>
                     </div>
@@ -494,7 +547,9 @@ export function Toolbar() {
                       max="1.0"
                       step="0.01"
                       value={brushStrength}
-                      onChange={(e) => setBrushStrength(parseFloat(e.target.value))}
+                      onChange={(e) =>
+                        setBrushStrength(parseFloat(e.target.value))
+                      }
                       className="w-full"
                     />
                   </div>

@@ -1,22 +1,24 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useCallback } from 'react';
-import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
-import { WaterSurface } from '../three/effects/WaterSurface';
+import { useRef, useMemo, useEffect, useCallback } from "react";
+import * as THREE from "three";
+import { useWorldStore } from "~/lib/store";
+import { WaterSurface } from "../three/effects/WaterSurface";
 
-import { MeshDebugVisualizer } from '../three/debug/MeshDebugVisualizer';
+import { MeshDebugVisualizer } from "../three/debug/MeshDebugVisualizer";
 
-import { WaterPhysics } from '../three/effects/WaterPhysics';
-import { usePerformanceDetector } from '~/lib/utils/performance-detector';
-
+import { WaterPhysics } from "../three/effects/WaterPhysics";
+import { usePerformanceDetector } from "~/lib/utils/performance-detector";
 
 interface TerrainSystemProps {
   onTerrainUpdate?: (geometry: THREE.BufferGeometry) => void;
   onTerrainMeshReady?: (mesh: THREE.Mesh) => void;
 }
 
-export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSystemProps) {
+export function TerrainSystem({
+  onTerrainUpdate,
+  onTerrainMeshReady,
+}: TerrainSystemProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const {
     terrainVertices,
@@ -24,7 +26,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     updateTerrainOctree,
     meshDebugMode,
   } = useWorldStore();
-  
+
   // Performance detection for adaptive water quality
   const { profile, shouldReduceQuality } = usePerformanceDetector();
 
@@ -36,10 +38,14 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
   // Initialize terrain vertices from geometry
   useEffect(() => {
-    if (baseGeometry && Array.isArray(terrainVertices) && terrainVertices.length === 0) {
+    if (
+      baseGeometry &&
+      Array.isArray(terrainVertices) &&
+      terrainVertices.length === 0
+    ) {
       const positions = baseGeometry.attributes.position;
       if (!positions) return;
-      
+
       // Initialize vertex colors for natural green terrain
       const colorArray = new Float32Array(positions.count * 3);
       const naturalGreen = new THREE.Color(0x4a7c59); // Base green
@@ -48,8 +54,11 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         colorArray[i * 3 + 1] = naturalGreen.g;
         colorArray[i * 3 + 2] = naturalGreen.b;
       }
-      baseGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-      
+      baseGeometry.setAttribute(
+        "color",
+        new THREE.BufferAttribute(colorArray, 3),
+      );
+
       const newVertices: Array<{
         x: number;
         y: number;
@@ -80,7 +89,12 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
 
   // Apply terrain deformation to geometry
   const applyTerrainDeformation = useCallback(() => {
-    if (!meshRef.current || !Array.isArray(terrainVertices) || terrainVertices.length === 0) return;
+    if (
+      !meshRef.current ||
+      !Array.isArray(terrainVertices) ||
+      terrainVertices.length === 0
+    )
+      return;
 
     const geometry = meshRef.current.geometry;
     const positions = geometry.attributes.position;
@@ -92,7 +106,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       // Create color attribute if it doesn't exist
       const colorArray = new Float32Array(positions.count * 3);
       colors = new THREE.BufferAttribute(colorArray, 3);
-      geometry.setAttribute('color', colors);
+      geometry.setAttribute("color", colors);
     }
 
     // Apply height and water modifications to each vertex
@@ -106,7 +120,9 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       const originalZ = positions.getZ(i);
 
       // Normalize to get direction
-      const length = Math.sqrt(originalX * originalX + originalY * originalY + originalZ * originalZ);
+      const length = Math.sqrt(
+        originalX * originalX + originalY * originalY + originalZ * originalZ,
+      );
       const dirX = originalX / length;
       const dirY = originalY / length;
       const dirZ = originalZ / length;
@@ -131,19 +147,21 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       // Green for natural terrain, brown for raised/disturbed earth
       const naturalGreen = new THREE.Color(0x4a7c59); // Base green
       const disturbedBrown = new THREE.Color(0x654321); // Darker, richer brown earth
-      const rockyGray = new THREE.Color(0x8A8A8A); // Gray for high elevations
-      
+      const rockyGray = new THREE.Color(0x8a8a8a); // Gray for high elevations
+
       // Calculate color blend - much more dramatic changes
       let finalColor = naturalGreen.clone();
-      
+
       if (heightOffset > 0) {
         // Raised terrain becomes brown (disturbed earth) much more quickly
         const blendFactor = Math.min(heightOffset / 1.0, 1.0); // Full brown at just 1 unit of height
-        
+
         if (heightOffset > 2.0) {
           // Very high terrain becomes rocky gray
           const rockBlendFactor = Math.min((heightOffset - 2.0) / 2.0, 1.0);
-          const brownToGray = disturbedBrown.clone().lerp(rockyGray, rockBlendFactor);
+          const brownToGray = disturbedBrown
+            .clone()
+            .lerp(rockyGray, rockBlendFactor);
           finalColor = naturalGreen.clone().lerp(brownToGray, 1.0);
         } else {
           finalColor = naturalGreen.clone().lerp(disturbedBrown, blendFactor);
@@ -154,7 +172,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         const muddyGreen = new THREE.Color(0x2d4a1a); // Much darker muddy green
         finalColor = naturalGreen.clone().lerp(muddyGreen, darkenFactor);
       }
-      
+
       colors.setXYZ(i, finalColor.r, finalColor.g, finalColor.b);
     }
 
@@ -176,12 +194,12 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
     if (meshRef.current && onTerrainMeshReady) {
       onTerrainMeshReady(meshRef.current);
     }
-    
+
     // Debug: Log mesh state for debug visualizer
-    console.log('TerrainSystem mesh state:', {
+    console.log("TerrainSystem mesh state:", {
       meshExists: !!meshRef.current,
       geometryExists: !!meshRef.current?.geometry,
-      hasUserData: !!meshRef.current?.userData?.isTerrainMesh
+      hasUserData: !!meshRef.current?.userData?.isTerrainMesh,
     });
   }, [onTerrainMeshReady]);
 
@@ -191,7 +209,7 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
       // Trigger terrain update callback when vertices change
       const geometry = meshRef.current.geometry;
       if (geometry) {
-        console.log('🏔️ TerrainSystem: Notifying terrain update');
+        console.log("🏔️ TerrainSystem: Notifying terrain update");
         onTerrainUpdate?.(geometry);
       }
     }
@@ -200,15 +218,15 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
   // Create material with vertex color support and debug modes
   const material = useMemo(() => {
     switch (meshDebugMode) {
-      case 'wireframe':
+      case "wireframe":
         return new THREE.MeshBasicMaterial({
           color: 0x00ff00,
           wireframe: true,
           transparent: false,
           opacity: 1.0,
         });
-      
-      case 'heightmap':
+
+      case "heightmap":
         return new THREE.ShaderMaterial({
           uniforms: {
             uMinHeight: { value: -4.0 },
@@ -254,12 +272,12 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
           `,
           side: THREE.DoubleSide,
         });
-      
-      case 'normals':
+
+      case "normals":
         return new THREE.MeshNormalMaterial({
           flatShading: false,
         });
-      
+
       default:
         // Standard terrain material
         return new THREE.MeshStandardMaterial({
@@ -267,8 +285,8 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
           roughness: 0.8,
           metalness: 0.1,
           flatShading: false,
-          depthWrite: true,  // Ensure terrain writes to depth buffer
-          depthTest: true,   // Ensure terrain tests depth
+          depthWrite: true, // Ensure terrain writes to depth buffer
+          depthTest: true, // Ensure terrain tests depth
         });
     }
   }, [meshDebugMode]);
@@ -277,12 +295,20 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
   // The water effect is achieved by the waterOffset in applyTerrainDeformation
 
   // Debug: Check if we have water
-  const hasWater = terrainVertices.some(v => v.waterLevel > 0.001); // Match WaterSurface threshold
-  const waterCount = terrainVertices.filter(v => v.waterLevel > 0.001).length;
-  
+  const hasWater = terrainVertices.some((v) => v.waterLevel > 0.001); // Match WaterSurface threshold
+  const waterCount = terrainVertices.filter((v) => v.waterLevel > 0.001).length;
+
   if (hasWater) {
-    console.log(`TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map(v => v.waterLevel))}`);
-    console.log(`TerrainSystem: Water levels:`, terrainVertices.filter(v => v.waterLevel > 0.01).map(v => v.waterLevel).slice(0, 10));
+    console.log(
+      `TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map((v) => v.waterLevel))}`,
+    );
+    console.log(
+      `TerrainSystem: Water levels:`,
+      terrainVertices
+        .filter((v) => v.waterLevel > 0.01)
+        .map((v) => v.waterLevel)
+        .slice(0, 10),
+    );
   }
 
   return (
@@ -295,18 +321,20 @@ export function TerrainSystem({ onTerrainUpdate, onTerrainMeshReady }: TerrainSy
         receiveShadow
         castShadow
         renderOrder={0} // Ensure terrain renders first
-        userData={{ isTerrainMesh: true, meshType: 'terrain' }}
+        userData={{ isTerrainMesh: true, meshType: "terrain" }}
       />
 
       {/* Animated water surface using shaders */}
       {hasWater && (
         <>
           <WaterSurface terrainVertices={terrainVertices} radius={6} />
-          <WaterPhysics 
-            terrainVertices={terrainVertices} 
-            radius={6} 
+          <WaterPhysics
+            terrainVertices={terrainVertices}
+            radius={6}
             resolution={profile.suggestedWaterResolution}
-            lowPerformanceMode={profile.useLowPerformanceMode || shouldReduceQuality}
+            lowPerformanceMode={
+              profile.useLowPerformanceMode || shouldReduceQuality
+            }
             updateFrequency={profile.suggestedUpdateFrequency}
           />
         </>

@@ -16,9 +16,9 @@ export function GravityController() {
   // DISABLED: No longer needed since DeerPhysics components handle surface adherence
   // const { world } = useRapier();
   // const lastCorrectionTime = useRef<Map<string, number>>(new Map());
-  
+
   // DISABLED: No frame updates needed
   // useFrame(() => { ... });
-  
+
   return null; // This component doesn't render anything
 }

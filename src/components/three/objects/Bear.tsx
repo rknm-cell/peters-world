@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
-import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { useWorldStore } from "~/lib/store";
+import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 interface BearProps {
   type: string;
@@ -43,19 +43,19 @@ export function Bear({
     if (isLoading || !gltfScene) {
       console.log(`Bear ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfScene
+        hasScene: !!gltfScene,
       });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
-      
+
       // Apply standardized scaling using the utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: 'animal',
+        objectType: "animal",
         modelType: type,
-        preview
+        preview,
       });
 
       // Enable shadows and apply preview styling
@@ -63,7 +63,7 @@ export function Bear({
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
+
           if (preview) {
             // Preview styling - make it more transparent and colored
             if (child.material) {
@@ -83,7 +83,7 @@ export function Bear({
       console.log(`Bear ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
         scaleFactor,
-        'bear positioned by PlacementSystem': true
+        "bear positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -100,17 +100,20 @@ export function Bear({
     // For physics-controlled objects, sync from store (they need dynamic updates)
     if (isPhysicsControlled && !disablePositionSync) {
       const store = useWorldStore.getState();
-      const object = store.objects.find(obj => obj.id === objectId);
+      const object = store.objects.find((obj) => obj.id === objectId);
       if (object) {
         groupRef.current.position.set(...object.position);
         groupRef.current.rotation.set(...object.rotation);
       }
     }
-    
+
     // Only apply selection animation when selected, let JSX props handle static positioning
     if (selected) {
-      const baseRotationY = isPhysicsControlled ? groupRef.current.rotation.y : rotation[1];
-      groupRef.current.rotation.y = baseRotationY + Math.sin(state.clock.elapsedTime * 1.2) * 0.05;
+      const baseRotationY = isPhysicsControlled
+        ? groupRef.current.rotation.y
+        : rotation[1];
+      groupRef.current.rotation.y =
+        baseRotationY + Math.sin(state.clock.elapsedTime * 1.2) * 0.05;
     }
   });
 
@@ -126,15 +129,15 @@ export function Bear({
       position={position}
       rotation={rotation}
       scale={scale}
-      userData={{ 
-        isPlacedObject: true, 
+      userData={{
+        isPlacedObject: true,
         objectId,
         isPhysicsControlled,
-        type: 'animal'
+        type: "animal",
       }}
     >
       <primitive object={bearModel} />
-      
+
       {/* Selection indicator */}
       {selected && (
         <mesh position={[0, -0.1, 0]}>

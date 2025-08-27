@@ -1,6 +1,6 @@
 "use client";
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface PathfindingDebugState {
   showPathfinding: boolean;
@@ -11,7 +11,7 @@ interface PathfindingDebugState {
   showCollisionChecks: boolean;
   pathColor: string;
   targetColor: string;
-  
+
   togglePathfinding: () => void;
   setShowTargets: (show: boolean) => void;
   setShowPaths: (show: boolean) => void;
@@ -22,25 +22,28 @@ interface PathfindingDebugState {
   setTargetColor: (color: string) => void;
 }
 
-export const usePathfindingDebugStore = create<PathfindingDebugState>((set) => ({
-  showPathfinding: false,
-  showTargets: true,
-  showPaths: true,
-  showProjectedPath: true,
-  showDecisions: true,
-  showCollisionChecks: false,
-  pathColor: '#ffff00',
-  targetColor: '#ff0000',
-  
-  togglePathfinding: () => set((state) => ({ 
-    showPathfinding: !state.showPathfinding 
-  })),
-  
-  setShowTargets: (show) => set({ showTargets: show }),
-  setShowPaths: (show) => set({ showPaths: show }),
-  setShowProjectedPath: (show) => set({ showProjectedPath: show }),
-  setShowDecisions: (show) => set({ showDecisions: show }),
-  setShowCollisionChecks: (show) => set({ showCollisionChecks: show }),
-  setPathColor: (color) => set({ pathColor: color }),
-  setTargetColor: (color) => set({ targetColor: color }),
-}));
+export const usePathfindingDebugStore = create<PathfindingDebugState>(
+  (set) => ({
+    showPathfinding: false,
+    showTargets: true,
+    showPaths: true,
+    showProjectedPath: true,
+    showDecisions: true,
+    showCollisionChecks: false,
+    pathColor: "#ffff00",
+    targetColor: "#ff0000",
+
+    togglePathfinding: () =>
+      set((state) => ({
+        showPathfinding: !state.showPathfinding,
+      })),
+
+    setShowTargets: (show) => set({ showTargets: show }),
+    setShowPaths: (show) => set({ showPaths: show }),
+    setShowProjectedPath: (show) => set({ showProjectedPath: show }),
+    setShowDecisions: (show) => set({ showDecisions: show }),
+    setShowCollisionChecks: (show) => set({ showCollisionChecks: show }),
+    setPathColor: (color) => set({ pathColor: color }),
+    setTargetColor: (color) => set({ targetColor: color }),
+  }),
+);

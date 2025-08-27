@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { useWorldStore, useSelectedObject } from '~/lib/store';
-import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
+import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { useWorldStore, useSelectedObject } from "~/lib/store";
+import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 interface DeerProps {
   type: string;
@@ -32,7 +32,7 @@ export function Deer({
 }: DeerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const selectedObject = useSelectedObject();
-  const selected = (!preview && objectId) ? selectedObject === objectId : false;
+  const selected = !preview && objectId ? selectedObject === objectId : false;
 
   // Load the GLTF model
   const { scene: gltfScene, ...gltfResult } = useGLTF(`/${type}.glb`);
@@ -45,19 +45,19 @@ export function Deer({
     if (isLoading || !gltfScene) {
       console.log(`Deer ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfScene
+        hasScene: !!gltfScene,
       });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
-      
+
       // Apply standardized scaling using the new utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: 'animal',
+        objectType: "animal",
         modelType: type,
-        preview
+        preview,
       });
 
       // Enable shadows and store original materials for preview switching
@@ -65,10 +65,12 @@ export function Deer({
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
+
           // Store original material for dynamic switching
           if (child.material) {
-            child.userData.originalMaterial = (child.material as THREE.Material).clone();
+            child.userData.originalMaterial = (
+              child.material as THREE.Material
+            ).clone();
           }
         }
       });
@@ -76,7 +78,7 @@ export function Deer({
       console.log(`Deer ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
         scaleFactor,
-        'deer positioned by PlacementSystem': true
+        "deer positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -91,7 +93,9 @@ export function Deer({
     if (deerModel && preview) {
       deerModel.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh && child.userData.originalMaterial) {
-          const previewMaterial = (child.userData.originalMaterial as THREE.MeshStandardMaterial).clone();
+          const previewMaterial = (
+            child.userData.originalMaterial as THREE.MeshStandardMaterial
+          ).clone();
           previewMaterial.transparent = true;
           previewMaterial.opacity = 0.6;
           previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
@@ -112,7 +116,7 @@ export function Deer({
   // Accessing store state inside useFrame creates new references every frame!
   const currentPositionRef = useRef(position);
   const currentRotationRef = useRef(rotation);
-  
+
   // Update refs when props change (outside of useFrame)
   useEffect(() => {
     currentPositionRef.current = position;
@@ -137,12 +141,15 @@ export function Deer({
     // Selected state animation (absolute rotation, not additive)
     // Use object-specific time offset to prevent synchronization with other deer
     if (selected) {
-      const timeOffset = objectId ? parseFloat('0.' + objectId.replace(/[^0-9]/g, '').slice(0, 6)) : 0;
+      const timeOffset = objectId
+        ? parseFloat("0." + objectId.replace(/[^0-9]/g, "").slice(0, 6))
+        : 0;
       const uniqueTime = state.clock.elapsedTime + timeOffset;
       // Store base rotation and set absolute rotation with animation
       groupRef.current.userData.baseRotationY ??= groupRef.current.rotation.y;
       const baseRotationY = groupRef.current.userData.baseRotationY as number;
-      groupRef.current.rotation.y = baseRotationY + Math.sin(uniqueTime * 2) * 0.1;
+      groupRef.current.rotation.y =
+        baseRotationY + Math.sin(uniqueTime * 2) * 0.1;
     } else {
       // Clear stored base rotation when not selected
       if (groupRef.current.userData.baseRotationY !== undefined) {
@@ -159,21 +166,21 @@ export function Deer({
         position={position}
         rotation={rotation}
         scale={scale}
-        userData={{ 
+        userData={{
           isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
           objectId,
-          isPhysicsControlled 
+          isPhysicsControlled,
         }}
       >
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.3, 0.8, 0.6]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={preview ? (canPlace ? "#00ff00" : "#ff0000") : "#8B4513"}
             transparent={preview}
             opacity={preview ? 0.6 : 1.0}
           />
         </mesh>
-        
+
         {/* Selection indicator */}
         {selected && !preview && (
           <mesh position={[0, 0.8, 0]}>
@@ -189,16 +196,16 @@ export function Deer({
     <group
       ref={groupRef}
       position={position}
-      rotation={rotation}  
+      rotation={rotation}
       scale={scale}
-      userData={{ 
+      userData={{
         isPlacedObject: !preview && !isPhysicsControlled, // Physics deer excluded from placement raycasting
         objectId,
-        isPhysicsControlled 
+        isPhysicsControlled,
       }}
     >
       <primitive object={deerModel} />
-      
+
       {/* Selection indicator */}
       {selected && !preview && (
         <mesh position={[0, 0.8, 0]}>

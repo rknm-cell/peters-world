@@ -3,11 +3,19 @@
 import { useRef, useCallback, useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { 
-  useIsPlacing, useIsDeleting, useIsTerraforming, useTerraformMode,
-  useBrushSize, useBrushStrength, useTerrainVertices, useObjects,
-  useRemoveObject, useUpdateTerrainVerticesBatchThrottled,
-  useSetTerraformMode, useSetIsTerraforming
+import {
+  useIsPlacing,
+  useIsDeleting,
+  useIsTerraforming,
+  useTerraformMode,
+  useBrushSize,
+  useBrushStrength,
+  useTerrainVertices,
+  useObjects,
+  useRemoveObject,
+  useUpdateTerrainVerticesBatchThrottled,
+  useSetTerraformMode,
+  useSetIsTerraforming,
 } from "~/lib/store";
 
 interface InputManagerProps {
@@ -16,9 +24,13 @@ interface InputManagerProps {
   rotationGroupRef: React.RefObject<THREE.Group | null>;
 }
 
-export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRef: _rotationGroupRef }: InputManagerProps) {
+export function InputManager({
+  globeRef: _globeRef,
+  terrainMesh,
+  rotationGroupRef: _rotationGroupRef,
+}: InputManagerProps) {
   const { gl, camera, scene } = useThree();
-  
+
   // Individual hook subscriptions for optimal performance
   const isPlacing = useIsPlacing();
   const isDeleting = useIsDeleting();
@@ -29,7 +41,8 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   const terrainVertices = useTerrainVertices();
   const objects = useObjects();
   const removeObject = useRemoveObject();
-  const updateTerrainVerticesBatchThrottled = useUpdateTerrainVerticesBatchThrottled();
+  const updateTerrainVerticesBatchThrottled =
+    useUpdateTerrainVerticesBatchThrottled();
   const setTerraformMode = useSetTerraformMode();
   const setIsTerraforming = useSetIsTerraforming();
 
@@ -42,334 +55,411 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
 
   // Determine current interaction mode
   const getInteractionMode = useCallback(() => {
-    const mode = isPlacing ? 'placing' : 
-                 isDeleting ? 'deleting' : 
-                 (isTerraforming && terraformMode !== 'none') ? 'terraforming' : 'idle';
-    
+    const mode = isPlacing
+      ? "placing"
+      : isDeleting
+        ? "deleting"
+        : isTerraforming && terraformMode !== "none"
+          ? "terraforming"
+          : "idle";
+
     // Debug logging for interaction mode
-    console.log("🎯 InputManager mode:", mode, { 
-      isPlacing, 
-      isDeleting, 
-      isTerraforming, 
-      terraformMode 
+    console.log("🎯 InputManager mode:", mode, {
+      isPlacing,
+      isDeleting,
+      isTerraforming,
+      terraformMode,
     });
-    
+
     return mode;
   }, [isPlacing, isDeleting, isTerraforming, terraformMode]);
 
   // Handle clicks outside the world (disable terraform tools)
-  const handleOffWorldClick = useCallback((event: PointerEvent) => {
-    if (!terrainMesh) return false;
+  const handleOffWorldClick = useCallback(
+    (event: PointerEvent) => {
+      if (!terrainMesh) return false;
 
-    // Update mouse position for raycast
-    const canvas = gl.domElement;
-    const rect = canvas.getBoundingClientRect();
-    mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    // Raycast to check if we hit the terrain
-    raycasterRef.current.setFromCamera(mouseRef.current, camera);
-    const intersects = raycasterRef.current.intersectObject(terrainMesh);
-
-    // If no intersection with terrain, it's an off-world click
-    if (intersects.length === 0) {
-      // Disable terraform tools when clicking off-world
-      if (isTerraforming) {
-        setTerraformMode("none");
-        setIsTerraforming(false);
-        console.log("🏔️ Terraform mode disabled - clicked outside world");
-      }
-      return true; // Indicates this was an off-world click
-    }
-
-    return false; // Hit the terrain, not an off-world click
-  }, [terrainMesh, gl.domElement, camera, isTerraforming, setTerraformMode, setIsTerraforming]);
-
-  // Terraforming action handler
-  const handleTerraformAction = useCallback((_event: PointerEvent) => {
-    if (!terrainMesh || !terrainVertices.length) return;
-
-    // Raycast to find intersection point
-    raycasterRef.current.setFromCamera(mouseRef.current, camera);
-    const intersects = raycasterRef.current.intersectObject(terrainMesh);
-
-    if (intersects.length === 0) return;
-
-    const intersectionPoint = intersects[0]?.point;
-    if (!intersectionPoint) return;
-    
-    // Apply terraforming by collecting updates for batch processing
-    const geometry = terrainMesh.geometry;
-    const positionAttribute = geometry.attributes.position;
-    if (!positionAttribute) return;
-    
-    const maxCheckDistance = brushSize * 1.5;
-    let processedVertices = 0;
-    const batchUpdates: Array<{ index: number; updates: Partial<{ height: number; waterLevel: number }> }> = [];
-    
-    for (let i = 0; i < positionAttribute.count && i < terrainVertices.length; i++) {
-      const vertex = terrainVertices[i];
-      if (!vertex) continue;
-      
-      const quickDistance = Math.sqrt(
-        Math.pow(intersectionPoint.x - vertex.x, 2) +
-        Math.pow(intersectionPoint.y - vertex.y, 2) +
-        Math.pow(intersectionPoint.z - vertex.z, 2)
-      );
-      
-      if (quickDistance > maxCheckDistance) continue;
-      
-      const vertexPos = new THREE.Vector3(
-        positionAttribute.getX(i),
-        positionAttribute.getY(i),
-        positionAttribute.getZ(i)
-      );
-      
-      const distance = intersectionPoint.distanceTo(vertexPos);
-      processedVertices++;
-      
-      if (distance <= brushSize) {
-        const normalizedDistance = distance / brushSize;
-        let falloff: number;
-        let strength: number;
-        
-        switch (terraformMode) {
-          case "raise":
-            falloff = Math.pow(1 - normalizedDistance, 3);
-            strength = brushStrength * falloff * 2.0;
-            batchUpdates.push({
-              index: i,
-              updates: { height: Math.min(vertex.height + strength, 6.0) }
-            });
-            break;
-            
-          case "lower":
-            falloff = Math.pow(1 - normalizedDistance, 3);
-            strength = brushStrength * falloff * 2.0;
-            batchUpdates.push({
-              index: i,
-              updates: { height: Math.max(vertex.height - strength, -4.0) }
-            });
-            break;
-            
-          case "water":
-            falloff = Math.max(0, 1 - normalizedDistance);
-            strength = brushStrength * falloff * 3.0;
-            
-            if (isShiftPressedRef.current) {
-              batchUpdates.push({
-                index: i,
-                updates: { waterLevel: Math.max(vertex.waterLevel - strength, 0.0) }
-              });
-            } else {
-              batchUpdates.push({
-                index: i,
-                updates: { waterLevel: Math.min(vertex.waterLevel + strength, 1.0) }
-              });
-            }
-            break;
-            
-          case "smooth":
-            const nearbyVertices = terrainVertices.filter((v, idx) => {
-              if (idx === i) return false;
-              const vPos = new THREE.Vector3(v.x, v.y, v.z);
-              return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
-            });
-            
-            if (nearbyVertices.length > 0) {
-              falloff = Math.max(0, 1 - normalizedDistance);
-              const smoothStrength = brushStrength * falloff * 1.0;
-              const avgHeight = nearbyVertices.reduce((sum, v) => sum + v.height, 0) / nearbyVertices.length;
-              const avgWater = nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) / nearbyVertices.length;
-              
-              batchUpdates.push({
-                index: i,
-                updates: {
-                  height: vertex.height + (avgHeight - vertex.height) * smoothStrength,
-                  waterLevel: vertex.waterLevel + (avgWater - vertex.waterLevel) * smoothStrength * 0.5
-                }
-              });
-            }
-            break;
-        }
-      }
-    }
-    
-    // Apply all updates in a single throttled batch operation to prevent update depth exceeded
-    if (batchUpdates.length > 0) {
-      updateTerrainVerticesBatchThrottled(batchUpdates);
-    }
-    
-    if (terraformMode === 'water' && processedVertices > 0) {
-      console.log(`Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`);
-    }
-  }, [camera, terrainMesh, terrainVertices, terraformMode, brushSize, brushStrength, updateTerrainVerticesBatchThrottled]);
-
-  // Delete action handler
-  const handleDeleteAction = useCallback((event: PointerEvent) => {
-    if (!objects.length) {
-      console.log("🗑️ No objects to delete");
-      return;
-    }
-
-    console.log("🗑️ Delete action triggered, checking for objects...");
-
-    // Raycast to find object intersections
-    raycasterRef.current.setFromCamera(mouseRef.current, camera);
-    
-    // Get all objects with userData.objectId from the scene
-    const objectsWithIds: THREE.Object3D[] = [];
-    
-    // Traverse the entire scene to find objects with objectId
-    // Exclude physics-controlled objects to prevent interference
-    scene.traverse((child) => {
-      if (child.userData?.objectId && !child.userData?.isPhysicsControlled) {
-        objectsWithIds.push(child);
-        console.log(`🔍 Found object in scene: ${child.userData.objectId}, type: ${child.type}`);
-      }
-    });
-
-    console.log(`🔍 Found ${objectsWithIds.length} objects in scene with IDs`);
-    console.log(`🔍 Store has ${objects.length} objects`);
-
-    if (objectsWithIds.length === 0) {
-      console.log("❌ No objects with IDs found in scene");
-      return;
-    }
-
-    // Raycast against all objects (recursive = true to check children)
-    const intersects = raycasterRef.current.intersectObjects(objectsWithIds, true);
-    
-    console.log(`🎯 Raycast found ${intersects.length} intersections`);
-    
-    if (intersects.length > 0) {
-      // Find the closest intersected object
-      const intersectedObject = intersects[0];
-      if (!intersectedObject) return;
-      
-      console.log(`🎯 Intersected object:`, intersectedObject.object);
-      
-      let objectId = intersectedObject.object.userData?.objectId as string | undefined;
-      
-      // If the intersected object doesn't have an objectId, traverse up the hierarchy
-      if (!objectId) {
-        let parent = intersectedObject.object.parent;
-        while (parent && !objectId) {
-          objectId = parent.userData?.objectId as string | undefined;
-          parent = parent.parent;
-        }
-      }
-      
-      if (objectId && typeof objectId === 'string') {
-        console.log(`🗑️ Deleting object: ${objectId}`);
-        removeObject(objectId);
-        event.preventDefault();
-        event.stopPropagation();
-      } else {
-        console.log("❌ No objectId found on intersected object or its parents");
-      }
-    } else {
-      console.log("❌ No intersections found");
-    }
-  }, [objects, removeObject, camera, scene]);
-
-  // Unified pointer down handler
-  const handlePointerDown = useCallback((event: PointerEvent) => {
-    const mode = getInteractionMode();
-    
-    console.log("🖱️ Pointer down event:", { 
-      mode, 
-      clientX: event.clientX, 
-      clientY: event.clientY,
-      target: event.target 
-    });
-    
-    // In idle mode, let OrbitControls handle all events
-    if (mode === 'idle') {
-      console.log("🖱️ Idle mode - letting OrbitControls handle event");
-      return; // Don't interfere with OrbitControls
-    }
-    
-    // Only handle events that this system should process
-    switch (mode) {
-      case 'placing':
-        console.log("🖱️ Placing mode - letting PlacementSystem handle");
-        // Let PlacementSystem handle this completely
-        return;
-        
-      case 'terraforming':
-        console.log("🖱️ Terraforming mode - handling event");
-        const canvas = gl.domElement;
-        const rect = canvas.getBoundingClientRect();
-        
-        // Update mouse position only for terraforming
-        mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        previousMouseRef.current.copy(mouseRef.current);
-        
-        // Check if this is an off-world click (will disable terraform if so)
-        if (handleOffWorldClick(event)) {
-          // Off-world click detected, terraform disabled, let OrbitControls handle
-          return;
-        }
-        
-        // Track shift key state
-        isShiftPressedRef.current = event.shiftKey;
-        isDraggingRef.current = true;
-        
-        event.preventDefault();
-        event.stopPropagation();
-        canvas.style.cursor = "crosshair";
-        handleTerraformAction(event);
-        break;
-        
-      case 'deleting':
-        console.log("🖱️ Deleting mode - handling event");
-        const deleteCanvas = gl.domElement;
-        const deleteRect = deleteCanvas.getBoundingClientRect();
-        
-        // Update mouse position for deleting
-        mouseRef.current.x = ((event.clientX - deleteRect.left) / deleteRect.width) * 2 - 1;
-        mouseRef.current.y = -((event.clientY - deleteRect.top) / deleteRect.height) * 2 + 1;
-        
-        event.preventDefault();
-        event.stopPropagation();
-        deleteCanvas.style.cursor = "crosshair";
-        handleDeleteAction(event);
-        break;
-    }
-  }, [getInteractionMode, gl.domElement, handleTerraformAction, handleDeleteAction, handleOffWorldClick]);
-
-  // Unified pointer move handler
-  const handlePointerMove = useCallback((event: PointerEvent) => {
-    const mode = getInteractionMode();
-    
-    // Only handle terraforming move events when actively dragging
-    if (mode === 'terraforming' && isDraggingRef.current) {
+      // Update mouse position for raycast
       const canvas = gl.domElement;
       const rect = canvas.getBoundingClientRect();
-      
-      // Update mouse position
       mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      
-      // Update shift key state
-      isShiftPressedRef.current = event.shiftKey;
-      
-      event.preventDefault();
-      event.stopPropagation();
-      handleTerraformAction(event);
-      
-      previousMouseRef.current.copy(mouseRef.current);
-    }
-    // For 'placing' and 'idle' modes, do nothing - let other systems handle
-  }, [getInteractionMode, gl.domElement, handleTerraformAction]);
+
+      // Raycast to check if we hit the terrain
+      raycasterRef.current.setFromCamera(mouseRef.current, camera);
+      const intersects = raycasterRef.current.intersectObject(terrainMesh);
+
+      // If no intersection with terrain, it's an off-world click
+      if (intersects.length === 0) {
+        // Disable terraform tools when clicking off-world
+        if (isTerraforming) {
+          setTerraformMode("none");
+          setIsTerraforming(false);
+          console.log("🏔️ Terraform mode disabled - clicked outside world");
+        }
+        return true; // Indicates this was an off-world click
+      }
+
+      return false; // Hit the terrain, not an off-world click
+    },
+    [
+      terrainMesh,
+      gl.domElement,
+      camera,
+      isTerraforming,
+      setTerraformMode,
+      setIsTerraforming,
+    ],
+  );
+
+  // Terraforming action handler
+  const handleTerraformAction = useCallback(
+    (_event: PointerEvent) => {
+      if (!terrainMesh || !terrainVertices.length) return;
+
+      // Raycast to find intersection point
+      raycasterRef.current.setFromCamera(mouseRef.current, camera);
+      const intersects = raycasterRef.current.intersectObject(terrainMesh);
+
+      if (intersects.length === 0) return;
+
+      const intersectionPoint = intersects[0]?.point;
+      if (!intersectionPoint) return;
+
+      // Apply terraforming by collecting updates for batch processing
+      const geometry = terrainMesh.geometry;
+      const positionAttribute = geometry.attributes.position;
+      if (!positionAttribute) return;
+
+      const maxCheckDistance = brushSize * 1.5;
+      let processedVertices = 0;
+      const batchUpdates: Array<{
+        index: number;
+        updates: Partial<{ height: number; waterLevel: number }>;
+      }> = [];
+
+      for (
+        let i = 0;
+        i < positionAttribute.count && i < terrainVertices.length;
+        i++
+      ) {
+        const vertex = terrainVertices[i];
+        if (!vertex) continue;
+
+        const quickDistance = Math.sqrt(
+          Math.pow(intersectionPoint.x - vertex.x, 2) +
+            Math.pow(intersectionPoint.y - vertex.y, 2) +
+            Math.pow(intersectionPoint.z - vertex.z, 2),
+        );
+
+        if (quickDistance > maxCheckDistance) continue;
+
+        const vertexPos = new THREE.Vector3(
+          positionAttribute.getX(i),
+          positionAttribute.getY(i),
+          positionAttribute.getZ(i),
+        );
+
+        const distance = intersectionPoint.distanceTo(vertexPos);
+        processedVertices++;
+
+        if (distance <= brushSize) {
+          const normalizedDistance = distance / brushSize;
+          let falloff: number;
+          let strength: number;
+
+          switch (terraformMode) {
+            case "raise":
+              falloff = Math.pow(1 - normalizedDistance, 3);
+              strength = brushStrength * falloff * 2.0;
+              batchUpdates.push({
+                index: i,
+                updates: { height: Math.min(vertex.height + strength, 6.0) },
+              });
+              break;
+
+            case "lower":
+              falloff = Math.pow(1 - normalizedDistance, 3);
+              strength = brushStrength * falloff * 2.0;
+              batchUpdates.push({
+                index: i,
+                updates: { height: Math.max(vertex.height - strength, -4.0) },
+              });
+              break;
+
+            case "water":
+              falloff = Math.max(0, 1 - normalizedDistance);
+              strength = brushStrength * falloff * 3.0;
+
+              if (isShiftPressedRef.current) {
+                batchUpdates.push({
+                  index: i,
+                  updates: {
+                    waterLevel: Math.max(vertex.waterLevel - strength, 0.0),
+                  },
+                });
+              } else {
+                batchUpdates.push({
+                  index: i,
+                  updates: {
+                    waterLevel: Math.min(vertex.waterLevel + strength, 1.0),
+                  },
+                });
+              }
+              break;
+
+            case "smooth":
+              const nearbyVertices = terrainVertices.filter((v, idx) => {
+                if (idx === i) return false;
+                const vPos = new THREE.Vector3(v.x, v.y, v.z);
+                return vertexPos.distanceTo(vPos) <= brushSize * 0.5;
+              });
+
+              if (nearbyVertices.length > 0) {
+                falloff = Math.max(0, 1 - normalizedDistance);
+                const smoothStrength = brushStrength * falloff * 1.0;
+                const avgHeight =
+                  nearbyVertices.reduce((sum, v) => sum + v.height, 0) /
+                  nearbyVertices.length;
+                const avgWater =
+                  nearbyVertices.reduce((sum, v) => sum + v.waterLevel, 0) /
+                  nearbyVertices.length;
+
+                batchUpdates.push({
+                  index: i,
+                  updates: {
+                    height:
+                      vertex.height +
+                      (avgHeight - vertex.height) * smoothStrength,
+                    waterLevel:
+                      vertex.waterLevel +
+                      (avgWater - vertex.waterLevel) * smoothStrength * 0.5,
+                  },
+                });
+              }
+              break;
+          }
+        }
+      }
+
+      // Apply all updates in a single throttled batch operation to prevent update depth exceeded
+      if (batchUpdates.length > 0) {
+        updateTerrainVerticesBatchThrottled(batchUpdates);
+      }
+
+      if (terraformMode === "water" && processedVertices > 0) {
+        console.log(
+          `Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`,
+        );
+      }
+    },
+    [
+      camera,
+      terrainMesh,
+      terrainVertices,
+      terraformMode,
+      brushSize,
+      brushStrength,
+      updateTerrainVerticesBatchThrottled,
+    ],
+  );
+
+  // Delete action handler
+  const handleDeleteAction = useCallback(
+    (event: PointerEvent) => {
+      if (!objects.length) {
+        console.log("🗑️ No objects to delete");
+        return;
+      }
+
+      console.log("🗑️ Delete action triggered, checking for objects...");
+
+      // Raycast to find object intersections
+      raycasterRef.current.setFromCamera(mouseRef.current, camera);
+
+      // Get all objects with userData.objectId from the scene
+      const objectsWithIds: THREE.Object3D[] = [];
+
+      // Traverse the entire scene to find objects with objectId
+      // Exclude physics-controlled objects to prevent interference
+      scene.traverse((child) => {
+        if (child.userData?.objectId && !child.userData?.isPhysicsControlled) {
+          objectsWithIds.push(child);
+          console.log(
+            `🔍 Found object in scene: ${child.userData.objectId}, type: ${child.type}`,
+          );
+        }
+      });
+
+      console.log(
+        `🔍 Found ${objectsWithIds.length} objects in scene with IDs`,
+      );
+      console.log(`🔍 Store has ${objects.length} objects`);
+
+      if (objectsWithIds.length === 0) {
+        console.log("❌ No objects with IDs found in scene");
+        return;
+      }
+
+      // Raycast against all objects (recursive = true to check children)
+      const intersects = raycasterRef.current.intersectObjects(
+        objectsWithIds,
+        true,
+      );
+
+      console.log(`🎯 Raycast found ${intersects.length} intersections`);
+
+      if (intersects.length > 0) {
+        // Find the closest intersected object
+        const intersectedObject = intersects[0];
+        if (!intersectedObject) return;
+
+        console.log(`🎯 Intersected object:`, intersectedObject.object);
+
+        let objectId = intersectedObject.object.userData?.objectId as
+          | string
+          | undefined;
+
+        // If the intersected object doesn't have an objectId, traverse up the hierarchy
+        if (!objectId) {
+          let parent = intersectedObject.object.parent;
+          while (parent && !objectId) {
+            objectId = parent.userData?.objectId as string | undefined;
+            parent = parent.parent;
+          }
+        }
+
+        if (objectId && typeof objectId === "string") {
+          console.log(`🗑️ Deleting object: ${objectId}`);
+          removeObject(objectId);
+          event.preventDefault();
+          event.stopPropagation();
+        } else {
+          console.log(
+            "❌ No objectId found on intersected object or its parents",
+          );
+        }
+      } else {
+        console.log("❌ No intersections found");
+      }
+    },
+    [objects, removeObject, camera, scene],
+  );
+
+  // Unified pointer down handler
+  const handlePointerDown = useCallback(
+    (event: PointerEvent) => {
+      const mode = getInteractionMode();
+
+      console.log("🖱️ Pointer down event:", {
+        mode,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        target: event.target,
+      });
+
+      // In idle mode, let OrbitControls handle all events
+      if (mode === "idle") {
+        console.log("🖱️ Idle mode - letting OrbitControls handle event");
+        return; // Don't interfere with OrbitControls
+      }
+
+      // Only handle events that this system should process
+      switch (mode) {
+        case "placing":
+          console.log("🖱️ Placing mode - letting PlacementSystem handle");
+          // Let PlacementSystem handle this completely
+          return;
+
+        case "terraforming":
+          console.log("🖱️ Terraforming mode - handling event");
+          const canvas = gl.domElement;
+          const rect = canvas.getBoundingClientRect();
+
+          // Update mouse position only for terraforming
+          mouseRef.current.x =
+            ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouseRef.current.y =
+            -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          previousMouseRef.current.copy(mouseRef.current);
+
+          // Check if this is an off-world click (will disable terraform if so)
+          if (handleOffWorldClick(event)) {
+            // Off-world click detected, terraform disabled, let OrbitControls handle
+            return;
+          }
+
+          // Track shift key state
+          isShiftPressedRef.current = event.shiftKey;
+          isDraggingRef.current = true;
+
+          event.preventDefault();
+          event.stopPropagation();
+          canvas.style.cursor = "crosshair";
+          handleTerraformAction(event);
+          break;
+
+        case "deleting":
+          console.log("🖱️ Deleting mode - handling event");
+          const deleteCanvas = gl.domElement;
+          const deleteRect = deleteCanvas.getBoundingClientRect();
+
+          // Update mouse position for deleting
+          mouseRef.current.x =
+            ((event.clientX - deleteRect.left) / deleteRect.width) * 2 - 1;
+          mouseRef.current.y =
+            -((event.clientY - deleteRect.top) / deleteRect.height) * 2 + 1;
+
+          event.preventDefault();
+          event.stopPropagation();
+          deleteCanvas.style.cursor = "crosshair";
+          handleDeleteAction(event);
+          break;
+      }
+    },
+    [
+      getInteractionMode,
+      gl.domElement,
+      handleTerraformAction,
+      handleDeleteAction,
+      handleOffWorldClick,
+    ],
+  );
+
+  // Unified pointer move handler
+  const handlePointerMove = useCallback(
+    (event: PointerEvent) => {
+      const mode = getInteractionMode();
+
+      // Only handle terraforming move events when actively dragging
+      if (mode === "terraforming" && isDraggingRef.current) {
+        const canvas = gl.domElement;
+        const rect = canvas.getBoundingClientRect();
+
+        // Update mouse position
+        mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseRef.current.y =
+          -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Update shift key state
+        isShiftPressedRef.current = event.shiftKey;
+
+        event.preventDefault();
+        event.stopPropagation();
+        handleTerraformAction(event);
+
+        previousMouseRef.current.copy(mouseRef.current);
+      }
+      // For 'placing' and 'idle' modes, do nothing - let other systems handle
+    },
+    [getInteractionMode, gl.domElement, handleTerraformAction],
+  );
 
   const handlePointerUp = useCallback(() => {
     const mode = getInteractionMode();
-    
+
     // Only handle pointer up for terraforming mode
-    if (mode === 'terraforming') {
+    if (mode === "terraforming") {
       const canvas = gl.domElement;
       isDraggingRef.current = false;
       canvas.style.cursor = "crosshair";
@@ -381,22 +471,22 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
   useEffect(() => {
     const canvas = gl.domElement;
     const mode = getInteractionMode();
-    
+
     // Set appropriate cursor and touch behavior
     switch (mode) {
-      case 'placing':
+      case "placing":
         canvas.style.cursor = "crosshair";
         canvas.style.touchAction = "none";
         break;
-      case 'terraforming':
+      case "terraforming":
         canvas.style.cursor = "crosshair";
         canvas.style.touchAction = "none";
         break;
-      case 'deleting':
+      case "deleting":
         canvas.style.cursor = "pointer";
         canvas.style.touchAction = "none";
         break;
-      case 'idle':
+      case "idle":
         canvas.style.cursor = "default";
         canvas.style.touchAction = "auto";
         break;
@@ -413,12 +503,18 @@ export function InputManager({ globeRef: _globeRef, terrainMesh, rotationGroupRe
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("pointerleave", handlePointerUp);
-      
+
       // Reset cursor
       canvas.style.cursor = "default";
       canvas.style.touchAction = "auto";
     };
-  }, [handlePointerDown, handlePointerMove, handlePointerUp, getInteractionMode, gl.domElement]);
+  }, [
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    getInteractionMode,
+    gl.domElement,
+  ]);
 
   return null; // This is just a controller component
 }

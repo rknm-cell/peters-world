@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from 'react';
-import { useWorldStore } from '~/lib/store';
-import { WOLF_CONFIG } from '~/lib/constants';
+import { useEffect, useRef, useCallback } from "react";
+import { useWorldStore } from "~/lib/store";
+import { WOLF_CONFIG } from "~/lib/constants";
 
 /**
  * WolfSpawningManager - Handles automatic spawning and despawning of wolves on suitable terrain areas
  * This component should be included once in the scene to manage wolf population
  */
 export function WolfSpawningManager() {
-  const attemptWolfSpawning = useWorldStore((state) => state.attemptWolfSpawning);
-  const attemptWolfDespawning = useWorldStore((state) => state.attemptWolfDespawning);
+  const attemptWolfSpawning = useWorldStore(
+    (state) => state.attemptWolfSpawning,
+  );
+  const attemptWolfDespawning = useWorldStore(
+    (state) => state.attemptWolfDespawning,
+  );
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
-  
+
   // Memoize the spawning function to prevent unnecessary re-renders
   const spawnWolf = useCallback(() => {
     if (isActiveRef.current) {
@@ -36,19 +40,19 @@ export function WolfSpawningManager() {
       checkWolfState?: () => void;
       checkWolfSpawnRequirements?: () => void;
     }
-    
+
     const debugWindow = window as Window & DebugWindow;
-    
+
     debugWindow.testWolfSpawn = () => {
       console.warn("🔧 Manually triggering wolf spawn...");
       spawnWolf();
     };
     debugWindow.checkWolfState = () => {
       const state = useWorldStore.getState();
-      const wolves = state.objects.filter(obj => obj.type === "animals/wolf");
+      const wolves = state.objects.filter((obj) => obj.type === "animals/wolf");
       console.warn("🔍 Current wolf state:", wolves);
-      wolves.forEach(w => {
-        console.warn(`   Wolf ${w.id}: pos [${w.position.join(', ')}]`);
+      wolves.forEach((w) => {
+        console.warn(`   Wolf ${w.id}: pos [${w.position.join(", ")}]`);
       });
     };
     debugWindow.checkWolfSpawnRequirements = () => {
@@ -57,10 +61,12 @@ export function WolfSpawningManager() {
         hasGlobeRef: !!state.globeRef,
         globeRefType: typeof state.globeRef,
         terrainVerticesCount: state.terrainVertices?.length || 0,
-        currentWolfCount: state.objects.filter(obj => obj.type === "animals/wolf").length,
+        currentWolfCount: state.objects.filter(
+          (obj) => obj.type === "animals/wolf",
+        ).length,
         maxWolvesInWorld: WOLF_CONFIG.maxWolvesInWorld,
         totalObjects: state.objects.length,
-        objectTypes: [...new Set(state.objects.map(obj => obj.type))]
+        objectTypes: [...new Set(state.objects.map((obj) => obj.type))],
       });
     };
     return () => {
@@ -69,33 +75,39 @@ export function WolfSpawningManager() {
       delete debugWindow.checkWolfSpawnRequirements;
     };
   }, [spawnWolf]);
-  
+
   useEffect(() => {
     // Spawn a wolf 10 seconds after scene loads for debugging (after deer)
     const immediateSpawnDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log("🐺 WolfSpawningManager: Scene loaded, spawning debug wolf in 10 seconds...");
+        console.log(
+          "🐺 WolfSpawningManager: Scene loaded, spawning debug wolf in 10 seconds...",
+        );
         setTimeout(() => {
           if (isActiveRef.current) {
-            console.log("🐺 WolfSpawningManager: Attempting immediate wolf spawn for debugging...");
+            console.log(
+              "🐺 WolfSpawningManager: Attempting immediate wolf spawn for debugging...",
+            );
             spawnWolf();
           }
         }, 10000); // 10 second delay after scene is ready
       }
     }, 1000);
-    
+
     // Add a delay before starting to avoid spawning during initial scene setup
     const startDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log("🐺 WolfSpawningManager: Starting regular wolf management cycle...");
+        console.log(
+          "🐺 WolfSpawningManager: Starting regular wolf management cycle...",
+        );
         // Spawn and despawn wolves periodically with jitter to prevent synchronization
         const manageWolvesWithJitter = () => {
           if (!isActiveRef.current) return;
-          
+
           // Add ±20% jitter to prevent exact synchronization with deer system
           const jitter = (Math.random() - 0.5) * 0.4; // Range: -0.2 to +0.2
           const intervalWithJitter = WOLF_CONFIG.checkInterval * (1 + jitter);
-          
+
           intervalRef.current = setTimeout(() => {
             if (isActiveRef.current) {
               spawnWolf(); // Try to spawn new wolves
@@ -104,7 +116,7 @@ export function WolfSpawningManager() {
             }
           }, intervalWithJitter);
         };
-        
+
         // Start the first wolf management cycle
         manageWolvesWithJitter();
       }

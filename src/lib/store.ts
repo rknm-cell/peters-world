@@ -762,22 +762,27 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
       });
       
-      // Second pass: advance all trees in a single state update
-      if (treesToAdvance.length > 0) {
-        logger.debug(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
+      // PERFORMANCE FIX: Early return if no trees need advancement
+      if (treesToAdvance.length === 0) {
+        logger.debug("⏰ TreeLifecycle tick - no trees need advancement");
+        return state; // Prevent unnecessary array creation and cache invalidation
+      }
+      
+      // Second pass: advance trees that need it in a single state update
+      logger.debug(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
+      
+      // Use the existing advanceTreeLifecycle logic but apply it synchronously
+      const updatedObjects = state.objects.map(obj => {
+        if (!treesToAdvance.includes(obj.id) || !obj.treeLifecycle) return obj;
         
-        // Use the existing advanceTreeLifecycle logic but apply it synchronously
-        const updatedObjects = state.objects.map(obj => {
-          if (!treesToAdvance.includes(obj.id) || !obj.treeLifecycle) return obj;
-          
-          const { stage, adultTreeType } = obj.treeLifecycle;
-          let newStage: TreeLifecycleStage = stage;
-          let newType = obj.type;
-          let deathTreeType = obj.treeLifecycle.deathTreeType;
+        const { stage, adultTreeType } = obj.treeLifecycle;
+        let newStage: TreeLifecycleStage = stage;
+        let newType = obj.type;
+        let deathTreeType = obj.treeLifecycle.deathTreeType;
 
-          // Determine next stage based on current stage (same logic as advanceTreeLifecycle)
-          switch (stage) {
-            case "youth-small":
+        // Determine next stage based on current stage (same logic as advanceTreeLifecycle)
+        switch (stage) {
+          case "youth-small":
               if (Math.random() < TREE_LIFECYCLE_CONFIG.deathProbability.youthSmall) {
                 newStage = "dead-standing";
                 const selectedDeathType = TREE_LIFECYCLE.death.standing[Math.floor(Math.random() * TREE_LIFECYCLE.death.standing.length)]!;
@@ -852,12 +857,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               deathTreeType,
             }
           };
-        });
-        
-        return { objects: updatedObjects };
-      }
+      });
       
-      return state; // No changes needed
+      return { objects: updatedObjects };
     });
   },
 
@@ -886,8 +888,18 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         (FOREST_CONFIG.forestEligibleStages as readonly string[]).includes(obj.treeLifecycle.stage)
       );
 
+      // PERFORMANCE FIX: Early return if not enough trees for any forests
       if (trees.length < FOREST_CONFIG.minTreesForForest) {
-        // Not enough trees to form any forests - mark all as non-forest
+        // Check if any trees currently think they're in forests
+        const hasForestTrees = state.objects.some(obj => obj.treeLifecycle?.isPartOfForest);
+        
+        if (!hasForestTrees) {
+          logger.debug("🌳 Forest detection: Not enough trees and none marked as forest - no changes needed");
+          return state; // Prevent unnecessary array creation
+        }
+        
+        // Only update if we need to clear existing forest flags
+        logger.debug("🌳 Forest detection: Clearing forest flags from all trees");
         return {
           objects: state.objects.map(obj =>
             obj.treeLifecycle
@@ -1864,25 +1876,32 @@ let treeObjectsLastHash = '';
 
 export const useTreeObjectsOnly = () => {
   return useWorldStore((state: WorldState) => {
-    // Create stable hash for trees
-    const treeIds = state.objects
-      .filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree'))
-      .map(obj => obj.id)
+    // CRITICAL FIX: Include ALL tree state in hash to detect lifecycle changes
+    // Previous hash only included IDs, missing type and lifecycle stage changes
+    const allTreeObjects = state.objects
+      .filter(obj => 
+        obj.type.includes('tree') || 
+        obj.type.includes('dead_tree') ||
+        obj.type.includes('bush')  // Include bush lifecycle stages
+      );
+    
+    // Create comprehensive hash including lifecycle data
+    const treeHash = allTreeObjects
+      .map(obj => `${obj.id}:${obj.type}:${obj.treeLifecycle?.stage ?? 'none'}:${obj.position.join(',')}`)
       .sort()
       .join('|');
     
-    if (treeIds !== treeObjectsLastHash) {
-      treeObjectsLastHash = treeIds;
-      treeObjectsCache = state.objects
-        .filter(obj => obj.type.includes('tree') || obj.type.includes('dead_tree'))
-        .map(obj => ({
-          id: obj.id,
-          type: obj.type,
-          position: obj.position,
-          rotation: obj.rotation,
-          scale: obj.scale,
-          treeLifecycle: obj.treeLifecycle
-        }));
+    // Only rebuild cache when trees actually change (ID, type, lifecycle, or position)
+    if (treeHash !== treeObjectsLastHash) {
+      treeObjectsLastHash = treeHash;
+      treeObjectsCache = allTreeObjects.map(obj => ({
+        id: obj.id,
+        type: obj.type,
+        position: obj.position,
+        rotation: obj.rotation,
+        scale: obj.scale,
+        treeLifecycle: obj.treeLifecycle
+      }));
     }
     
     return treeObjectsCache;

@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { useWorldStore } from '~/lib/store';
-import { applyStandardizedScaling } from '~/lib/utils/model-scaling';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { useWorldStore } from "~/lib/store";
+import { applyStandardizedScaling } from "~/lib/utils/model-scaling";
 
 interface HenProps {
   type: string;
@@ -43,19 +43,19 @@ export function Hen({
     if (isLoading || !gltfScene) {
       console.log(`Hen ${type}: GLB loading failed or no scene`, {
         isLoading,
-        hasScene: !!gltfScene
+        hasScene: !!gltfScene,
       });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
-      
+
       // Apply standardized scaling using the utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: 'animal',
+        objectType: "animal",
         modelType: type,
-        preview
+        preview,
       });
 
       // Enable shadows and apply preview styling
@@ -63,7 +63,7 @@ export function Hen({
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
+
           if (preview) {
             // Preview styling - make it more transparent and colored
             if (child.material) {
@@ -83,7 +83,7 @@ export function Hen({
       console.log(`Hen ${type}: Model loaded successfully`, {
         hasModel: !!clonedScene,
         scaleFactor,
-        'hen positioned by PlacementSystem': true
+        "hen positioned by PlacementSystem": true,
       });
 
       return clonedScene;
@@ -100,7 +100,7 @@ export function Hen({
     // Update position from store if not physics-controlled
     if (!isPhysicsControlled && !disablePositionSync) {
       const store = useWorldStore.getState();
-      const object = store.objects.find(obj => obj.id === objectId);
+      const object = store.objects.find((obj) => obj.id === objectId);
       if (object) {
         groupRef.current.position.set(...object.position);
         groupRef.current.rotation.set(...object.rotation);
@@ -109,7 +109,8 @@ export function Hen({
 
     // Add subtle idle animation for hen
     if (selected) {
-      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2.0) * 0.05;
+      groupRef.current.rotation.y =
+        rotation[1] + Math.sin(state.clock.elapsedTime * 2.0) * 0.05;
     } else {
       groupRef.current.rotation.y = rotation[1];
     }
@@ -127,15 +128,15 @@ export function Hen({
       position={position}
       rotation={rotation}
       scale={scale}
-      userData={{ 
-        isPlacedObject: true, 
+      userData={{
+        isPlacedObject: true,
         objectId,
         isPhysicsControlled,
-        type: 'animal'
+        type: "animal",
       }}
     >
       <primitive object={henModel} />
-      
+
       {/* Selection indicator */}
       {selected && (
         <mesh position={[0, -0.1, 0]}>

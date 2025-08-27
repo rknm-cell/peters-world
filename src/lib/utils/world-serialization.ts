@@ -1,4 +1,9 @@
-import type { PlacedObject, TerrainVertex, TimeOfDay, TerraformMode } from "../store";
+import type {
+  PlacedObject,
+  TerrainVertex,
+  TimeOfDay,
+  TerraformMode,
+} from "../store";
 
 // Serializable world data for database storage
 export interface SerializedWorld {
@@ -83,7 +88,9 @@ export function deserializeWorld(data: unknown) {
 
   // Validate version compatibility
   if (!data.version || data.version !== SCHEMA_VERSION) {
-    console.warn(`World version mismatch: ${data.version} vs ${SCHEMA_VERSION}`);
+    console.warn(
+      `World version mismatch: ${data.version} vs ${SCHEMA_VERSION}`,
+    );
   }
 
   return {
@@ -100,13 +107,15 @@ export function deserializeWorld(data: unknown) {
  * Generate a default world name based on content
  */
 export function generateWorldName(objects: PlacedObject[]): string {
-  const treeCount = objects.filter(obj => obj.treeLifecycle).length;
-  const animalCount = objects.filter(obj => obj.type.includes("animals/")).length;
-  
+  const treeCount = objects.filter((obj) => obj.treeLifecycle).length;
+  const animalCount = objects.filter((obj) =>
+    obj.type.includes("animals/"),
+  ).length;
+
   if (objects.length === 0) return "Empty World";
   if (treeCount > 10) return "Forest World";
   if (animalCount > 3) return "Wildlife World";
   if (objects.length > 20) return "Bustling World";
-  
+
   return "Tiny World";
 }
