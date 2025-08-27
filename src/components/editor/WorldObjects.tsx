@@ -30,7 +30,6 @@ type TreeType =
   | "bush-medium-high"
   | "bush-big"
   // Adult trees
-  | "tree"
   | "tree-baobab"
   | "tree-beech"
   | "tree-birch"
@@ -262,7 +261,7 @@ const OtherObjectsRenderer = React.memo(function OtherObjectsRenderer() {
         }
 
         // Default fallback
-        return <Tree key={obj.id} type="tree" {...props} />;
+        return <Tree key={obj.id} type="tree-oak" {...props} />;
       })}
     </>
   );

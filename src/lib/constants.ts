@@ -81,7 +81,6 @@ export const TREE_LIFECYCLE = {
   },
   // Adult stages - existing tree models
   adult: [
-    "tree",
     "tree-baobab",
     "tree-beech",
     "tree-birch",
@@ -316,7 +315,6 @@ export const DECORATION_MODEL_PATHS = {
 // Object types available for placement
 export const OBJECT_TYPES = {
   trees: [
-    "tree", // Generic tree
     "tree-baobab",
     "tree-beech",
     "tree-birch",
