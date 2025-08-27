@@ -5,6 +5,7 @@ import { RigidBody, useRapier } from '@react-three/rapier';
 import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 import { Globe } from '~/components/editor/Globe';
 import { useWorldStore } from '~/lib/store';
+import { COLLISION_GROUPS } from '~/lib/constants';
 import type { Mesh } from 'three';
 
 // Global reference to the terrain collider for debug visualization
@@ -114,7 +115,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
 
         // Create new trimesh collider
         const colliderDesc = rapier.ColliderDesc.trimesh(vertices, indices);
-        colliderDesc.setCollisionGroups(0x00010001); // Group 1, interacts with group 1
+        colliderDesc.setCollisionGroups(COLLISION_GROUPS.TERRAIN); // Use terrain collision group
         
         // Create and attach the new collider
         const newCollider = world.createCollider(colliderDesc, rigidBodyRef.current);

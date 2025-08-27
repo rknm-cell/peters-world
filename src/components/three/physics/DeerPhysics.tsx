@@ -18,6 +18,7 @@ import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 import { enhancedPathfinder } from '~/lib/utils/enhanced-pathfinding';
 import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
+import { COLLISION_GROUPS, COLLISION_INTERACTIONS } from '~/lib/constants';
 
 
 // Type for debug window functions
@@ -786,6 +787,8 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         position={[0, 0.2, 0]} // Lower position for better surface adherence
         friction={1.0} // Good friction for walking
         restitution={0.0} // No bounce
+        collisionGroups={COLLISION_GROUPS.ANIMALS}
+        solverGroups={COLLISION_INTERACTIONS.ANIMALS}
       />
       
       {/* Visual deer model - inherits rotation from RigidBody */}

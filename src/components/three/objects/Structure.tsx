@@ -34,6 +34,14 @@ export function Structure({
   const selectedObject = useSelectedObject();
   const selected = selectedObject === objectId;
 
+  // Load GLB models for the new building types
+  const cabinSmallModel = useGLTF("/buildings/building-cabin-small.glb");
+  const cabinBigModel = useGLTF("/buildings/building-cabin-big.glb");
+
+  // Handle loading states for GLB models
+  const isLoadingSmall = !cabinSmallModel.scene;
+  const isLoadingBig = !cabinBigModel.scene;
+
   // Create materials that work well with directional lighting and shadows
   const materials = useMemo(() => {
     // Use red color for invalid placement previews
@@ -65,10 +73,6 @@ export function Structure({
       }),
     };
   }, [preview, canPlace]);
-
-  // Load GLB models for the new building types
-  const cabinSmallModel = useGLTF("/buildings/building-cabin-small.glb");
-  const cabinBigModel = useGLTF("/buildings/building-cabin-big.glb");
 
   // Calculate scale factor to match target heights
   const getBuildingScale = useMemo(() => {
@@ -110,6 +114,103 @@ export function Structure({
     
     return finalScale;
   }, [type]);
+
+  // Process cabin models with proper error handling and preview styling
+  const processedCabinModels = useMemo(() => {
+    if (type === "building-cabin-small") {
+      if (isLoadingSmall || !cabinSmallModel.scene) {
+        console.log(`Structure ${type}: GLB loading failed or no scene`, {
+          isLoading: isLoadingSmall,
+          hasScene: !!cabinSmallModel.scene
+        });
+        return null;
+      }
+
+      try {
+        const clonedScene = cabinSmallModel.scene.clone(true);
+        
+        // Enable shadows and apply preview styling
+        clonedScene.traverse((child: THREE.Object3D) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            if (preview) {
+              // Preview styling - make it more transparent and colored
+              if (child.material) {
+                const material = child.material as THREE.MeshStandardMaterial;
+                if (material.clone) {
+                  const previewMaterial = material.clone();
+                  previewMaterial.transparent = true;
+                  previewMaterial.opacity = 0.6;
+                  previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
+                  child.material = previewMaterial;
+                }
+              }
+            }
+          }
+        });
+
+        console.log(`Structure ${type}: Model loaded successfully`, {
+          hasModel: !!clonedScene,
+          scaleFactor: getBuildingScale,
+          'structure positioned by PlacementSystem': true
+        });
+
+        return clonedScene;
+      } catch (error) {
+        console.error(`Structure ${type}: Error processing GLB scene:`, error);
+        return null;
+      }
+    } else if (type === "building-cabin-big") {
+      if (isLoadingBig || !cabinBigModel.scene) {
+        console.log(`Structure ${type}: GLB loading failed or no scene`, {
+          isLoading: isLoadingBig,
+          hasScene: !!cabinBigModel.scene
+        });
+        return null;
+      }
+
+      try {
+        const clonedScene = cabinBigModel.scene.clone(true);
+        
+        // Enable shadows and apply preview styling
+        clonedScene.traverse((child: THREE.Object3D) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            if (preview) {
+              // Preview styling - make it more transparent and colored
+              if (child.material) {
+                const material = child.material as THREE.MeshStandardMaterial;
+                if (material.clone) {
+                  const previewMaterial = material.clone();
+                  previewMaterial.transparent = true;
+                  previewMaterial.opacity = 0.6;
+                  previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
+                  child.material = previewMaterial;
+                }
+              }
+            }
+          }
+        });
+
+        console.log(`Structure ${type}: Model loaded successfully`, {
+          hasModel: !!clonedScene,
+          scaleFactor: getBuildingScale,
+          'structure positioned by PlacementSystem': true
+        });
+
+        return clonedScene;
+      } catch (error) {
+        console.error(`Structure ${type}: Error processing GLB scene:`, error);
+        return null;
+      }
+    }
+    
+    return null;
+  }, [type, cabinSmallModel.scene, cabinBigModel.scene, isLoadingSmall, isLoadingBig, preview, canPlace, getBuildingScale]);
 
   // Generate structure geometry based on type
   const renderStructure = () => {
@@ -185,17 +286,25 @@ export function Structure({
         );
 
       case "building-cabin-small":
+        if (!processedCabinModels) {
+          console.warn(`Structure ${type}: Failed to load model, not rendering`);
+          return null;
+        }
         return (
           <primitive 
-            object={cabinSmallModel.scene.clone()} 
+            object={processedCabinModels} 
             scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
           />
         );
 
       case "building-cabin-big":
+        if (!processedCabinModels) {
+          console.warn(`Structure ${type}: Failed to load model, not rendering`);
+          return null;
+        }
         return (
           <primitive 
-            object={cabinBigModel.scene.clone()} 
+            object={processedCabinModels} 
             scale={[getBuildingScale, getBuildingScale, getBuildingScale]}
           />
         );
@@ -213,12 +322,36 @@ export function Structure({
     }
   };
 
-  // Animation for selected state
+  // Animation for selected state - improved rotation handling
   useFrame((state) => {
-    if (groupRef.current && selected) {
-      groupRef.current.rotation.y = rotation[1] + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+    if (!groupRef.current) return;
+
+    // Handle rotation updates consistently with placement system
+    // Only update rotation if there's a significant difference to reduce flickering
+    if (Math.abs(groupRef.current.rotation.x - rotation[0]) > 0.01 ||
+        Math.abs(groupRef.current.rotation.y - rotation[1]) > 0.01 ||
+        Math.abs(groupRef.current.rotation.z - rotation[2]) > 0.01) {
+      groupRef.current.rotation.set(rotation[0], rotation[1], rotation[2]);
+    }
+
+    // Add subtle animation for selected state (similar to other objects)
+    if (selected) {
+      // Store base rotation and set absolute rotation with animation
+      groupRef.current.userData.baseRotationY ??= rotation[1];
+      const baseRotationY = groupRef.current.userData.baseRotationY as number;
+      groupRef.current.rotation.y = baseRotationY + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+    } else {
+      // Clear stored base rotation when not selected
+      if (groupRef.current.userData.baseRotationY !== undefined) {
+        groupRef.current.userData.baseRotationY = undefined;
+      }
     }
   });
+
+  // Don't render if cabin models failed to load
+  if ((type === "building-cabin-small" || type === "building-cabin-big") && !processedCabinModels) {
+    return null;
+  }
 
   return (
     <group
@@ -226,7 +359,11 @@ export function Structure({
       position={position}
       rotation={rotation}
       scale={scale}
-      userData={{ isPlacedObject: true, objectId }}
+      userData={{ 
+        isPlacedObject: true, 
+        objectId,
+        type: 'structure'
+      }}
     >
       {renderStructure()}
 

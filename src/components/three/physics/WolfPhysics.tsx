@@ -13,6 +13,7 @@ import { useDeerRenderQueue } from '~/lib/utils/render-queue';
 import { getTerrainCollisionDetector } from '~/lib/utils/terrain-collision';
 import { enhancedPathfinder } from '~/lib/utils/enhanced-pathfinding';
 import { terrainHeightMapGenerator } from '~/components/debug/TerrainHeightMap';
+import { COLLISION_GROUPS, COLLISION_INTERACTIONS } from '~/lib/constants';
 
 // Type for debug window functions
 interface DebugWindow extends Window {
@@ -746,12 +747,14 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       colliders={false}
       userData={{ isWolf: true, objectId, isMoving: !isIdle && target !== null, isHunting: isHunting }}
     >
-      {/* Capsule collider for character controller - slightly larger than deer */}
+      {/* Capsule collider for character controller */}
       <CapsuleCollider 
-        args={[0.25, 0.45]} // Slightly larger than deer
-        position={[0, 0.25, 0]} // Lower position for better surface adherence
+        args={[0.25, 0.5]} // Slightly larger than deer for wolf
+        position={[0, 0.25, 0]} // Center the collider vertically
         friction={1.0} // Good friction for walking
         restitution={0.0} // No bounce
+        collisionGroups={COLLISION_GROUPS.ANIMALS}
+        solverGroups={COLLISION_INTERACTIONS.ANIMALS}
       />
       
       {/* Visual wolf model - inherits rotation from RigidBody */}

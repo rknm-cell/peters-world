@@ -404,7 +404,11 @@ export function PlacementSystem({
             <Structure
               type={selectedObjectType}
               position={[0, 0, 0]}
-              rotation={[0, 0, 0]}
+              rotation={[
+                placementPreview.rotation.x,
+                placementPreview.rotation.y,
+                placementPreview.rotation.z
+              ]}
               scale={[1, 1, 1]}
               objectId="preview"
               preview={true}
