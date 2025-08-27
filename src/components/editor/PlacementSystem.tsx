@@ -424,11 +424,7 @@ export function PlacementSystem({
               <Deer
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -438,11 +434,7 @@ export function PlacementSystem({
               <Wolf
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -452,11 +444,7 @@ export function PlacementSystem({
               <Sheep
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -466,11 +454,7 @@ export function PlacementSystem({
               <Bear
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -480,11 +464,7 @@ export function PlacementSystem({
               <Cow
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -494,11 +474,7 @@ export function PlacementSystem({
               <Hen
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -508,11 +484,7 @@ export function PlacementSystem({
               <Horse
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -522,11 +494,7 @@ export function PlacementSystem({
               <Penguin
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -536,11 +504,7 @@ export function PlacementSystem({
               <Pig
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
@@ -550,11 +514,7 @@ export function PlacementSystem({
               <Deer
                 type={selectedObjectType}
                 position={[0, 0, 0]}
-                rotation={[
-                  placementPreview.rotation.x,
-                  placementPreview.rotation.y,
-                  placementPreview.rotation.z
-                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
                 scale={[1, 1, 1]}
                   objectId="preview"
                 preview={true}
