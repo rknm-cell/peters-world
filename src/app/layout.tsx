@@ -23,10 +23,10 @@ export const metadata: Metadata = {
     description: "Create, explore, and share your own tiny worlds with beautiful 3D graphics and immersive experiences.",
     images: [
       {
-        url: "/globe.png",
-        width: 512,
-        height: 512,
-        alt: "Peter's World - 3D World Builder",
+        url: "/landing_page.png",
+        width: 1200,
+        height: 630,
+        alt: "Peter's World - Interactive 3D World Builder Landing Page",
       },
     ],
   },
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Peter's World - Interactive 3D World Builder",
     description: "Create, explore, and share your own tiny worlds with beautiful 3D graphics and immersive experiences.",
-    images: ["/globe.png"],
-    creator: "@racknahm", // Update this with your actual Twitter handle
+    images: ["/landing_page.png"],
+    creator: "@racknahm", // Update this with your actual X handle
   },
   icons: [{ rel: "icon", url: "/globe.png" }],
   manifest: "/site.webmanifest",

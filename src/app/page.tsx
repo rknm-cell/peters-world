@@ -25,14 +25,14 @@ export default function Home() {
         <meta property="og:description" content="Welcome to Peter&apos;s World - an interactive 3D world builder where you can create, explore, and share your own tiny worlds with beautiful graphics and immersive experiences." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://peters-world.com" />
-        <meta property="og:image" content="/globe.png" />
+        <meta property="og:image" content="/landing_page.png" />
         <meta property="og:site_name" content="Peter&apos;s World" />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Peter&apos;s World - Make it your own" />
         <meta name="twitter:description" content="Welcome to Peter&apos;s World - an interactive 3D world builder where you can create, explore, and share your own tiny worlds with beautiful graphics and immersive experiences." />
-        <meta name="twitter:image" content="/globe.png" />
+        <meta name="twitter:image" content="/landing_page.png" />
       </Head>
       
       <div className="relative h-screen w-screen bg-gray-900">
