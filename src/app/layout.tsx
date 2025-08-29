@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     title: "Peter's World - Interactive 3D World Builder",
     description: "Create, explore, and share your own tiny worlds with beautiful 3D graphics and immersive experiences.",
     images: ["/globe.png"],
-    creator: "@petersworld", // Update this with your actual Twitter handle
+    creator: "@racknahm", // Update this with your actual Twitter handle
   },
   icons: [{ rel: "icon", url: "/globe.png" }],
   manifest: "/site.webmanifest",
