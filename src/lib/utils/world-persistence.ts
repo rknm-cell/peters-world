@@ -53,7 +53,7 @@ class WorldPersistence {
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializedWorld));
         this.lastSaveTime = Date.now();
       } catch (error) {
-        console.error("❌ Failed to save world to localStorage:", error);
+        // Failed to save world to localStorage
       }
     }, DEBOUNCE_DELAY);
   }
@@ -72,7 +72,6 @@ class WorldPersistence {
       const worldData = deserializeWorld(parsed);
       return worldData;
     } catch (error) {
-      console.error("❌ Failed to load world from localStorage:", error);
       return null;
     }
   }
@@ -84,7 +83,7 @@ class WorldPersistence {
     try {
       localStorage.removeItem(AUTOSAVE_KEY);
     } catch (error) {
-      console.error("❌ Failed to clear saved world:", error);
+      // Failed to clear saved world
     }
   }
 
@@ -146,7 +145,7 @@ class WorldPersistence {
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializedWorld));
       this.lastSaveTime = Date.now();
     } catch (error) {
-      console.error("❌ Failed to force-save world:", error);
+      // Failed to force-save world
     }
   }
 }

@@ -41,8 +41,6 @@ export class TerrainHeightMapGenerator {
       return null;
     }
 
-    console.log("🗺️ Generating terrain height map...", { resolution });
-
     const vertices = globalTerrainCollider.vertices;
     const canvas = document.createElement("canvas");
     canvas.width = resolution;
@@ -119,12 +117,6 @@ export class TerrainHeightMapGenerator {
     };
 
     this.lastUpdate = now;
-
-    console.log("✅ Height map generated", {
-      resolution,
-      minHeight: minHeight.value.toFixed(3),
-      maxHeight: maxHeight.value.toFixed(3),
-    });
 
     return this.heightMapData;
   }

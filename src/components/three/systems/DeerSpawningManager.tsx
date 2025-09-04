@@ -25,9 +25,6 @@ export function DeerSpawningManager() {
   // Function to pause/resume movement
   const toggleMovement = useCallback(() => {
     isMovementPausedRef.current = !isMovementPausedRef.current;
-    console.log(
-      `🦌 Deer movement ${isMovementPausedRef.current ? "PAUSED" : "RESUMED"}`,
-    );
   }, []);
 
   // We'll add the global functions after the callback definitions
@@ -49,7 +46,6 @@ export function DeerSpawningManager() {
   // Movement is now handled by physics system - no longer needed
   const moveDeer = useCallback(() => {
     // Physics-based movement is handled automatically by DeerPhysics components
-    console.debug("🦌 Movement handled by physics system");
   }, []);
 
   // Test function to check if movement system works
@@ -111,21 +107,12 @@ export function DeerSpawningManager() {
     // Spawn a deer 1 second after scene loads for debugging
     const immediateSpawnDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log(
-          "🦌 DeerSpawningManager: Scene loaded, spawning debug deer in 1 second...",
-        );
         setTimeout(() => {
           if (isActiveRef.current) {
-            console.log(
-              "🦌 DeerSpawningManager: Attempting immediate deer spawn for debugging...",
-            );
             spawnDeer();
 
             // DISABLED: Store-based movement system - now using physics-based movement
             // Physics-based deer (DeerPhysics component) handles all movement automatically
-            console.log(
-              "🦌 DeerSpawningManager: Spawned deer - physics-based movement will take over",
-            );
           }
         }, 1000); // 1 second delay after scene is ready
       }
@@ -138,9 +125,6 @@ export function DeerSpawningManager() {
     // Add a delay before starting to avoid spawning during initial scene setup
     const startDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log(
-          "🦌 DeerSpawningManager: Starting regular deer management cycle...",
-        );
         // Spawn and despawn deer periodically with jitter to prevent synchronization
         const manageDeerWithJitter = () => {
           if (!isActiveRef.current) return;
@@ -175,7 +159,7 @@ export function DeerSpawningManager() {
         clearInterval(movementIntervalRefCurrent);
       }
     };
-  }, [spawnDeer, despawnDeer, moveDeer, testMovement]);
+  }, [spawnDeer, despawnDeer]);
 
   // This component doesn't render anything visible
   return null;

@@ -88,7 +88,6 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
         // Get the updated vertex positions
         const positions = geometry.attributes.position;
         if (!positions) {
-          console.error("⚠️ No position attribute in geometry");
           return;
         }
 
@@ -135,7 +134,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
         };
 
       } catch (error) {
-        console.error("❌ Failed to update terrain collider:", error);
+        // Failed to update terrain collider
       }
     }, [world, rapier]);
 

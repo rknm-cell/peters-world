@@ -24,11 +24,25 @@ const handler = (req: NextRequest) =>
     onError:
       env.NODE_ENV === "development"
         ? ({ path, error }) => {
-            console.error(
-              `❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`,
-            );
+            // tRPC error logged
           }
         : undefined,
   });
 
 export { handler as GET, handler as POST };
+
+export async function POST(request: Request) {
+  try {
+    const req = await request.json();
+    const { httpRes, response } = await fetchRequestHandler({
+      endpoint: "/api/trpc",
+      req,
+      router: appRouter,
+      createContext: () => ({}),
+    });
+    return httpRes;
+  } catch (err) {
+    // API route error
+    return new Response("Internal Server Error", { status: 500 });
+  }
+}

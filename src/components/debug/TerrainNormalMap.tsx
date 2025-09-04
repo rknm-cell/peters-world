@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { globalTerrainCollider } from "~/components/three/physics/GlobePhysics";
 
@@ -39,8 +39,6 @@ export class TerrainNormalMapGenerator {
     if (!globalTerrainCollider?.vertices || !globalTerrainCollider?.indices) {
       return null;
     }
-
-    console.log("🧭 Generating terrain normal map...", { resolution });
 
     const vertices = globalTerrainCollider.vertices;
     const indices = globalTerrainCollider.indices;
@@ -123,7 +121,6 @@ export class TerrainNormalMapGenerator {
     };
 
     this.lastUpdate = now;
-    console.log("✅ Normal map generated");
 
     return this.normalMapData;
   }
@@ -254,6 +251,7 @@ export function TerrainNormalMapDebug() {
   );
   const [showNormalMap, setShowNormalMap] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [normalMapDataURL, setNormalMapDataURL] = useState<string | null>(null);
 
   // Generate normal map periodically using useEffect and setInterval
   useEffect(() => {
