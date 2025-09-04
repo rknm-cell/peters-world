@@ -22,19 +22,7 @@ import { enhancedPathfinder } from "~/lib/utils/enhanced-pathfinding";
 import { terrainHeightMapGenerator } from "~/components/debug/TerrainHeightMap";
 import { COLLISION_GROUPS, COLLISION_INTERACTIONS } from "~/lib/constants";
 
-// Type for debug window functions
-interface DebugWindow extends Window {
-  updateDeerDebug?: (
-    deerId: string,
-    data: {
-      position?: THREE.Vector3;
-      target?: THREE.Vector3 | null;
-      state?: string;
-      lastDecision?: string;
-      collisionPoints?: THREE.Vector3[];
-    },
-  ) => void;
-}
+
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -239,27 +227,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       currentPos.z,
     );
 
-    // Report debug state
-    const debugWindow = window as DebugWindow;
-    if (debugWindow.updateDeerDebug) {
-      const distanceToTarget = target ? currentPosition.distanceTo(target) : 0;
-      let decision = "Seeking target";
 
-      if (isEating) {
-        decision = `Eating grass`;
-      } else if (isIdle) {
-        decision = `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s`;
-      } else if (target) {
-        decision = `Traveling (${distanceToTarget.toFixed(1)}m to go)`;
-      }
-
-      debugWindow.updateDeerDebug(objectId, {
-        position: currentPosition,
-        target: target,
-        state: isEating ? "eating" : isIdle ? "idle" : "moving",
-        lastDecision: decision,
-      });
-    }
 
     // Handle idle state
     if (isIdle) {
@@ -599,14 +567,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         //     groundHeight: terrainCollision.groundHeight.toFixed(2)
         // });
 
-        // Report collision to debug system
-        const debugWin = window as DebugWindow;
-        if (debugWin.updateDeerDebug) {
-          debugWin.updateDeerDebug(objectId, {
-            lastDecision: blockReason,
-            collisionPoints: [targetPosition],
-          });
-        }
+
 
         // For building collisions, generate a new target instead of using adjusted position
         if (terrainCollision.isBuildingBlocked) {

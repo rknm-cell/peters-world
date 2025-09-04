@@ -16,10 +16,10 @@ This document outlines incremental cleanup and optimization tasks for the DeerPh
 **File**: `src/components/three/physics/DeerPhysics.tsx`
 **Lines**: 26-37, 601-746
 **Task**: Remove debug window interface and all debug reporting
-- [ ] Remove `DebugWindow` interface (lines 26-37)
-- [ ] Remove `updateDeerDebug` calls throughout the file
-- [ ] Remove collision point reporting
-- [ ] Remove debug state tracking in useFrame
+- [x] Remove `DebugWindow` interface (lines 26-37)
+- [x] Remove `updateDeerDebug` calls throughout the file
+- [x] Remove collision point reporting
+- [x] Remove debug state tracking in useFrame
 - [ ] Test that deer movement still works correctly
 
 ### 2. Simplify Collision Detection System
