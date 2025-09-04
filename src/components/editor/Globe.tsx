@@ -30,12 +30,8 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
 
         // Set globe reference for tree spawning
         if (mesh) {
-          console.log(
-            "🌍 Globe mesh mounted - setting reference for tree spawning",
-          );
           setGlobeRef(mesh);
         } else {
-          console.log("🌍 Globe mesh unmounted - clearing reference");
           setGlobeRef(null);
         }
       },
@@ -76,7 +72,6 @@ export const Globe = forwardRef<THREE.Mesh, GlobeProps>(
         {/* Terrain System - this will handle the actual terrain */}
         <TerrainSystem
           onTerrainMeshReady={(terrainMesh) => {
-            console.log("🏔️ TerrainSystem mesh ready in Globe");
             terrainMeshRef.current = terrainMesh;
             // Pass the actual terrain mesh to physics, not the reference sphere
             if (onTerrainMeshReady) {

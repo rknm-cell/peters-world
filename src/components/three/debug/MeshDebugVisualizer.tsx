@@ -117,15 +117,11 @@ export function MeshDebugVisualizer({
   }, [mesh?.geometry, terrainVertices, debugMode]);
 
   // Debug logging
-  console.log("MeshDebugVisualizer:", {
-    hasMesh: !!mesh,
-    debugMode,
-    geometryExists: !!mesh?.geometry,
-    geometryType: mesh?.geometry?.type,
-    vertexCount: terrainVertices.length,
-    meshPosition: mesh?.position,
-    meshScale: mesh?.scale,
-  });
+  useMemo(() => {
+    if (mesh) {
+      // Mesh debug visualization updated
+    }
+  }, [mesh]);
 
   if (!mesh || debugMode === "off") return null;
 

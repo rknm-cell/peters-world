@@ -11,40 +11,9 @@ export function CameraController() {
   // This allows users to freely rotate the camera to view the globe from different angles
   const shouldDisableRotation = isPlacing || terraformMode !== "none";
 
-  // Debug logging for control state - more prominent logging
-  console.warn("🎮 CAMERA CONTROLLER STATE:", {
-    isPlacing,
-    terraformMode,
-    isTerraforming,
-    shouldDisableRotation,
-    controlsEnabled: !shouldDisableRotation,
-    enableRotate: !shouldDisableRotation,
-  });
-
-  // Log when component mounts
-  useEffect(() => {
-    console.log("🎮 CameraController mounted");
-    console.log("🎮 Initial state:", {
-      isPlacing,
-      terraformMode,
-      isTerraforming,
-    });
-  }, []);
-
-  // Log when state changes
-  useEffect(() => {
-    console.log("🎮 CameraController state changed:", {
-      isPlacing,
-      terraformMode,
-      isTerraforming,
-      shouldDisableRotation,
-    });
-  }, [isPlacing, terraformMode, isTerraforming, shouldDisableRotation]);
-
   // Add global function to force reset camera controls (for debugging)
   if (typeof window !== "undefined") {
     window.resetCameraControls = () => {
-      console.log("🔧 Force resetting camera controls...");
       useWorldStore.getState().exitPlacementMode();
       useWorldStore.getState().setTerraformMode("none");
     };

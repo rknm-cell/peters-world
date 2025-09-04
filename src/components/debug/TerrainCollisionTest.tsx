@@ -17,13 +17,7 @@ export function TerrainCollisionTest() {
       );
 
       if (deformedVertices.length > 0) {
-        console.log("🔍 Terrain Collision Test:", {
-          totalVertices: terrainVertices.length,
-          deformedVertices: deformedVertices.length,
-          maxHeight: Math.max(...terrainVertices.map((v) => v.height)),
-          minHeight: Math.min(...terrainVertices.map((v) => v.height)),
-          maxWater: Math.max(...terrainVertices.map((v) => v.waterLevel)),
-        });
+        // Removed console.log statement
       }
     }
   }, [terrainVertices]);

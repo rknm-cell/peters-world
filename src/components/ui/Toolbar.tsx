@@ -112,7 +112,6 @@ export function Toolbar() {
       resetWorld();
       clearStoredWorld();
       setHasAutoSave(false);
-      console.log("🗑️ World deleted successfully");
     }
   };
 

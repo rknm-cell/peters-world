@@ -41,19 +41,15 @@ export function Grass({
   // Clone the scene to avoid sharing between instances
   const grassModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Grass ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
 
-      // Apply standardized scaling using the new utility
+      // Apply standardized scaling using the utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
-        objectType: "grass",
+        objectType: "decoration",
         modelType: type,
         preview,
       });
@@ -80,15 +76,9 @@ export function Grass({
         }
       });
 
-      console.log(`Grass ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "grass positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Grass ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);

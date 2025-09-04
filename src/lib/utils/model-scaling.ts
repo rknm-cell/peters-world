@@ -119,19 +119,6 @@ export function applyStandardizedScaling(
   // Apply scale
   scene.scale.setScalar(scaleFactor);
 
-  console.log(`Model scaling applied:`, {
-    objectType: options.objectType,
-    modelType: options.modelType,
-    lifecycleStage: options.lifecycleStage,
-    targetHeight,
-    scaleFactor,
-    finalSize: {
-      x: scene.scale.x,
-      y: scene.scale.y,
-      z: scene.scale.z,
-    },
-  });
-
   return scaleFactor;
 }
 
@@ -147,7 +134,6 @@ export function applySpecialScaling(
   if (modelType.includes("tree-dead-broken")) {
     const forcedScale = 0.05; // Very small scale for broken trees
     scene.scale.setScalar(forcedScale);
-    console.log(`BROKEN TREE - Forced tiny scale:`, { modelType, forcedScale });
     return forcedScale;
   }
 
@@ -155,11 +141,6 @@ export function applySpecialScaling(
   if (lifecycleStage === "logs" || modelType.includes("log")) {
     const logScale = 0.2; // Small scale for logs
     scene.scale.setScalar(logScale);
-    console.log(`LOG - Forced small scale:`, {
-      modelType,
-      lifecycleStage,
-      logScale,
-    });
     return logScale;
   }
 

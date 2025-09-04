@@ -146,9 +146,6 @@ export function WaterMaterial({ waterVertices }: WaterMaterialProps) {
 
   const waterCount = waterVertices.filter((v) => v.waterLevel > 0.001).length;
   const maxWaterLevel = Math.max(...waterVertices.map((v) => v.waterLevel));
-  console.log(
-    `WaterMaterial: Rendering water with toon material, ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`,
-  );
 
   return <WaterToonMaterial waterVertices={waterVertices} />;
 }

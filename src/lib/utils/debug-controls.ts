@@ -79,7 +79,7 @@ class DebugControlsManager {
 
   conditionalLog(level: DebugLevel, message: string, ...args: unknown[]): void {
     if (this.shouldLog(level)) {
-      console.log(`[DEBUG:${DebugLevel[level]}] ${message}`, ...args);
+      // console.log(`[DEBUG:${DebugLevel[level]}] ${message}`, ...args);
     }
   }
 
@@ -123,3 +123,9 @@ export const conditionalLog = (
   ...args: unknown[]
 ) => debugControls.conditionalLog(level, message, ...args);
 export const shouldThrottle = () => debugControls.shouldThrottle();
+
+export const debugLog = (level: DebugLevel, message: string, ...args: unknown[]): void => {
+  if (level <= currentDebugLevel) {
+    // Debug message logged
+  }
+};

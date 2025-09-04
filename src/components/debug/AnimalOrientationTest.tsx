@@ -275,9 +275,7 @@ export function AnimalOrientationTest() {
       {/* Log results to console for easier reading */}
       {testResults.length > 0 &&
         (() => {
-          console.group("🦌 Animal Orientation Test Results");
-          testResults.forEach((result) => console.log(result));
-          console.groupEnd();
+          // Test results logged
           return null;
         })()}
     </group>

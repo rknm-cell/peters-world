@@ -18,12 +18,7 @@ export function PhysicsStatusLogger() {
       const bodyCount = world.bodies.len();
       const colliderCount = world.colliders.len();
 
-      console.warn("🔧 Physics World Status:", {
-        totalBodies: bodyCount,
-        totalColliders: colliderCount,
-        gravity: world.gravity,
-        timestep: world.timestep,
-      });
+      // Physics world status logged
 
       // Log each body's status
       let bodyIndex = 0;
@@ -33,34 +28,19 @@ export function PhysicsStatusLogger() {
         const velocity = body.linvel();
         const mass = body.mass();
 
-        console.warn(`  Body ${bodyIndex}:`, {
-          isDeer: userData?.isDeer,
-          objectId: userData?.objectId,
-          position: [
-            position.x.toFixed(2),
-            position.y.toFixed(2),
-            position.z.toFixed(2),
-          ],
-          velocity: [
-            velocity.x.toFixed(2),
-            velocity.y.toFixed(2),
-            velocity.z.toFixed(2),
-          ],
-          mass: mass.toFixed(2),
-          bodyType: body.bodyType(),
-        });
+        // Body status logged
         bodyIndex++;
       });
     };
 
     window.spawnPhysicsDeer = () => {
-      console.warn("🔧 Attempting to spawn physics deer...");
+      // Attempting to spawn physics deer
       // This will trigger the existing spawn system
       const testSpawn = window.testDeerSpawn;
       if (testSpawn) {
         testSpawn();
       } else {
-        console.error("testDeerSpawn function not available");
+        // testDeerSpawn function not available
       }
     };
 
@@ -84,7 +64,7 @@ export function PhysicsStatusLogger() {
       ).length;
 
       if (deerCount > 0) {
-        console.log(`🦌 Physics: ${deerCount} deer active in physics world`);
+        // console.log(`🦌 Physics: ${deerCount} deer active in physics world`);
       }
     }
   });

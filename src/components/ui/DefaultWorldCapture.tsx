@@ -41,15 +41,13 @@ export function DefaultWorldCapture() {
 
     const template = captureCurrentWorldAsDefault(worldState);
     
-    // Copy to clipboard for easy pasting
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(JSON.stringify(template, null, 2)).then(() => {
-        console.log("📋 Template copied to clipboard!");
-      }).catch(() => {
-        console.log("📋 Template logged to console (clipboard failed)");
-      });
+    // Copy to clipboard
+    try {
+      navigator.clipboard.writeText(JSON.stringify(template, null, 2));
+    } catch (error) {
+      // Template logged to console (clipboard failed)
     }
-
+    
     // Also download as JSON file
     const blob = new Blob([JSON.stringify(template, null, 2)], { 
       type: "application/json" 

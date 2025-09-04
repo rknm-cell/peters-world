@@ -74,79 +74,43 @@ const TreeComponent = ({
   // Clone the scene to avoid sharing between instances - memoized with stable key
   const treeModel = useMemo(() => {
     if (isLoading || !gltfResult.scene) {
-      console.log(`Tree ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfResult.scene,
-      });
       return null;
     }
 
     try {
       const clonedScene = gltfResult.scene.clone(true);
-      console.log(`Tree ${type}: Scene cloned successfully:`, clonedScene);
 
-      // Apply standardized scaling using the new utility
-      const scaleFactor = applySpecialScaling(
-        clonedScene,
-        type,
-        lifecycleStage,
-      );
+      // Apply standardized scaling using the utility
+      const scaleFactor = applySpecialScaling(clonedScene, type, lifecycleStage);
 
-      // Enable shadows for all meshes in the tree model
+      // Enable shadows and apply preview styling
       clonedScene.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-        }
-      });
 
-      // If this is a preview, modify the materials to be transparent
-      if (preview) {
-        console.log(
-          `Tree ${type}: Applying preview materials, canPlace: ${canPlace}`,
-        );
-        clonedScene.traverse((child: THREE.Object3D) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            // Clone the material to avoid affecting other instances
-            const material = (
-              child.material as THREE.Material
-            ).clone() as THREE.MeshStandardMaterial;
-
-            // Make it transparent
-            material.transparent = true;
-            material.opacity = 0.6;
-
-            // Change color based on placement validity
-            if (canPlace) {
-              // Green tint for valid placement - multiply existing color with green
-              material.color.multiply(new THREE.Color(0.3, 1.0, 0.3));
-              console.log(`Tree ${type}: Applied green tint`);
-            } else {
-              // Red tint for invalid placement - multiply existing color with red
-              material.color.multiply(new THREE.Color(1.0, 0.3, 0.3));
-              console.log(`Tree ${type}: Applied red tint`);
+          if (preview) {
+            // Preview styling - make it more transparent and colored
+            if (child.material) {
+              const material = child.material as THREE.MeshStandardMaterial;
+              if (material.clone) {
+                const previewMaterial = material.clone();
+                previewMaterial.transparent = true;
+                previewMaterial.opacity = 0.6;
+                previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
+                child.material = previewMaterial;
+              }
             }
-
-            child.material = material;
           }
-        });
-      }
-
-      console.log(`Tree ready:`, {
-        type,
-        scaleFactor,
-        preview,
-        canPlace,
-        hasModel: !!clonedScene,
-        "tree will be positioned by PlacementSystem": true,
+        }
       });
 
       return clonedScene;
     } catch (error) {
-      console.error(`Tree ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
-  }, [gltfResult.scene, type, lifecycleStage, preview, canPlace, isLoading]); // Include all dependencies
+  }, [gltfResult.scene, type, lifecycleStage, preview, canPlace, isLoading]);
 
   // Animation for selected state
   useFrame((state) => {

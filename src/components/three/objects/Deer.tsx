@@ -43,17 +43,13 @@ export function Deer({
   // Clone the scene to avoid sharing between instances
   const deerModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Deer ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
 
-      // Apply standardized scaling using the new utility
+      // Apply standardized scaling using the utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
         objectType: "animal",
         modelType: type,
@@ -75,15 +71,9 @@ export function Deer({
         }
       });
 
-      console.log(`Deer ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "deer positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Deer ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, type, isLoading]); // Remove preview and canPlace from deps to prevent unnecessary recreations

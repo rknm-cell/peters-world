@@ -63,14 +63,6 @@ export function InputManager({
           ? "terraforming"
           : "idle";
 
-    // Debug logging for interaction mode
-    console.log("🎯 InputManager mode:", mode, {
-      isPlacing,
-      isDeleting,
-      isTerraforming,
-      terraformMode,
-    });
-
     return mode;
   }, [isPlacing, isDeleting, isTerraforming, terraformMode]);
 
@@ -95,7 +87,6 @@ export function InputManager({
         if (isTerraforming) {
           setTerraformMode("none");
           setIsTerraforming(false);
-          console.log("🏔️ Terraform mode disabled - clicked outside world");
         }
         return true; // Indicates this was an off-world click
       }
@@ -248,9 +239,6 @@ export function InputManager({
       }
 
       if (terraformMode === "water" && processedVertices > 0) {
-        console.log(
-          `Water tool: processed ${processedVertices}/${terrainVertices.length} vertices`,
-        );
       }
     },
     [
@@ -268,11 +256,8 @@ export function InputManager({
   const handleDeleteAction = useCallback(
     (event: PointerEvent) => {
       if (!objects.length) {
-        console.log("🗑️ No objects to delete");
         return;
       }
-
-      console.log("🗑️ Delete action triggered, checking for objects...");
 
       // Raycast to find object intersections
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
@@ -285,19 +270,10 @@ export function InputManager({
       scene.traverse((child) => {
         if (child.userData?.objectId && !child.userData?.isPhysicsControlled) {
           objectsWithIds.push(child);
-          console.log(
-            `🔍 Found object in scene: ${child.userData.objectId}, type: ${child.type}`,
-          );
         }
       });
 
-      console.log(
-        `🔍 Found ${objectsWithIds.length} objects in scene with IDs`,
-      );
-      console.log(`🔍 Store has ${objects.length} objects`);
-
       if (objectsWithIds.length === 0) {
-        console.log("❌ No objects with IDs found in scene");
         return;
       }
 
@@ -307,14 +283,10 @@ export function InputManager({
         true,
       );
 
-      console.log(`🎯 Raycast found ${intersects.length} intersections`);
-
       if (intersects.length > 0) {
         // Find the closest intersected object
         const intersectedObject = intersects[0];
         if (!intersectedObject) return;
-
-        console.log(`🎯 Intersected object:`, intersectedObject.object);
 
         let objectId = intersectedObject.object.userData?.objectId as
           | string
@@ -330,17 +302,12 @@ export function InputManager({
         }
 
         if (objectId && typeof objectId === "string") {
-          console.log(`🗑️ Deleting object: ${objectId}`);
           removeObject(objectId);
           event.preventDefault();
           event.stopPropagation();
         } else {
-          console.log(
-            "❌ No objectId found on intersected object or its parents",
-          );
         }
       } else {
-        console.log("❌ No intersections found");
       }
     },
     [objects, removeObject, camera, scene],
@@ -351,28 +318,18 @@ export function InputManager({
     (event: PointerEvent) => {
       const mode = getInteractionMode();
 
-      console.log("🖱️ Pointer down event:", {
-        mode,
-        clientX: event.clientX,
-        clientY: event.clientY,
-        target: event.target,
-      });
-
       // In idle mode, let OrbitControls handle all events
       if (mode === "idle") {
-        console.log("🖱️ Idle mode - letting OrbitControls handle event");
         return; // Don't interfere with OrbitControls
       }
 
       // Only handle events that this system should process
       switch (mode) {
         case "placing":
-          console.log("🖱️ Placing mode - letting PlacementSystem handle");
           // Let PlacementSystem handle this completely
           return;
 
         case "terraforming":
-          console.log("🖱️ Terraforming mode - handling event");
           const canvas = gl.domElement;
           const rect = canvas.getBoundingClientRect();
 
@@ -400,7 +357,6 @@ export function InputManager({
           break;
 
         case "deleting":
-          console.log("🖱️ Deleting mode - handling event");
           const deleteCanvas = gl.domElement;
           const deleteRect = deleteCanvas.getBoundingClientRect();
 

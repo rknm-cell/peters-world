@@ -30,20 +30,16 @@ export function useWorldPersistence() {
     if (!hasRestoredRef.current) {
       const hasData = hasStoredWorld();
       if (hasData) {
-        console.log("🔄 Restoring world from localStorage...");
         const restored = restoreWorldFromStorage();
         if (restored) {
-          console.log("✅ World restored successfully");
         }
       } else {
-        console.log("📭 No saved world found, loading default world...");
         // Load default world for new users
         if (shouldLoadDefaultWorld()) {
           const defaultWorld = getDefaultWorld();
           const { loadWorld } = useWorldStore.getState();
           loadWorld(defaultWorld);
           loadedDefaultRef.current = true;
-          console.log("🌟 Default world loaded successfully");
         }
       }
       hasRestoredRef.current = true;

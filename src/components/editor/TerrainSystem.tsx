@@ -194,13 +194,6 @@ export function TerrainSystem({
     if (meshRef.current && onTerrainMeshReady) {
       onTerrainMeshReady(meshRef.current);
     }
-
-    // Debug: Log mesh state for debug visualizer
-    console.log("TerrainSystem mesh state:", {
-      meshExists: !!meshRef.current,
-      geometryExists: !!meshRef.current?.geometry,
-      hasUserData: !!meshRef.current?.userData?.isTerrainMesh,
-    });
   }, [onTerrainMeshReady]);
 
   // Notify parent when terrain is updated (for physics collider updates)
@@ -209,7 +202,6 @@ export function TerrainSystem({
       // Trigger terrain update callback when vertices change
       const geometry = meshRef.current.geometry;
       if (geometry) {
-        console.log("🏔️ TerrainSystem: Notifying terrain update");
         onTerrainUpdate?.(geometry);
       }
     }
@@ -299,16 +291,7 @@ export function TerrainSystem({
   const waterCount = terrainVertices.filter((v) => v.waterLevel > 0.001).length;
 
   if (hasWater) {
-    console.log(
-      `TerrainSystem: Found ${waterCount} vertices with water, max water level: ${Math.max(...terrainVertices.map((v) => v.waterLevel))}`,
-    );
-    console.log(
-      `TerrainSystem: Water levels:`,
-      terrainVertices
-        .filter((v) => v.waterLevel > 0.01)
-        .map((v) => v.waterLevel)
-        .slice(0, 10),
-    );
+    // Water found in terrain
   }
 
   return (

@@ -41,10 +41,6 @@ export function Penguin({
   // Clone the scene to avoid sharing between instances
   const penguinModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Penguin ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Penguin({
         }
       });
 
-      console.log(`Penguin ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "penguin positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Penguin ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Penguin({
 
   // Don't render if model failed to load
   if (!penguinModel) {
-    console.warn(`Penguin ${type}: Failed to load model, not rendering`);
     return null;
   }
 

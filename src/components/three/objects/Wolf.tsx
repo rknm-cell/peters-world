@@ -43,53 +43,47 @@ export function Wolf({
   // Clone the scene to avoid sharing between instances
   const wolfModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Wolf ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
     try {
       const clonedScene = gltfScene.clone(true);
 
-      // Apply standardized scaling using the new utility
+      // Apply standardized scaling using the utility
       const scaleFactor = applyStandardizedScaling(clonedScene, {
         objectType: "animal",
         modelType: type,
         preview,
       });
 
-      // Reset position to origin - let PlacementSystem handle positioning
-      clonedScene.position.set(0, 0, 0);
-
-      // Enable shadows and store original materials for preview switching
+      // Enable shadows and apply preview styling
       clonedScene.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
 
-          // Store original material for dynamic switching
-          if (child.material) {
-            child.userData.originalMaterial = (
-              child.material as THREE.Material
-            ).clone();
+          if (preview) {
+            // Preview styling - make it more transparent and colored
+            if (child.material) {
+              const material = child.material as THREE.MeshStandardMaterial;
+              if (material.clone) {
+                const previewMaterial = material.clone();
+                previewMaterial.transparent = true;
+                previewMaterial.opacity = 0.6;
+                previewMaterial.color.setHex(canPlace ? 0x00ff00 : 0xff0000);
+                child.material = previewMaterial;
+              }
+            }
           }
         }
       });
 
-      console.log(`Wolf ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "wolf positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Wolf ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
-  }, [gltfScene, type, isLoading]); // Remove preview and canPlace from deps to prevent unnecessary recreations
+  }, [gltfScene, type, isLoading]);
 
   // Update materials dynamically when preview state changes (without recreating the model)
   useEffect(() => {

@@ -41,10 +41,6 @@ export function Hen({
   // Clone the scene to avoid sharing between instances
   const henModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Hen ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Hen({
         }
       });
 
-      console.log(`Hen ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "hen positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Hen ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Hen({
 
   // Don't render if model failed to load
   if (!henModel) {
-    console.warn(`Hen ${type}: Failed to load model, not rendering`);
     return null;
   }
 

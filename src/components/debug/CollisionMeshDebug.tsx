@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useRapier } from "@react-three/rapier";
 import * as THREE from "three";
 import { useWorldStore } from "~/lib/store";
@@ -75,7 +75,7 @@ export function CollisionMeshDebug({
         let colliderCount = 0;
 
         // Debug: Log world state
-        console.log("🔍 Searching for colliders in world:", world);
+        // console.log("🔍 Searching for colliders in world:", world);
 
         // Try different methods to access colliders based on Rapier version
         const rapierWorld = world as unknown as RapierWorldWithColliders;
@@ -83,11 +83,11 @@ export function CollisionMeshDebug({
           // Method 1: Use forEachCollider if available
           rapierWorld.forEachCollider((collider: RapierColliderWithMethods) => {
             colliderCount++;
-            console.log(`📦 Collider ${colliderCount}:`, {
-              type: collider.shapeType?.(),
-              shape: collider.shape,
-              hasVertices: !!collider.vertices,
-            });
+            // console.log(`📦 Collider ${colliderCount}:`, {
+            //   type: collider.shapeType?.(),
+            //   shape: collider.shape,
+            //   hasVertices: !!collider.vertices,
+            // });
 
             // Check for trimesh type (9 is the enum value for TriMesh)
             const shapeType = collider.shapeType?.();
@@ -98,10 +98,10 @@ export function CollisionMeshDebug({
               if (vertices && vertices.length > maxVertices) {
                 maxVertices = vertices.length;
                 globeCollider = collider;
-                console.log(
-                  "🎯 Found potential globe collider with vertices:",
-                  vertices.length / 3,
-                );
+                // console.log(
+                //   "🎯 Found potential globe collider with vertices:",
+                //   vertices.length / 3,
+                // );
               }
             }
           });
@@ -113,7 +113,7 @@ export function CollisionMeshDebug({
                 colliderCount++;
                 const shapeType =
                   collider.shapeType?.() ?? collider.shape?.type;
-                console.log(`📦 Collider ${colliderCount} type:`, shapeType);
+                // console.log(`📦 Collider ${colliderCount} type:`, shapeType);
 
                 if (shapeType === 9 || shapeType === "TriMesh") {
                   const vertices =
@@ -128,10 +128,10 @@ export function CollisionMeshDebug({
           }
         }
 
-        console.log(`📊 Total colliders found: ${colliderCount}`);
+        // console.log(`📊 Total colliders found: ${colliderCount}`);
 
         if (globeCollider) {
-          console.log("🔍 Found globe collider, extracting geometry...");
+          // console.log("🔍 Found globe collider, extracting geometry...");
 
           // Try different methods to extract vertices and indices
           let vertices: Float32Array | null = null;
@@ -145,7 +145,7 @@ export function CollisionMeshDebug({
               collider.trimeshVertices?.() ??
               null;
           } catch (e) {
-            console.warn("Failed to extract vertices:", e);
+            // console.warn("Failed to extract vertices:", e);
           }
 
           try {
@@ -156,15 +156,15 @@ export function CollisionMeshDebug({
               collider.trimeshIndices?.() ??
               null;
           } catch (e) {
-            console.warn("Failed to extract indices:", e);
+            // console.warn("Failed to extract indices:", e);
           }
 
-          console.log("📐 Extracted data:", {
-            hasVertices: !!vertices,
-            verticesLength: vertices?.length,
-            hasIndices: !!indices,
-            indicesLength: indices?.length,
-          });
+          // console.log("📐 Extracted data:", {
+          //   hasVertices: !!vertices,
+          //   verticesLength: vertices?.length,
+          //   hasIndices: !!indices,
+          //   indicesLength: indices?.length,
+          // });
 
           if (vertices && indices) {
             // Create a new geometry from the collider data
@@ -186,25 +186,25 @@ export function CollisionMeshDebug({
 
             setColliderGeometry(geometry);
 
-            console.log("✅ Collision mesh visualization updated:", {
-              vertices: vertices.length / 3,
-              triangles: indices.length / 3,
-              timestamp: new Date().toLocaleTimeString(),
-            });
+            // console.log("✅ Collision mesh visualization updated:", {
+            //   vertices: vertices.length / 3,
+            //   triangles: indices.length / 3,
+            //   timestamp: new Date().toLocaleTimeString(),
+            // });
           } else {
-            console.log("⚠️ Could not extract vertices/indices from collider");
+            // console.log("⚠️ Could not extract vertices/indices from collider");
           }
         } else {
           // Fallback: Try to use global terrain collider reference
-          console.log(
-            "⚠️ No collider found via world iteration, trying global reference...",
-          );
+          // console.log(
+          //   "⚠️ No collider found via world iteration, trying global reference...",
+          // );
 
           if (
             globalTerrainCollider?.vertices &&
             globalTerrainCollider.indices
           ) {
-            console.log("✨ Using global terrain collider reference");
+            // console.log("✨ Using global terrain collider reference");
 
             const geometry = new THREE.BufferGeometry();
 
@@ -226,25 +226,25 @@ export function CollisionMeshDebug({
 
             setColliderGeometry(geometry);
 
-            console.log(
-              "✅ Collision mesh visualization created from global reference:",
-              {
-                vertices: globalTerrainCollider.vertexCount,
-                triangles: globalTerrainCollider.triangleCount,
-                timestamp: new Date().toLocaleTimeString(),
-              },
-            );
+            // console.log(
+            //   "✅ Collision mesh visualization created from global reference:",
+            //   {
+            //     vertices: globalTerrainCollider.vertexCount,
+            //     triangles: globalTerrainCollider.triangleCount,
+            //     timestamp: new Date().toLocaleTimeString(),
+            //   },
+            // );
           } else {
-            console.log(
-              "⚠️ No trimesh collider found in physics world or global reference",
-            );
-            console.log(
-              "💡 Make sure terrain has been initialized and collider has been created",
-            );
+            // console.log(
+            //   "⚠️ No trimesh collider found in physics world or global reference",
+            // );
+            // console.log(
+            //   "💡 Make sure terrain has been initialized and collider has been created",
+            // );
           }
         }
       } catch (error) {
-        console.error("❌ Error updating collision mesh visualization:", error);
+        // console.error("❌ Error updating collision mesh visualization:", error);
       }
     };
 
@@ -310,7 +310,7 @@ export function CollisionDebugPanel() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "C") {
         e.preventDefault();
         toggleCollisionMesh();
-        console.log("🎮 Toggled collision mesh visualization");
+        // console.log("🎮 Toggled collision mesh visualization");
       }
     };
 

@@ -77,14 +77,6 @@ export class PerformanceDetector {
       useLowPerformanceMode: isLowEnd || (isMobile && performanceScore < 0.6),
     };
 
-    console.log("Performance Profile:", {
-      ...this.profile,
-      performanceScore: performanceScore.toFixed(2),
-      gpuTier,
-      cores,
-      memory: memoryInfo,
-    });
-
     return this.profile;
   }
 
@@ -221,3 +213,9 @@ export function usePerformanceDetector() {
     shouldReduceQuality: detector.shouldReduceQuality(),
   };
 }
+
+export const logPerformanceProfile = (): void => {
+  const profile = PerformanceDetector.getInstance().detectPerformance();
+  
+  // Performance profile logged
+};

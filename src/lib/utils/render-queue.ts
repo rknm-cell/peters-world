@@ -156,10 +156,6 @@ export function useRenderQueue(config: Partial<RenderQueueConfig> = {}) {
             queue.delete(update.id);
             processedCount++;
           } catch (error) {
-            console.warn(
-              `Render queue: Failed to process update ${update.id}:`,
-              error,
-            );
             // Remove failed update to prevent infinite retries
             queue.delete(update.id);
           }
@@ -169,9 +165,6 @@ export function useRenderQueue(config: Partial<RenderQueueConfig> = {}) {
         const now = performance.now();
         for (const [id, update] of queue.entries()) {
           if (now - update.timestamp > finalConfig.maxQueueTime) {
-            console.warn(
-              `Render queue: Removing stale update ${id} (${now - update.timestamp}ms old)`,
-            );
             queue.delete(id);
           }
         }

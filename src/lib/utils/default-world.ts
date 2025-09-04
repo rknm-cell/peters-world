@@ -78,9 +78,6 @@ export function captureCurrentWorldAsDefault(worldState: DefaultWorldState): Ser
     }
   };
 
-  console.log("🎨 Captured world template:", JSON.stringify(template, null, 2));
-  console.log("📋 Copy this template to update src/lib/default/default-world-template.json");
-  
   return template;
 }
 
@@ -103,5 +100,5 @@ export function shouldLoadDefaultWorld(): boolean {
  * The capture function is available through the UI button in development mode
  */
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-  console.log("🛠️ Development capture available via 'Capture Default' button in create page");
+  // console.log("🛠️ Development capture available via 'Capture Default' button in create page");
 }

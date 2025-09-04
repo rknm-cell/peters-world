@@ -113,16 +113,7 @@ export function Structure({
       ),
     );
 
-    // Debug logging for scaling
-    if (type === "building-cabin-small" || type === "building-cabin-big") {
-      console.log(`🏗️ ${type} scaling:`, {
-        targetHeight,
-        originalHeight,
-        scaleFactor,
-        finalScale,
-        type,
-      });
-    }
+
 
     return finalScale;
   }, [type]);
@@ -131,10 +122,6 @@ export function Structure({
   const processedCabinModels = useMemo(() => {
     if (type === "building-cabin-small") {
       if (isLoadingSmall || !cabinSmallModel.scene) {
-        console.log(`Structure ${type}: GLB loading failed or no scene`, {
-          isLoading: isLoadingSmall,
-          hasScene: !!cabinSmallModel.scene,
-        });
         return null;
       }
 
@@ -163,23 +150,13 @@ export function Structure({
           }
         });
 
-        console.log(`Structure ${type}: Model loaded successfully`, {
-          hasModel: !!clonedScene,
-          scaleFactor: getBuildingScale,
-          "structure positioned by PlacementSystem": true,
-        });
-
         return clonedScene;
       } catch (error) {
-        console.error(`Structure ${type}: Error processing GLB scene:`, error);
+        // Error processing GLB scene
         return null;
       }
     } else if (type === "building-cabin-big") {
       if (isLoadingBig || !cabinBigModel.scene) {
-        console.log(`Structure ${type}: GLB loading failed or no scene`, {
-          isLoading: isLoadingBig,
-          hasScene: !!cabinBigModel.scene,
-        });
         return null;
       }
 
@@ -208,15 +185,9 @@ export function Structure({
           }
         });
 
-        console.log(`Structure ${type}: Model loaded successfully`, {
-          hasModel: !!clonedScene,
-          scaleFactor: getBuildingScale,
-          "structure positioned by PlacementSystem": true,
-        });
-
         return clonedScene;
       } catch (error) {
-        console.error(`Structure ${type}: Error processing GLB scene:`, error);
+        // Error processing GLB scene
         return null;
       }
     }
@@ -308,9 +279,6 @@ export function Structure({
 
       case "building-cabin-small":
         if (!processedCabinModels) {
-          console.warn(
-            `Structure ${type}: Failed to load model, not rendering`,
-          );
           return null;
         }
         return (
@@ -322,9 +290,6 @@ export function Structure({
 
       case "building-cabin-big":
         if (!processedCabinModels) {
-          console.warn(
-            `Structure ${type}: Failed to load model, not rendering`,
-          );
           return null;
         }
         return (

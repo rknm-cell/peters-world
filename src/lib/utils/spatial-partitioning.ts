@@ -32,10 +32,6 @@ export class TerrainOctree {
       }
       this.nodes.get(cellKey)!.push(index);
     });
-
-    console.log(
-      `TerrainOctree: Partitioned ${vertices.length} vertices into ${this.nodes.size} cells`,
-    );
   }
 
   // Get cell key for a 3D position

@@ -42,8 +42,6 @@ export function PhysicsDebug() {
     debugWindow.togglePhysicsDebug = () => {
       setShowDebug((prev) => {
         const newState = !prev;
-        console.log(`🔧 Physics debug: ${newState ? "enabled" : "disabled"}`);
-        console.log(`🔧 Debug state changed from ${prev} to ${newState}`);
         return newState;
       });
     };
@@ -59,10 +57,6 @@ export function PhysicsDebug() {
     document.addEventListener("keydown", handleKeyDown);
 
     // Auto-show debug instructions
-    console.log("🔧 Physics Debug Available:");
-    console.log("  - Run togglePhysicsDebug() in console");
-    console.log("  - Or press Ctrl+Shift+P");
-
     return () => {
       delete debugWindow.togglePhysicsDebug;
       document.removeEventListener("keydown", handleKeyDown);
@@ -83,21 +77,21 @@ export function PhysicsDebug() {
   // Log when debug state changes
   useEffect(() => {
     if (showDebug) {
-      console.log("🔧 Physics debug enabled - rendering debug visuals");
-      console.log(`🔧 Current physics bodies count: ${bodies.length}`);
+      // console.log("🔧 Physics debug enabled - rendering debug visuals");
+      // console.log(`🔧 Current physics bodies count: ${bodies.length}`);
     } else {
-      console.log("🔧 Physics debug disabled");
+      // console.log("🔧 Physics debug disabled");
     }
   }, [showDebug, bodies.length]);
 
   if (!showDebug) return null;
 
   // Custom physics debug visualization
-  console.log(
-    "🔧 Rendering PhysicsDebug component with",
-    bodies.length,
-    "bodies",
-  );
+  // console.log(
+  //   "🔧 Rendering PhysicsDebug component with",
+  //   bodies.length,
+  //   "bodies",
+  // );
 
   return (
     <group>

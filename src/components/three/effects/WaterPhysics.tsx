@@ -83,7 +83,6 @@ export function WaterPhysics({
     const uvAttribute = geometry.attributes.uv;
 
     if (!positionAttribute || !uvAttribute) {
-      console.error("WaterPhysics: Failed to get geometry attributes");
       return null;
     }
 
@@ -382,13 +381,14 @@ export function WaterPhysics({
 
   // Only render if there's significant water
   const hasSignificantWater = useMemo(() => {
+    if (!terrainVertices || terrainVertices.length === 0) {
+      return false;
+    }
+
     const waterVertices = terrainVertices.filter((v) => v.waterLevel > 0.001);
     const maxWaterLevel = Math.max(
       0,
       ...terrainVertices.map((v) => v.waterLevel),
-    );
-    console.log(
-      `WaterPhysics: ${waterVertices.length} vertices with water, max level: ${maxWaterLevel.toFixed(4)}`,
     );
     return waterVertices.length > 0;
   }, [terrainVertices]);

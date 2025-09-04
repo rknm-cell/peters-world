@@ -38,9 +38,6 @@ export class TerrainHeightMapGenerator {
     }
 
     if (!globalTerrainCollider?.vertices || !globalTerrainCollider?.indices) {
-      console.warn(
-        "No terrain collider data available for height map generation",
-      );
       return null;
     }
 

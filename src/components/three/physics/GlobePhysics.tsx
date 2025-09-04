@@ -70,17 +70,13 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
         !world ||
         !rapier
       ) {
-        console.log("⚠️ Cannot update collider: missing dependencies");
         return;
       }
 
       const geometry = terrainMeshRef.current.geometry;
       if (!geometry) {
-        console.log("⚠️ Cannot update collider: no geometry");
         return;
       }
-
-      console.log("🔄 Updating terrain physics collider...");
 
       try {
         // Remove old collider if it exists
@@ -138,10 +134,6 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
           triangleCount: indices.length / 3,
         };
 
-        console.log("✅ Terrain collider updated successfully", {
-          vertexCount: positions.count,
-          triangleCount: indices.length / 3,
-        });
       } catch (error) {
         console.error("❌ Failed to update terrain collider:", error);
       }
@@ -152,13 +144,6 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
      */
     const handleTerrainMeshReady = useCallback(
       (mesh: Mesh) => {
-        console.log("🌍 Terrain mesh ready for physics", {
-          isTerrainMesh: (mesh?.userData as { isTerrainMesh?: boolean })
-            ?.isTerrainMesh,
-          meshType: mesh?.constructor?.name,
-          hasGeometry: !!mesh?.geometry,
-        });
-
         // Store the actual terrain mesh (from TerrainSystem)
         terrainMeshRef.current = mesh;
 
@@ -182,9 +167,6 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
       const currentHash = getTerrainHash();
 
       if (currentHash !== lastUpdateHash.current && currentHash !== "") {
-        console.log(
-          "🔍 Terrain change detected, scheduling collider update...",
-        );
         lastUpdateHash.current = currentHash;
 
         // Debounce the update to avoid too frequent updates during terraforming
@@ -203,7 +185,7 @@ export const GlobePhysics = forwardRef<Mesh, GlobePhysicsProps>(
       rigidBodyRef.current = rb;
 
       if (rb) {
-        console.log("📍 Globe rigid body initialized");
+        // console.log("📍 Globe rigid body initialized");
       }
     }, []);
 

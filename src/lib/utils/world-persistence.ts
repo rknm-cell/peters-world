@@ -52,7 +52,6 @@ class WorldPersistence {
         const serializedWorld = serializeWorld(state);
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializedWorld));
         this.lastSaveTime = Date.now();
-        console.log("🔄 World auto-saved to localStorage");
       } catch (error) {
         console.error("❌ Failed to save world to localStorage:", error);
       }
@@ -66,13 +65,11 @@ class WorldPersistence {
     try {
       const saved = localStorage.getItem(AUTOSAVE_KEY);
       if (!saved) {
-        console.log("📭 No auto-saved world found");
         return null;
       }
 
       const parsed = JSON.parse(saved) as unknown;
       const worldData = deserializeWorld(parsed);
-      console.log("📂 World restored from localStorage");
       return worldData;
     } catch (error) {
       console.error("❌ Failed to load world from localStorage:", error);
@@ -86,7 +83,6 @@ class WorldPersistence {
   clearSavedWorld(): void {
     try {
       localStorage.removeItem(AUTOSAVE_KEY);
-      console.log("🗑️ Auto-saved world cleared");
     } catch (error) {
       console.error("❌ Failed to clear saved world:", error);
     }
@@ -119,7 +115,6 @@ class WorldPersistence {
     this.autoSaveInterval = setInterval(() => {
       // Auto-save will be triggered by store subscription
       // This interval just ensures we don't go too long without saving
-      console.log("⏰ Auto-save interval tick");
     }, AUTOSAVE_INTERVAL);
   }
 
@@ -150,7 +145,6 @@ class WorldPersistence {
       const serializedWorld = serializeWorld(state);
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializedWorld));
       this.lastSaveTime = Date.now();
-      console.log("💾 World force-saved to localStorage");
     } catch (error) {
       console.error("❌ Failed to force-save world:", error);
     }

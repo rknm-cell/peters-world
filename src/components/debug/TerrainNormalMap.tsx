@@ -37,9 +37,6 @@ export class TerrainNormalMapGenerator {
     }
 
     if (!globalTerrainCollider?.vertices || !globalTerrainCollider?.indices) {
-      console.warn(
-        "No terrain collider data available for normal map generation",
-      );
       return null;
     }
 

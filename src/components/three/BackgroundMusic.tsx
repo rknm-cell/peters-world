@@ -36,7 +36,6 @@ export function BackgroundMusic({
     // Auto-play if enabled
     if (autoPlay) {
       audio.play().catch((error) => {
-        console.warn("Auto-play failed:", error);
         // Auto-play might be blocked by browser policy
       });
     }
@@ -50,6 +49,12 @@ export function BackgroundMusic({
       audio.src = "";
     };
   }, [volume, autoPlay]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      // Background music loaded
+    }
+  }, [audioRef]);
 
   const togglePlayPause = () => {
     if (audioRef.current) {

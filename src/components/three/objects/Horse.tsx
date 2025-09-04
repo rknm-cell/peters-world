@@ -41,10 +41,6 @@ export function Horse({
   // Clone the scene to avoid sharing between instances
   const horseModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Horse ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Horse({
         }
       });
 
-      console.log(`Horse ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "horse positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Horse ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Horse({
 
   // Don't render if model failed to load
   if (!horseModel) {
-    console.warn(`Horse ${type}: Failed to load model, not rendering`);
     return null;
   }
 

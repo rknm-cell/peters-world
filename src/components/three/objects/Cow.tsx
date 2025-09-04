@@ -41,10 +41,6 @@ export function Cow({
   // Clone the scene to avoid sharing between instances
   const cowModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Cow ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Cow({
         }
       });
 
-      console.log(`Cow ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "cow positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Cow ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Cow({
 
   // Don't render if model failed to load
   if (!cowModel) {
-    console.warn(`Cow ${type}: Failed to load model, not rendering`);
     return null;
   }
 

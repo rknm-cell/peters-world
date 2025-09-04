@@ -169,9 +169,6 @@ export function PlacementSystem({
       const MIN_CLICK_INTERVAL = 50; // 50ms minimum between clicks
 
       if (timeSinceLastClick < MIN_CLICK_INTERVAL) {
-        console.log(
-          `🖱️ Click debounced (${timeSinceLastClick.toFixed(1)}ms since last click)`,
-        );
         return;
       }
       lastClickTimeRef.current = now;

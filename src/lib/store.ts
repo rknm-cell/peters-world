@@ -11,10 +11,10 @@ import { getDefaultWorld } from "./utils/default-world";
 // Optimized logging system for production
 const isDevelopment = process.env.NODE_ENV === 'development';
 const logger = {
-  debug: isDevelopment ? console.debug : (): void => { /* no-op */ },
-  info: isDevelopment ? console.log : (): void => { /* no-op */ },
-  warn: console.warn,
-  error: console.error,
+  debug: (): void => { /* no-op */ },
+  info: (): void => { /* no-op */ },
+  warn: (): void => { /* no-op */ },
+  error: (): void => { /* no-op */ },
 };
 
 
@@ -378,7 +378,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
 
   setPlacing: (placing: boolean) => {
-    logger.debug(`📍 isPlacing changed: ${placing}`);
     if (placing) {
       // When entering placement mode, clear other modes
       set({ 
@@ -397,7 +396,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   },
 
   setDeleting: (deleting: boolean) => {
-    logger.debug(`🗑️ isDeleting changed: ${deleting}`);
     set({ isDeleting: deleting });
     // Exit placement mode when entering delete mode
     if (deleting) {
@@ -470,7 +468,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   
   // Terrain actions
   setTerraformMode: (mode: TerraformMode) => {
-    logger.debug(`🔧 terraformMode changed: ${mode}`);
     if (mode !== "none") {
       // When entering terraform mode, clear other modes
       set({ 
@@ -766,12 +763,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       
       // PERFORMANCE FIX: Early return if no trees need advancement
       if (treesToAdvance.length === 0) {
-        logger.debug("⏰ TreeLifecycle tick - no trees need advancement");
         return state; // Prevent unnecessary array creation and cache invalidation
       }
       
       // Second pass: advance trees that need it in a single state update
-      logger.debug(`⏰ Advancing ${treesToAdvance.length} trees in batched update`);
       
       // Use the existing advanceTreeLifecycle logic but apply it synchronously
       const updatedObjects = state.objects.map(obj => {
@@ -896,12 +891,10 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         const hasForestTrees = state.objects.some(obj => obj.treeLifecycle?.isPartOfForest);
         
         if (!hasForestTrees) {
-          logger.debug("🌳 Forest detection: Not enough trees and none marked as forest - no changes needed");
           return state; // Prevent unnecessary array creation
         }
         
         // Only update if we need to clear existing forest flags
-        logger.debug("🌳 Forest detection: Clearing forest flags from all trees");
         return {
           objects: state.objects.map(obj =>
             obj.treeLifecycle
@@ -1007,11 +1000,8 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Tree spawning function with proper surface placement
   attemptTreeSpawning: () => {
     set((state) => {
-      logger.debug("🌱 Tree spawning attempt started");
-      
       // Check if we have globe reference for surface placement
       if (!state.globeRef) {
-        logger.warn("❌ Tree spawning: No globe reference available");
         return state;
       }
 
@@ -1025,7 +1015,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       const forestTrees = eligibleSpawners.filter(tree => tree.treeLifecycle?.isPartOfForest);
       const isolatedTrees = eligibleSpawners.filter(tree => !tree.treeLifecycle?.isPartOfForest);
 
-      logger.debug(`🌳 Found ${eligibleSpawners.length} eligible spawners (${forestTrees.length} forest, ${isolatedTrees.length} isolated)`);
+
       
       if (eligibleSpawners.length === 0) {
         return state; // No eligible spawner trees
@@ -1045,11 +1035,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         
         const randomRoll = Math.random();
         const treeType = isForestTree ? "🌲 Forest" : "🌳 Isolated";
-        console.log(`${treeType} tree ${index + 1}: Random roll = ${randomRoll.toFixed(3)}, needed < ${spawnProbability}`);
         
         // Use different probabilities for forest vs isolated trees
         if (randomRoll < spawnProbability) {
-          console.log(`✅ ${treeType} tree ${index + 1} wins spawn roll! Attempting to spawn...`);
           
           // For forest trees, use tighter spawn radius to stay within forest proximity
           const spawnRadiusMax = isForestTree 
@@ -1060,8 +1048,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           const angle = Math.random() * 2 * Math.PI;
           const distance = TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min + 
             Math.random() * (spawnRadiusMax - TREE_LIFECYCLE_CONFIG.spawning.spawnRadius.min);
-          
-          console.log(`📏 Spawn distance: ${distance.toFixed(2)} (max: ${spawnRadiusMax.toFixed(2)} for ${isForestTree ? 'forest' : 'isolated'} tree)`);
           
           // Calculate horizontal position around parent
           const horizontalX = spawnerTree.position[0] + Math.cos(angle) * distance;
@@ -1076,10 +1062,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
           // Get intersection with globe surface
           const detailedIntersection = state.globeRef ? getDetailedIntersection(raycaster, state.globeRef) : null;
           
-          console.log(`🎯 Raycast from [${horizontalX.toFixed(2)}, 20, ${horizontalZ.toFixed(2)}] result:`, detailedIntersection ? "HIT" : "MISS");
-          
           if (detailedIntersection) {
-            console.log(`📍 Surface hit at [${detailedIntersection.point.x.toFixed(2)}, ${detailedIntersection.point.y.toFixed(2)}, ${detailedIntersection.point.z.toFixed(2)}]`);
             // Use placement system to get proper position and rotation
             const parentAdultType = spawnerTree.treeLifecycle?.adultTreeType ?? "tree-oak";
             const spawnTreeType = TREE_LIFECYCLE.youth.small;
@@ -1090,8 +1073,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               detailedIntersection.normal,
               state.objects
             );
-            
-            console.log(`🏗️ Placement validation result: ${placementInfo.canPlace ? "CAN PLACE" : "CANNOT PLACE"}`);
             
             // For forest trees, validate that spawned tree would be close enough to other forest trees
             let forestValidation = true;
@@ -1111,8 +1092,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                 return distance <= FOREST_CONFIG.proximityThreshold;
               });
-              
-              console.log(`🌲 Forest validation: ${forestValidation ? 'PASS' : 'FAIL'} (checked ${sameForestTrees.length} forest neighbors)`);
             }
             
             if (placementInfo.canPlace && forestValidation) {
@@ -1142,31 +1121,23 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               };
 
               newTrees.push(newTree);
-              
-              console.log(`🌿 NEW TREE SPAWNED! ID: ${newTreeId}, Type: ${spawnTreeType}`);
-              console.log(`📊 Parent: [${spawnerTree.position.join(', ')}], Spawn: [${newTree.position.join(', ')}]`);
             } else if (!placementInfo.canPlace) {
-              console.log(`❌ Cannot place tree - collision or boundary issue`);
+              // Cannot place tree - collision or boundary issue
             } else if (!forestValidation) {
-              console.log(`❌ Cannot place forest tree - would be too far from other forest trees`);
+              // Cannot place forest tree - would be too far from other forest trees
             }
           } else {
-            console.log(`❌ Raycast missed globe surface`);
+            // Raycast missed globe surface
           }
         } else {
-          console.log(`❌ Tree ${index + 1} failed spawn roll`);
+          // Tree failed spawn roll
         }
       });
 
-      console.log(`📈 Spawning result: ${newTrees.length} new trees created`);
-      
       if (newTrees.length > 0) {
         // Add spawned trees directly without affecting placement state
         // Use more efficient array concatenation for better performance
         const updatedObjects = state.objects.concat(newTrees);
-        
-        console.log(`🌲 Total trees now: ${updatedObjects.filter(obj => obj.treeLifecycle).length}`);
-        console.log("🎮 Post-spawn state (returning):", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
         
         // Run forest detection after spawning (with delay to avoid race conditions)
         setTimeout(() => _get().detectForests(), 200);
@@ -1184,8 +1155,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         return result;
       }
 
-      console.log("❌ No new trees spawned this cycle");
-      console.log("🎮 Post-spawn state (no spawn, returning):", { isPlacing: state.isPlacing, terraformMode: state.terraformMode });
       return state; // No new trees spawned
     });
   },
@@ -1301,10 +1270,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
       }
 
-      // Only log if grass was actually spawned
-      if (newGrass.length > 0) {
-        console.log(`🌿 Grass spawned: ${newGrass.length} patches`);
-      }
+
       
       if (newGrass.length > 0) {
         const result = { 
@@ -1327,27 +1293,21 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   attemptDeerSpawning: () => {
     set((state) => {
       const currentDeerCount = state.objects.filter(obj => obj.type === "animals/deer").length;
-      logger.debug(`🦌 Deer spawning: ${currentDeerCount}/${DEER_CONFIG.maxDeerInWorld} deer`);
       
       // Check if we have globe reference for surface placement
       if (!state.globeRef) {
-        logger.error("❌ Deer spawning: No globe reference available");
         return state;
       }
 
       // Check if we have terrain data for color/height analysis
       if (!state.terrainVertices || state.terrainVertices.length === 0) {
-        logger.error("❌ Deer spawning: No terrain data available");
         return state;
       }
 
       // Check if we're already at max deer capacity
       if (currentDeerCount >= DEER_CONFIG.maxDeerInWorld) {
-        logger.debug("❌ Deer spawning: Already at max capacity");
         return state;
       }
-
-      logger.debug("🦌 Deer spawning: Starting spawn attempts");
 
       const newDeer: PlacedObject[] = [];
       const raycaster = new THREE.Raycaster();
@@ -1405,24 +1365,9 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               closestVertex.height <= DEER_CONFIG.heightRange.max &&
               closestVertex.waterLevel <= DEER_CONFIG.waterLevelMax;
             
-            if (attempts <= 3) { // Log first few attempts for debugging
-              console.log(`🦌 Deer spawn attempt ${attempts}:`, {
-                hitPoint: hitPoint.toArray(),
-                closestVertex: {
-                  height: closestVertex.height,
-                  waterLevel: closestVertex.waterLevel
-                },
-                isValidTerrain,
-                heightRange: DEER_CONFIG.heightRange,
-                waterLevelMax: DEER_CONFIG.waterLevelMax,
-                spawnRoll: Math.random(),
-                spawnProbability: DEER_CONFIG.spawnProbability
-              });
-            }
+
             
             if (isValidTerrain && Math.random() < DEER_CONFIG.spawnProbability) {
-              console.log(`🦌 Deer spawn attempt ${attempts}: Terrain valid, attempting placement...`);
-              
               // Use placement system for proper positioning
               const placementInfo = calculatePlacement(
                 "animals/deer",
@@ -1430,8 +1375,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 detailedIntersection.normal,
                 state.objects
               );
-              
-              console.log(`🦌 Deer placement result:`, placementInfo);
               
               if (placementInfo.canPlace) {
                 const deerId = Math.random().toString(36).substring(7);
@@ -1459,10 +1402,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
       }
 
-      // Only log if deer was actually spawned
-      if (newDeer.length > 0) {
-        console.log(`🦌 Deer spawned: ${newDeer.length} deer`);
-      }
+
       
       if (newDeer.length > 0) {
         const result = { 
@@ -1500,7 +1440,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       });
 
       if (deerToRemove.length > 0) {
-        console.log(`🦌 Deer despawned: ${deerToRemove.length} deer`);
         const result = {
           ...state,
           objects: state.objects.filter(obj => !deerToRemove.includes(obj.id))
@@ -1519,34 +1458,23 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   // Wolf spawning function - spawns wolves on suitable terrain areas
   attemptWolfSpawning: () => {
     set((state) => {
-      console.log("🐺 Wolf spawning attempt started...");
-      console.log("🐺 Current state:", {
-        hasGlobeRef: !!state.globeRef,
-        terrainVerticesCount: state.terrainVertices?.length || 0,
-        currentWolfCount: state.objects.filter(obj => obj.type === "animals/wolf").length,
-        maxWolvesInWorld: WOLF_CONFIG.maxWolvesInWorld
-      });
+
       
       // Check if we have globe reference for surface placement
       if (!state.globeRef) {
-        console.error("❌ Wolf spawning: No globe reference available");
         return state;
       }
 
       // Check if we have terrain data for color/height analysis
       if (!state.terrainVertices || state.terrainVertices.length === 0) {
-        console.error("❌ Wolf spawning: No terrain data available");
         return state;
       }
 
       // Check if we're already at max wolf capacity
       const currentWolfCount = state.objects.filter(obj => obj.type === "animals/wolf").length;
       if (currentWolfCount >= WOLF_CONFIG.maxWolvesInWorld) {
-        console.log("❌ Wolf spawning: Already at max capacity");
         return state;
       }
-
-      console.log("🐺 Wolf spawning: Starting spawn attempts...");
 
       const newWolves: PlacedObject[] = [];
       const raycaster = new THREE.Raycaster();
@@ -1603,23 +1531,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
               closestVertex.height <= WOLF_CONFIG.heightRange.max &&
               closestVertex.waterLevel <= WOLF_CONFIG.waterLevelMax;
             
-            if (attempts <= 3) { // Log first few attempts for debugging
-              console.log(`🐺 Wolf spawn attempt ${attempts}:`, {
-                hitPoint: hitPoint.toArray(),
-                closestVertex: {
-                  height: closestVertex.height,
-                  waterLevel: closestVertex.waterLevel
-                },
-                isValidTerrain,
-                heightRange: WOLF_CONFIG.heightRange,
-                waterLevelMax: WOLF_CONFIG.waterLevelMax,
-                spawnRoll: Math.random(),
-                spawnProbability: WOLF_CONFIG.spawnProbability
-              });
-            }
-            
             if (isValidTerrain && Math.random() < WOLF_CONFIG.spawnProbability) {
-              console.log(`🐺 Wolf spawn attempt ${attempts}: Terrain valid, attempting placement...`);
               
               // Use placement system for proper positioning
               const placementInfo = calculatePlacement(
@@ -1629,7 +1541,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
                 state.objects
               );
               
-              console.log(`🐺 Wolf placement result:`, placementInfo);
+
               
               if (placementInfo.canPlace) {
                 const wolfId = Math.random().toString(36).substring(7);
@@ -1657,10 +1569,7 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
         }
       }
 
-      // Only log if wolves were actually spawned
-      if (newWolves.length > 0) {
-        console.log(`🐺 Wolves spawned: ${newWolves.length} wolves`);
-      }
+
       
       if (newWolves.length > 0) {
         const result = { 
@@ -1698,7 +1607,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
       });
 
       if (wolvesToRemove.length > 0) {
-        console.log(`🐺 Wolves despawned: ${wolvesToRemove.length} wolves`);
         const result = {
           ...state,
           objects: state.objects.filter(obj => !wolvesToRemove.includes(obj.id))
@@ -1716,17 +1624,13 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
 
   // Test deer movement - physics-based movement testing
   testDeerMovement: () => {
-    logger.debug("🧪 Testing physics-based deer movement system");
-    
     set((state) => {
       const deerObjects = state.objects.filter(obj => obj.type === "animals/deer");
       
       if (deerObjects.length === 0) {
-        logger.debug("🧪 No deer found to test");
         return state;
       }
       
-      logger.debug(`🧪 Found ${deerObjects.length} deer - physics system handles movement automatically`);
       return state; // No state changes needed - physics handles movement
     });
   },
@@ -1761,7 +1665,6 @@ export const useWorldStore = create<WorldState>((set, _get) => ({
   loadDefaultWorld: () => {
     const defaultWorld = getDefaultWorld();
     _get().loadWorld(defaultWorld);
-    logger.info("🌟 Default world loaded");
   },
 
   // Reset world to initial state

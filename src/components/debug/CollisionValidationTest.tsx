@@ -38,8 +38,6 @@ export function CollisionValidationTest() {
     setIsRunning(true);
     const results: TestResult[] = [];
 
-    console.log("🧪 Starting collision validation tests...");
-
     // Test 1: Height Map Generation
     try {
       const startTime = performance.now();
@@ -269,16 +267,9 @@ export function CollisionValidationTest() {
 
     // Log summary
     const successCount = results.filter((r) => r.success).length;
-    console.log(`🧪 Tests completed: ${successCount}/${results.length} passed`);
 
     results.forEach((result) => {
-      const status = result.success ? "✅" : "❌";
-      const perf = result.performance
-        ? ` (${result.performance.toFixed(2)}ms)`
-        : "";
-      console.log(
-        `${status} ${result.method}${perf}: ${result.details ?? result.error ?? "No details"}`,
-      );
+      // Test result logged
     });
   };
 

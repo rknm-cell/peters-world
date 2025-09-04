@@ -259,7 +259,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
         setIsHunting(false);
         setHuntingTargetId(null);
         setTarget(null);
-        console.log(`🐺 Wolf ${objectId}: Hunting timeout, returning to wandering`);
       } else if (huntingTargetId) {
         // Check if target deer still exists
         const targetDeer = relevantObjects.find(obj => obj.id === huntingTargetId);
@@ -275,7 +274,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
             setTarget(null);
             setIsIdle(true);
             setIdleStartTime(currentTime);
-            console.log(`🐺 Wolf ${objectId}: Caught deer, resting`);
             return;
           }
           
@@ -286,7 +284,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
           setIsHunting(false);
           setHuntingTargetId(null);
           setTarget(null);
-          console.log(`🐺 Wolf ${objectId}: Target deer disappeared`);
         }
       }
     }
@@ -305,7 +302,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
         setHuntingTargetId(nearbyDeer.id);
         setTarget(deerPosition);
         setIsIdle(false);
-        console.log(`🐺 Wolf ${objectId}: Starting to hunt deer at distance ${distanceToDeer.toFixed(2)}`);
       }
     }
 
@@ -319,14 +315,12 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       if (needsNewTarget) {
         // If we just reached a target, decide whether to idle or continue moving
         if (targetReached && target) {
-          console.log(`🐺 Wolf ${objectId}: Reached target at distance ${distanceToTarget.toFixed(2)}`);
           
           // Decide if wolf should idle or move to new location
           if (Math.random() < IDLE_PROBABILITY) {
             setIsIdle(true);
             setIdleStartTime(currentTime);
             setTarget(null);
-            console.log(`🐺 Wolf ${objectId}: Starting idle period`);
             return;
           }
         }
@@ -335,7 +329,6 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
         const newTarget = generateWanderingTarget(currentPosition);
         if (newTarget) {
           setTarget(newTarget);
-          console.log(`🐺 Wolf ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
         }
       }
     }
@@ -388,23 +381,18 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       
       // Handle collision detection results (same as deer)
       if (!terrainCollision.canMove) {
-        console.log(`🐺 Wolf ${objectId}: Movement blocked`);
         
         // For building collisions, generate a new target
         if (terrainCollision.isBuildingBlocked) {
-          console.log(`🐺 Wolf ${objectId}: Blocked by building, generating new target`);
           setTarget(null);
           return;
         } else if (enhancedValidation?.alternativePath && enhancedValidation.alternativePath.length > 0) {
           targetPosition = enhancedValidation.alternativePath[0]!;
-          console.log(`🐺 Wolf ${objectId}: Using enhanced alternative path point`);
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          console.log(`🐺 Wolf ${objectId}: Using traditional adjusted position`);
         } else {
           // No alternative available, generate new target
           setTarget(null);
-          console.log(`🐺 Wolf ${objectId}: Generating new target due to blocked movement`);
           return;
         }
       } else {
@@ -546,19 +534,16 @@ function WolfPhysicsComponent({ objectId, position, type }: WolfPhysicsProps) {
       
       // Lower confidence threshold for easier target generation
       if (pathValidation.isValid && pathValidation.confidence > 0.4) {
-        console.log(`🐺 Wolf ${objectId}: Found valid target after ${attempt + 1} attempts (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`);
         return candidateTarget;
       } else if (pathValidation.confidence > 0.2) {
         // Fallback to traditional collision detection
         const terrainCollision = terrainCollisionDetector.checkMovement(currentPos, candidateTarget);
         if (terrainCollision.canMove) {
-          console.log(`🐺 Wolf ${objectId}: Fallback collision detection found target after ${attempt + 1} attempts`);
           return candidateTarget;
         }
       }
     }
     
-    console.log(`🐺 Wolf ${objectId}: Could not find valid wandering target after ${maxAttempts} attempts`);
     return null;
   }
 

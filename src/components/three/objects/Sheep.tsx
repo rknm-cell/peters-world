@@ -41,10 +41,6 @@ export function Sheep({
   // Clone the scene to avoid sharing between instances
   const sheepModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Sheep ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Sheep({
         }
       });
 
-      console.log(`Sheep ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "sheep positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Sheep ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Sheep({
 
   // Don't render if model failed to load
   if (!sheepModel) {
-    console.warn(`Sheep ${type}: Failed to load model, not rendering`);
     return null;
   }
 

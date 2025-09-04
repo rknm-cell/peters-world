@@ -41,10 +41,6 @@ export function Pig({
   // Clone the scene to avoid sharing between instances
   const pigModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Pig ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Pig({
         }
       });
 
-      console.log(`Pig ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "pig positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Pig ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -118,7 +108,6 @@ export function Pig({
 
   // Don't render if model failed to load
   if (!pigModel) {
-    console.warn(`Pig ${type}: Failed to load model, not rendering`);
     return null;
   }
 

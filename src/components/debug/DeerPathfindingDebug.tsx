@@ -445,7 +445,6 @@ export function PathfindingDebugPanel() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "D") {
         e.preventDefault();
         togglePathfinding();
-        console.log("🦌 Toggled deer pathfinding debug");
       }
     };
 

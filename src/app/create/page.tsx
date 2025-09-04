@@ -28,7 +28,7 @@ export default function CreatePage() {
       {/* <PlacementDebugPanel /> */}
       {/* <CollisionDebugPanel /> */}
       {/* <PathfindingDebugPanel /> */}
-            {/* <CollisionValidationTest /> */}
+      {/* <CollisionValidationTest /> */}
       {/* <TerrainHeightMapDebug /> */}
       {/* <TerrainNormalMapDebug /> */}
       

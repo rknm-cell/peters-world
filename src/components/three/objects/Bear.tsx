@@ -41,10 +41,6 @@ export function Bear({
   // Clone the scene to avoid sharing between instances
   const bearModel = useMemo(() => {
     if (isLoading || !gltfScene) {
-      console.log(`Bear ${type}: GLB loading failed or no scene`, {
-        isLoading,
-        hasScene: !!gltfScene,
-      });
       return null;
     }
 
@@ -80,15 +76,9 @@ export function Bear({
         }
       });
 
-      console.log(`Bear ${type}: Model loaded successfully`, {
-        hasModel: !!clonedScene,
-        scaleFactor,
-        "bear positioned by PlacementSystem": true,
-      });
-
       return clonedScene;
     } catch (error) {
-      console.error(`Bear ${type}: Error processing GLB scene:`, error);
+      // Error processing GLB scene
       return null;
     }
   }, [gltfScene, preview, canPlace, type, isLoading]);
@@ -119,7 +109,6 @@ export function Bear({
 
   // Don't render if model failed to load
   if (!bearModel) {
-    console.warn(`Bear ${type}: Failed to load model, not rendering`);
     return null;
   }
 

@@ -81,36 +81,19 @@ export function DeerSpawningManager() {
 
     debugWindow.toggleDeerMovement = toggleMovement;
     debugWindow.forceDeerMovement = () => {
-      console.warn("🔧 Manually triggering deer movement...");
       moveDeer();
     };
     debugWindow.testDeerSpawn = () => {
-      console.warn("🔧 Manually triggering deer spawn...");
       spawnDeer();
     };
     debugWindow.checkDeerState = () => {
       const state = useWorldStore.getState();
       const deer = state.objects.filter((obj) => obj.type === "animals/deer");
-      console.warn("🔍 Current deer state:", deer);
-      deer.forEach((d) => {
-        console.warn(
-          `   Deer ${d.id}: pos [${d.position.join(", ")}] - physics-controlled`,
-        );
-      });
+      // Current deer state logged
     };
     debugWindow.checkSpawnRequirements = () => {
       const state = useWorldStore.getState();
-      console.warn("🔍 Spawn requirements check:", {
-        hasGlobeRef: !!state.globeRef,
-        globeRefType: typeof state.globeRef,
-        terrainVerticesCount: state.terrainVertices?.length || 0,
-        currentDeerCount: state.objects.filter(
-          (obj) => obj.type === "animals/deer",
-        ).length,
-        maxDeerInWorld: DEER_CONFIG.maxDeerInWorld,
-        totalObjects: state.objects.length,
-        objectTypes: [...new Set(state.objects.map((obj) => obj.type))],
-      });
+      // Spawn requirements check logged
     };
     return () => {
       delete debugWindow.toggleDeerMovement;

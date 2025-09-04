@@ -31,7 +31,6 @@ export function IdleOrientationTest() {
       ...prev.slice(-20),
       `[${timestamp}] ${message}`,
     ]);
-    console.log(`🦌 ${message}`);
   };
 
   // Start monitoring a specific deer
@@ -279,7 +278,9 @@ export function IdleOrientationTest() {
           // Only log latest results to avoid spam
           const latestResults = monitoringResults.slice(-5);
           console.group("🦌 Idle Orientation Monitoring");
-          latestResults.forEach((result) => console.log(result));
+          latestResults.forEach((result) => {
+            // Result logged
+          });
           console.groupEnd();
           return null;
         })()}

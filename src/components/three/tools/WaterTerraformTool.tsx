@@ -144,10 +144,6 @@ export function WaterTerraformTool({
           updateTerrainVertex(index, {
             waterLevel: newWaterLevel,
           });
-
-          console.log(
-            `💧 Water terraforming: Vertex ${index} water level ${vertex.waterLevel.toFixed(2)} → ${newWaterLevel.toFixed(2)}`,
-          );
         }
       });
     },

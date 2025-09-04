@@ -72,36 +72,27 @@ function isSerializedWorld(data: unknown): data is SerializedWorld {
   );
 }
 
-export function deserializeWorld(data: unknown) {
-  // Validate that data is an object
-  if (!isSerializedWorld(data)) {
-    console.warn("Invalid world data format, using defaults");
+export const deserializeWorld = (data: unknown): WorldData => {
+  try {
+    if (!data || typeof data !== 'object') {
+      return getDefaultWorld();
+    }
+
+    const worldData = data as Partial<WorldData>;
+    
     return {
-      objects: [],
-      terrainVertices: [],
-      terraformMode: "none" as const,
-      brushSize: 0.5,
-      brushStrength: 0.1,
-      timeOfDay: "day" as const,
+      objects: Array.isArray(worldData.objects) ? worldData.objects : [],
+      terrainVertices: Array.isArray(worldData.terrainVertices) ? worldData.terrainVertices : [],
+      terraformMode: worldData.terraformMode || "none",
+      brushSize: typeof worldData.brushSize === 'number' ? worldData.brushSize : 0.5,
+      brushStrength: typeof worldData.brushStrength === 'number' ? worldData.brushStrength : 0.1,
+      timeOfDay: worldData.timeOfDay || "day",
     };
+  } catch (error) {
+    // Invalid world data format, using defaults
+    return getDefaultWorld();
   }
-
-  // Validate version compatibility
-  if (!data.version || data.version !== SCHEMA_VERSION) {
-    console.warn(
-      `World version mismatch: ${data.version} vs ${SCHEMA_VERSION}`,
-    );
-  }
-
-  return {
-    objects: data.objects || [],
-    terrainVertices: data.terrain?.vertices || [],
-    terraformMode: data.terrain?.terraformMode || ("none" as const),
-    brushSize: data.terrain?.brushSize || 0.5,
-    brushStrength: data.terrain?.brushStrength || 0.1,
-    timeOfDay: data.environment?.timeOfDay || ("day" as const),
-  };
-}
+};
 
 /**
  * Generate a default world name based on content

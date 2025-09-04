@@ -78,7 +78,7 @@ class DebouncedUpdateManager {
         try {
           update.updateFn();
         } catch (error) {
-          console.warn(`Debounced update failed for ${update.id}:`, error);
+          // Debounced update failed
         }
       }
     } finally {

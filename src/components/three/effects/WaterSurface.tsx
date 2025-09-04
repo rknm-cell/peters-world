@@ -83,13 +83,6 @@ export function WaterSurface({
   // Don't render if no water
   if (!waterGeometry) return null;
 
-  // Debug info
-  const waterCount = terrainVertices.filter((v) => v.waterLevel > 0.001).length;
-  const maxWaterLevel = Math.max(...terrainVertices.map((v) => v.waterLevel));
-  console.log(
-    `WaterSurface: Rendering with ${waterCount} water vertices, max level: ${maxWaterLevel.toFixed(3)}`,
-  );
-
   return (
     <mesh
       geometry={waterGeometry}

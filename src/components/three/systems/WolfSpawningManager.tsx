@@ -44,30 +44,16 @@ export function WolfSpawningManager() {
     const debugWindow = window as Window & DebugWindow;
 
     debugWindow.testWolfSpawn = () => {
-      console.warn("🔧 Manually triggering wolf spawn...");
       spawnWolf();
     };
     debugWindow.checkWolfState = () => {
       const state = useWorldStore.getState();
       const wolves = state.objects.filter((obj) => obj.type === "animals/wolf");
-      console.warn("🔍 Current wolf state:", wolves);
-      wolves.forEach((w) => {
-        console.warn(`   Wolf ${w.id}: pos [${w.position.join(", ")}]`);
-      });
+      // Current wolf state logged
     };
     debugWindow.checkWolfSpawnRequirements = () => {
       const state = useWorldStore.getState();
-      console.warn("🔍 Wolf spawn requirements check:", {
-        hasGlobeRef: !!state.globeRef,
-        globeRefType: typeof state.globeRef,
-        terrainVerticesCount: state.terrainVertices?.length || 0,
-        currentWolfCount: state.objects.filter(
-          (obj) => obj.type === "animals/wolf",
-        ).length,
-        maxWolvesInWorld: WOLF_CONFIG.maxWolvesInWorld,
-        totalObjects: state.objects.length,
-        objectTypes: [...new Set(state.objects.map((obj) => obj.type))],
-      });
+      // Wolf spawn requirements check logged
     };
     return () => {
       delete debugWindow.testWolfSpawn;
@@ -80,14 +66,8 @@ export function WolfSpawningManager() {
     // Spawn a wolf 10 seconds after scene loads for debugging (after deer)
     const immediateSpawnDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log(
-          "🐺 WolfSpawningManager: Scene loaded, spawning debug wolf in 10 seconds...",
-        );
         setTimeout(() => {
           if (isActiveRef.current) {
-            console.log(
-              "🐺 WolfSpawningManager: Attempting immediate wolf spawn for debugging...",
-            );
             spawnWolf();
           }
         }, 10000); // 10 second delay after scene is ready
@@ -97,9 +77,6 @@ export function WolfSpawningManager() {
     // Add a delay before starting to avoid spawning during initial scene setup
     const startDelay = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log(
-          "🐺 WolfSpawningManager: Starting regular wolf management cycle...",
-        );
         // Spawn and despawn wolves periodically with jitter to prevent synchronization
         const manageWolvesWithJitter = () => {
           if (!isActiveRef.current) return;
