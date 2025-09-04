@@ -18,7 +18,6 @@ import { DeerSpawningManager } from "~/components/three/systems/DeerSpawningMana
 import { SelectionIndicator } from "~/components/three/effects/SelectionIndicator";
 
 import { GlobePhysics } from "~/components/three/physics/GlobePhysics";
-import { GravityController } from "~/components/three/physics/GravityController";
 import { PhysicsStatusLogger } from "~/components/three/physics/PhysicsStatusLogger";
 
 export function Scene() {
@@ -63,8 +62,6 @@ export function Scene() {
         updateLoop="independent" // Better performance
         timeStep={1 / 60} // 60 FPS physics updates
       >
-        {/* Custom radial gravity system */}
-        <GravityController />
 
         {/* Physics debug visualization */}
         {/* <PhysicsDebug /> */}
