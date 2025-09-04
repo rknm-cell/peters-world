@@ -16,10 +16,10 @@ This document outlines incremental cleanup and optimization tasks for the DeerPh
 **File**: `src/components/three/physics/DeerPhysics.tsx`
 **Lines**: 26-37, 601-746
 **Task**: Remove debug window interface and all debug reporting
-- [ ] Remove `DebugWindow` interface (lines 26-37)
-- [ ] Remove `updateDeerDebug` calls throughout the file
-- [ ] Remove collision point reporting
-- [ ] Remove debug state tracking in useFrame
+- [x] Remove `DebugWindow` interface (lines 26-37)
+- [x] Remove `updateDeerDebug` calls throughout the file
+- [x] Remove collision point reporting
+- [x] Remove debug state tracking in useFrame
 - [ ] Test that deer movement still works correctly
 
 ### 2. Simplify Collision Detection System
@@ -36,8 +36,8 @@ This document outlines incremental cleanup and optimization tasks for the DeerPh
 **File**: `src/components/three/physics/DeerPhysics.tsx`
 **Lines**: Throughout file
 **Task**: Remove excessive console.log statements
-- [ ] Remove all `console.log` statements
-- [ ] Keep only critical error logging
+- [x] Remove all `console.log` statements
+- [x] Keep only critical error logging
 - [ ] Test that deer behavior is still observable without logs
 
 ---
@@ -48,10 +48,10 @@ This document outlines incremental cleanup and optimization tasks for the DeerPh
 **File**: `src/components/three/physics/DeerPhysics.tsx`
 **Lines**: ~200-250, ~350-400, ~880-885
 **Task**: Remove all commented-out code blocks
-- [ ] Remove commented-out bounce animation code during idle
-- [ ] Remove commented-out bounce animation code during eating
-- [ ] Remove commented-out eating indicator mesh
-- [ ] Remove other commented-out code blocks
+- [x] Remove commented-out bounce animation code during idle
+- [x] Remove commented-out bounce animation code during eating
+- [x] Remove commented-out eating indicator mesh
+- [x] Remove other commented-out code blocks
 - [ ] Test that no functionality is lost
 
 ### 5. Simplify Target Generation Logic

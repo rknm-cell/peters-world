@@ -22,19 +22,7 @@ import { enhancedPathfinder } from "~/lib/utils/enhanced-pathfinding";
 import { terrainHeightMapGenerator } from "~/components/debug/TerrainHeightMap";
 import { COLLISION_GROUPS, COLLISION_INTERACTIONS } from "~/lib/constants";
 
-// Type for debug window functions
-interface DebugWindow extends Window {
-  updateDeerDebug?: (
-    deerId: string,
-    data: {
-      position?: THREE.Vector3;
-      target?: THREE.Vector3 | null;
-      state?: string;
-      lastDecision?: string;
-      collisionPoints?: THREE.Vector3[];
-    },
-  ) => void;
-}
+
 
 interface DeerPhysicsProps {
   objectId: string;
@@ -128,10 +116,9 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       const controller = world.createCharacterController(
         0.01,
       ) as CharacterController; // Small offset for stability
-      controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
-      controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
-      characterController.current = controller;
-      // console.log('🦌 Character controller initialized for deer', objectId);
+              controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
+        controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
+        characterController.current = controller;
     }
 
     // Set initial deer orientation to match surface normal
@@ -239,27 +226,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       currentPos.z,
     );
 
-    // Report debug state
-    const debugWindow = window as DebugWindow;
-    if (debugWindow.updateDeerDebug) {
-      const distanceToTarget = target ? currentPosition.distanceTo(target) : 0;
-      let decision = "Seeking target";
 
-      if (isEating) {
-        decision = `Eating grass`;
-      } else if (isIdle) {
-        decision = `Idle for ${((currentTime - idleStartTime) / 1000).toFixed(1)}s`;
-      } else if (target) {
-        decision = `Traveling (${distanceToTarget.toFixed(1)}m to go)`;
-      }
-
-      debugWindow.updateDeerDebug(objectId, {
-        position: currentPosition,
-        target: target,
-        state: isEating ? "eating" : isIdle ? "idle" : "moving",
-        lastDecision: decision,
-      });
-    }
 
     // Handle idle state
     if (isIdle) {
@@ -344,11 +311,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           "low",
         ); // Low priority since this is just orientation maintenance
 
-        // Debug logging (can be removed later)
-        if (orientationDifference > 0.2) {
-          // Only log significant corrections
-          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
-        }
+
       }
 
       // During idle, no movement but orientation is maintained
@@ -374,26 +337,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         setEatingOrientation(null);
         setTarget(null); // Force new target generation
       }
-
-      // DISABLED: Bounce animation during eating to preserve orientation
-      // Previously this modified position which could interfere with surface alignment
-      // Apply bounce decay when eating (slower decay than idle)
-      // const bounceDecayRate = 3.0; // Slower decay while eating
-      // lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
-
-      // Continue gentle bounce animation while eating
-      // bouncePhase.current += lastMovementSpeed.current * 4.0 * delta; // Slower frequency while eating
-
-      // Calculate gentle bounce height while eating
-      // const maxBounceHeight = 0.04; // Smaller bounce while eating
-      // const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
-
-      // Apply subtle bounce to deer position while eating - DISABLED to preserve surface alignment
-      // if (Math.abs(bounceHeight) > 0.005) {
-      //   const idealSurfaceDistance = 6.05 + bounceHeight;
-      //   const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-      //   body.setTranslation(adjustedPosition, true);
-      // }
 
       // Reset movement speed when eating to stop any residual bounce
       lastMovementSpeed.current = 0;
@@ -462,12 +405,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           "low",
         ); // Low priority since this is just orientation maintenance
 
-        // Debug logging (can be removed later)
-        if (orientationDifference > 0.2) {
-          // Only log significant corrections
-          const orientationType = eatingOrientation ? "captured" : "default";
-          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
-        }
+
       }
 
       // During eating, no movement but orientation is maintained
@@ -498,17 +436,15 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         setEatingOrientation(capturedOrientation);
         setTarget(null);
         setIsIdle(false);
-        console.log(`🦌 Deer ${objectId}: Starting to eat grass`);
         return;
       }
 
       // If grass is nearby but not close enough, set it as target (only if not already targeting it)
-      const targetingGrass = target && target.distanceTo(grassPosition) < 0.1;
-      if (!targetingGrass) {
-        setTarget(grassPosition);
-        setIsIdle(false);
-        // console.log(`🦌 Deer ${objectId}: Found grass, moving to eat it`);
-      }
+              const targetingGrass = target && target.distanceTo(grassPosition) < 0.1;
+        if (!targetingGrass) {
+          setTarget(grassPosition);
+          setIsIdle(false);
+        }
     }
 
     // Check if we need a new target (only if not pursuing grass)
@@ -523,30 +459,24 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       const targetReached = distanceToTarget < TARGET_REACHED_THRESHOLD;
       const needsNewTarget = !target || targetReached;
 
-      if (needsNewTarget) {
-        // If we just reached a target, decide whether to idle or continue moving
-        if (targetReached && target) {
-          console.log(
-            `🦌 Deer ${objectId}: Reached target at distance ${distanceToTarget.toFixed(2)}`,
-          );
-
-          // Decide if deer should idle or move to new location
-          if (Math.random() < IDLE_PROBABILITY) {
-            setIsIdle(true);
-            setIdleStartTime(currentTime);
-            setTarget(null);
-            // console.log(`🦌 Deer ${objectId}: Starting idle period`);
+              if (needsNewTarget) {
+          // If we just reached a target, decide whether to idle or continue moving
+          if (targetReached && target) {
+            // Decide if deer should idle or move to new location
+            if (Math.random() < IDLE_PROBABILITY) {
+              setIsIdle(true);
+              setIdleStartTime(currentTime);
+                          setTarget(null);
             return;
+            }
+          }
+
+          // Generate new wandering target
+          const newTarget = generateWanderingTarget(currentPosition);
+          if (newTarget) {
+            setTarget(newTarget);
           }
         }
-
-        // Generate new wandering target
-        const newTarget = generateWanderingTarget(currentPosition);
-        if (newTarget) {
-          setTarget(newTarget);
-          // console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
-        }
-      }
     }
 
     // Move toward target using simple kinematic movement
@@ -599,27 +529,17 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         //     groundHeight: terrainCollision.groundHeight.toFixed(2)
         // });
 
-        // Report collision to debug system
-        const debugWin = window as DebugWindow;
-        if (debugWin.updateDeerDebug) {
-          debugWin.updateDeerDebug(objectId, {
-            lastDecision: blockReason,
-            collisionPoints: [targetPosition],
-          });
-        }
+
 
         // For building collisions, generate a new target instead of using adjusted position
         if (terrainCollision.isBuildingBlocked) {
-          // console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
           setTarget(null); // Force new target generation
           return; // Skip movement this frame
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          // console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);
         } else {
           // No alternative available, generate new target
           setTarget(null);
-          // console.log(`🦌 Deer ${objectId}: Generating new target due to blocked movement`);
           return; // Skip movement this frame
         }
       } else {
@@ -771,9 +691,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       );
 
       if (pathValidation.isValid && pathValidation.confidence > 0.6) {
-        console.log(
-          `🦌 Deer ${objectId}: Enhanced pathfinding found valid target after ${attempt + 1} attempts (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`,
-        );
         return candidateTarget;
       } else if (pathValidation.confidence > 0.3) {
         // If path has moderate confidence but isn't fully valid, try traditional collision detection as fallback
@@ -782,25 +699,11 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           candidateTarget,
         );
         if (terrainCollision.canMove) {
-          console.log(
-            `🦌 Deer ${objectId}: Fallback collision detection found target after ${attempt + 1} attempts`,
-          );
           return candidateTarget;
         }
       }
-
-      // Log why this target was rejected for debugging
-      if (attempt % 5 === 0) {
-        // Log every 5th attempt to avoid spam
-        console.log(
-          `🦌 Deer ${objectId}: Target attempt ${attempt + 1} rejected - ${pathValidation.reason ?? "Unknown reason"} (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`,
-        );
-      }
     }
 
-    console.log(
-      `🦌 Deer ${objectId}: Could not find valid wandering target after ${maxAttempts} attempts`,
-    );
     return null; // No valid target found, deer will idle
   }
 
@@ -840,14 +743,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           disablePositionSync={true}
           isPhysicsControlled={true}
         />
-
-        {/* Eating indicator */}
-        {/* {isEating && (
-          <mesh position={[0, 1.2, 0]}>
-            <sphereGeometry args={[0.08, 8, 8]} />
-            <meshBasicMaterial color="green" />
-          </mesh>
-        )} */}
       </group>
     </RigidBody>
   );
