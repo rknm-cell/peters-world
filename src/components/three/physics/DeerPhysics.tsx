@@ -116,10 +116,9 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       const controller = world.createCharacterController(
         0.01,
       ) as CharacterController; // Small offset for stability
-      controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
-      controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
-      characterController.current = controller;
-      // console.log('🦌 Character controller initialized for deer', objectId);
+              controller.enableAutostep(0.5, 0.2, true); // Enable stepping over small obstacles
+        controller.enableSnapToGround(0.5); // Snap to ground within 0.5 units
+        characterController.current = controller;
     }
 
     // Set initial deer orientation to match surface normal
@@ -466,7 +465,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         setEatingOrientation(capturedOrientation);
         setTarget(null);
         setIsIdle(false);
-        console.log(`🦌 Deer ${objectId}: Starting to eat grass`);
         return;
       }
 
@@ -491,30 +489,26 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       const targetReached = distanceToTarget < TARGET_REACHED_THRESHOLD;
       const needsNewTarget = !target || targetReached;
 
-      if (needsNewTarget) {
-        // If we just reached a target, decide whether to idle or continue moving
-        if (targetReached && target) {
-          console.log(
-            `🦌 Deer ${objectId}: Reached target at distance ${distanceToTarget.toFixed(2)}`,
-          );
+              if (needsNewTarget) {
+          // If we just reached a target, decide whether to idle or continue moving
+          if (targetReached && target) {
+            // Decide if deer should idle or move to new location
+            if (Math.random() < IDLE_PROBABILITY) {
+              setIsIdle(true);
+              setIdleStartTime(currentTime);
+              setTarget(null);
+              // console.log(`🦌 Deer ${objectId}: Starting idle period`);
+              return;
+            }
+          }
 
-          // Decide if deer should idle or move to new location
-          if (Math.random() < IDLE_PROBABILITY) {
-            setIsIdle(true);
-            setIdleStartTime(currentTime);
-            setTarget(null);
-            // console.log(`🦌 Deer ${objectId}: Starting idle period`);
-            return;
+          // Generate new wandering target
+          const newTarget = generateWanderingTarget(currentPosition);
+          if (newTarget) {
+            setTarget(newTarget);
+            // console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
           }
         }
-
-        // Generate new wandering target
-        const newTarget = generateWanderingTarget(currentPosition);
-        if (newTarget) {
-          setTarget(newTarget);
-          // console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
-        }
-      }
     }
 
     // Move toward target using simple kinematic movement
@@ -571,16 +565,13 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
 
         // For building collisions, generate a new target instead of using adjusted position
         if (terrainCollision.isBuildingBlocked) {
-          // console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
           setTarget(null); // Force new target generation
           return; // Skip movement this frame
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
-          // console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);
         } else {
           // No alternative available, generate new target
           setTarget(null);
-          // console.log(`🦌 Deer ${objectId}: Generating new target due to blocked movement`);
           return; // Skip movement this frame
         }
       } else {
@@ -732,9 +723,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       );
 
       if (pathValidation.isValid && pathValidation.confidence > 0.6) {
-        console.log(
-          `🦌 Deer ${objectId}: Enhanced pathfinding found valid target after ${attempt + 1} attempts (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`,
-        );
         return candidateTarget;
       } else if (pathValidation.confidence > 0.3) {
         // If path has moderate confidence but isn't fully valid, try traditional collision detection as fallback
@@ -743,25 +731,11 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           candidateTarget,
         );
         if (terrainCollision.canMove) {
-          console.log(
-            `🦌 Deer ${objectId}: Fallback collision detection found target after ${attempt + 1} attempts`,
-          );
           return candidateTarget;
         }
       }
-
-      // Log why this target was rejected for debugging
-      if (attempt % 5 === 0) {
-        // Log every 5th attempt to avoid spam
-        console.log(
-          `🦌 Deer ${objectId}: Target attempt ${attempt + 1} rejected - ${pathValidation.reason ?? "Unknown reason"} (confidence: ${(pathValidation.confidence * 100).toFixed(1)}%)`,
-        );
-      }
     }
 
-    console.log(
-      `🦌 Deer ${objectId}: Could not find valid wandering target after ${maxAttempts} attempts`,
-    );
     return null; // No valid target found, deer will idle
   }
 
