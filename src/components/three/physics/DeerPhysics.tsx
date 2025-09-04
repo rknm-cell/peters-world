@@ -273,25 +273,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         setTarget(null); // Force new target generation
       }
 
-      // DISABLED: Bounce animation during idle to preserve orientation
-      // Previously this modified position which could interfere with surface alignment
-      // Apply bounce decay when idle
-      // const bounceDecayRate = 5.0; // How quickly bounce fades when idle
-      // lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
-
-      // Continue bounce animation with decaying speed
-      // bouncePhase.current += lastMovementSpeed.current * 8.0 * delta;
-
-      // Calculate fading bounce height
-      // const maxBounceHeight = 0.08;
-      // const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
-
-      // Deer should not bounce if idle - DISABLED to preserve surface alignment
-      // if (Math.abs(bounceHeight) > 0.01) {
-      //   const idealSurfaceDistance = 6.05 + bounceHeight;
-      //   const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-      //   body.setTranslation(adjustedPosition, true);
-      // }
 
       // Reset movement speed when entering idle to stop any residual bounce
       lastMovementSpeed.current = 0;
@@ -598,25 +579,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       );
       // console.log(`🦌 Deer ${objectId}: Collision result: canMove=${terrainCollision.canMove}, groundHeight=${terrainCollision.groundHeight.toFixed(2)}, isWater=${terrainCollision.isWater}`);
 
-      let enhancedValidation = null;
-
-      // Only use enhanced pathfinding for additional validation if traditional collision fails
-      if (!terrainCollision.canMove) {
-        enhancedValidation = enhancedPathfinder.validatePath(
-          currentPosition,
-          targetPosition,
-          {
-            maxSlopeAngle: Math.PI / 3, // 60 degrees
-            avoidWater: true,
-            samples: 3, // Quick validation for real-time movement
-            useHeightMap: true,
-            useNormalMap: false, // Disable normal map to reduce complexity
-            generateAlternatives: true, // Generate alternatives if path is blocked
-          },
-        );
-        // console.log(`🦌 Deer ${objectId}: Enhanced validation result: isValid=${enhancedValidation.isValid}, confidence=${(enhancedValidation.confidence * 100).toFixed(1)}%`);
-      }
-
       // Handle collision detection results
       if (!terrainCollision.canMove) {
         let blockReason = "Unknown obstacle";
@@ -651,12 +613,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           // console.log(`🦌 Deer ${objectId}: Blocked by building (${terrainCollision.blockedByBuilding}), generating new target`);
           setTarget(null); // Force new target generation
           return; // Skip movement this frame
-        } else if (
-          enhancedValidation?.alternativePath &&
-          enhancedValidation.alternativePath.length > 0
-        ) {
-          targetPosition = enhancedValidation.alternativePath[0]!;
-          // console.log(`🦌 Deer ${objectId}: Using enhanced alternative path point`);
         } else if (terrainCollision.adjustedPosition) {
           targetPosition = terrainCollision.adjustedPosition;
           // console.log(`🦌 Deer ${objectId}: Using traditional adjusted position`);

@@ -51,25 +51,9 @@ export class EnhancedPathfinder {
     const opts = { ...this.defaultOptions, ...options };
     const results: PathValidationResult[] = [];
 
-    // Approach 1: Traditional terrain collision detection
-    const traditionalResult = this.validateWithTraditionalCollision(
-      startPos,
-      endPos,
-      opts,
-    );
-    results.push(traditionalResult);
+  
 
-    // Approach 2: Height map validation
-    if (opts.useHeightMap) {
-      const heightMapResult = this.validateWithHeightMap(
-        startPos,
-        endPos,
-        opts,
-      );
-      if (heightMapResult) results.push(heightMapResult);
-    }
-
-    // Approach 3: Normal map validation
+    //Normal map validation
     if (opts.useNormalMap) {
       const normalMapResult = this.validateWithNormalMap(
         startPos,
@@ -81,71 +65,6 @@ export class EnhancedPathfinder {
 
     // Combine results using weighted voting
     return this.combineValidationResults(results, opts, endPos);
-  }
-
-  /**
-   * Validate using traditional terrain collision detection
-   */
-  private validateWithTraditionalCollision(
-    startPos: THREE.Vector3,
-    endPos: THREE.Vector3,
-    options: PathfindingOptions,
-  ): PathValidationResult {
-    const detector = getTerrainCollisionDetector();
-    const path = this.generatePathPoints(startPos, endPos, options.samples);
-
-    for (let i = 1; i < path.length; i++) {
-      const prevPoint = path[i - 1];
-      const currPoint = path[i];
-      if (!prevPoint || !currPoint) continue;
-
-      const result = detector.checkMovement(prevPoint, currPoint);
-
-      if (!result.canMove) {
-        let reason = "Unknown obstacle";
-        if (result.isBuildingBlocked) {
-          reason = `Building obstacle (${result.blockedByBuilding})`;
-        } else if (result.isWater) {
-          reason = "Water obstacle";
-        } else {
-          reason = "Steep terrain";
-        }
-
-        return {
-          isValid: false,
-          blockedAt: path[i],
-          reason,
-          confidence: 0.8,
-        };
-      }
-    }
-
-    return { isValid: true, confidence: 0.8 };
-  }
-
-  /**
-   * Validate using height map
-   */
-  private validateWithHeightMap(
-    startPos: THREE.Vector3,
-    endPos: THREE.Vector3,
-    options: PathfindingOptions,
-  ): PathValidationResult | null {
-    const heightMapResult = terrainHeightMapGenerator.validatePath(
-      startPos,
-      endPos,
-      options.maxSlopeAngle,
-      options.samples,
-    );
-
-    if (!heightMapResult) return null;
-
-    return {
-      isValid: heightMapResult.valid,
-      blockedAt: heightMapResult.blockedAt,
-      reason: heightMapResult.reason,
-      confidence: 0.9, // Height maps are typically very accurate
-    };
   }
 
   /**
