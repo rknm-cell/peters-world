@@ -48,10 +48,10 @@ This document outlines incremental cleanup and optimization tasks for the DeerPh
 **File**: `src/components/three/physics/DeerPhysics.tsx`
 **Lines**: ~200-250, ~350-400, ~880-885
 **Task**: Remove all commented-out code blocks
-- [ ] Remove commented-out bounce animation code during idle
-- [ ] Remove commented-out bounce animation code during eating
-- [ ] Remove commented-out eating indicator mesh
-- [ ] Remove other commented-out code blocks
+- [x] Remove commented-out bounce animation code during idle
+- [x] Remove commented-out bounce animation code during eating
+- [x] Remove commented-out eating indicator mesh
+- [x] Remove other commented-out code blocks
 - [ ] Test that no functionality is lost
 
 ### 5. Simplify Target Generation Logic

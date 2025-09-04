@@ -311,11 +311,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           "low",
         ); // Low priority since this is just orientation maintenance
 
-        // Debug logging (can be removed later)
-        if (orientationDifference > 0.2) {
-          // Only log significant corrections
-          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
-        }
+
       }
 
       // During idle, no movement but orientation is maintained
@@ -341,26 +337,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
         setEatingOrientation(null);
         setTarget(null); // Force new target generation
       }
-
-      // DISABLED: Bounce animation during eating to preserve orientation
-      // Previously this modified position which could interfere with surface alignment
-      // Apply bounce decay when eating (slower decay than idle)
-      // const bounceDecayRate = 3.0; // Slower decay while eating
-      // lastMovementSpeed.current = Math.max(0, lastMovementSpeed.current - bounceDecayRate * delta);
-
-      // Continue gentle bounce animation while eating
-      // bouncePhase.current += lastMovementSpeed.current * 4.0 * delta; // Slower frequency while eating
-
-      // Calculate gentle bounce height while eating
-      // const maxBounceHeight = 0.04; // Smaller bounce while eating
-      // const bounceHeight = Math.sin(bouncePhase.current) * maxBounceHeight * Math.min(lastMovementSpeed.current / MOVEMENT_SPEED, 1.0);
-
-      // Apply subtle bounce to deer position while eating - DISABLED to preserve surface alignment
-      // if (Math.abs(bounceHeight) > 0.005) {
-      //   const idealSurfaceDistance = 6.05 + bounceHeight;
-      //   const adjustedPosition = currentPosition.clone().normalize().multiplyScalar(idealSurfaceDistance);
-      //   body.setTranslation(adjustedPosition, true);
-      // }
 
       // Reset movement speed when eating to stop any residual bounce
       lastMovementSpeed.current = 0;
@@ -429,12 +405,7 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           "low",
         ); // Low priority since this is just orientation maintenance
 
-        // Debug logging (can be removed later)
-        if (orientationDifference > 0.2) {
-          // Only log significant corrections
-          const orientationType = eatingOrientation ? "captured" : "default";
-          // console.log(`🦌 Deer ${objectId}: Correcting orientation drift while eating using ${orientationType} orientation (${(orientationDifference * 180 / Math.PI).toFixed(1)}°)`);
-        }
+
       }
 
       // During eating, no movement but orientation is maintained
@@ -469,12 +440,11 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
       }
 
       // If grass is nearby but not close enough, set it as target (only if not already targeting it)
-      const targetingGrass = target && target.distanceTo(grassPosition) < 0.1;
-      if (!targetingGrass) {
-        setTarget(grassPosition);
-        setIsIdle(false);
-        // console.log(`🦌 Deer ${objectId}: Found grass, moving to eat it`);
-      }
+              const targetingGrass = target && target.distanceTo(grassPosition) < 0.1;
+        if (!targetingGrass) {
+          setTarget(grassPosition);
+          setIsIdle(false);
+        }
     }
 
     // Check if we need a new target (only if not pursuing grass)
@@ -496,9 +466,8 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
             if (Math.random() < IDLE_PROBABILITY) {
               setIsIdle(true);
               setIdleStartTime(currentTime);
-              setTarget(null);
-              // console.log(`🦌 Deer ${objectId}: Starting idle period`);
-              return;
+                          setTarget(null);
+            return;
             }
           }
 
@@ -506,7 +475,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           const newTarget = generateWanderingTarget(currentPosition);
           if (newTarget) {
             setTarget(newTarget);
-            // console.log(`🦌 Deer ${objectId}: New target set at distance ${currentPosition.distanceTo(newTarget).toFixed(2)}`);
           }
         }
     }
@@ -775,14 +743,6 @@ function DeerPhysicsComponent({ objectId, position, type }: DeerPhysicsProps) {
           disablePositionSync={true}
           isPhysicsControlled={true}
         />
-
-        {/* Eating indicator */}
-        {/* {isEating && (
-          <mesh position={[0, 1.2, 0]}>
-            <sphereGeometry args={[0.08, 8, 8]} />
-            <meshBasicMaterial color="green" />
-          </mesh>
-        )} */}
       </group>
     </RigidBody>
   );
