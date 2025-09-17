@@ -405,9 +405,10 @@ export function Toolbar() {
       <div className="fixed bottom-4 right-4 z-40">
         <div className="rounded-lg border border-white/20 bg-black/70 px-2 py-1 backdrop-blur-sm sm:px-3 sm:py-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/80 sm:text-sm">
+            {/* Objects count - DISABLED */}
+            {/* <span className="text-xs text-white/80 sm:text-sm">
               Objects: {objectsCount}/{50}
-            </span>
+            </span> */}
             {hasAutoSave && (
               <div
                 className="flex items-center gap-1"
