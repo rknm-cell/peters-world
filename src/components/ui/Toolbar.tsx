@@ -409,7 +409,7 @@ export function Toolbar() {
             {/* <span className="text-xs text-white/80 sm:text-sm">
               Objects: {objectsCount}/{50}
             </span> */}
-            {hasAutoSave && (
+            {/* {hasAutoSave && (
               <div
                 className="flex items-center gap-1"
                 title="Auto-save enabled"
@@ -417,7 +417,7 @@ export function Toolbar() {
                 <div className="h-2 w-2 rounded-full bg-green-400"></div>
                 <span className="text-xs text-green-400">Auto</span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
