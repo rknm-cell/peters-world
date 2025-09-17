@@ -402,7 +402,7 @@ export function Toolbar() {
       </div> */}
 
       {/* Object count and auto-save status - smaller on mobile */}
-      <div className="fixed bottom-4 right-4 z-40">
+      {/* <div className="fixed bottom-4 right-4 z-40">
         <div className="rounded-lg border border-white/20 bg-black/70 px-2 py-1 backdrop-blur-sm sm:px-3 sm:py-2">
           <div className="flex items-center gap-2">
             {/* Objects count - DISABLED */}
@@ -417,10 +417,10 @@ export function Toolbar() {
                 <div className="h-2 w-2 rounded-full bg-green-400"></div>
                 <span className="text-xs text-green-400">Auto</span>
               </div>
-            )} */}
+            )} 
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Grid placement menu */}
       <GridPlacementMenu
